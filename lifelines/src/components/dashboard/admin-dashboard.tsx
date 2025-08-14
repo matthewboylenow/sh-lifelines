@@ -263,22 +263,46 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
           {/* Quick Actions */}
           <div className="dashboard-card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Button 
-                onClick={() => setActiveTab('lifelines')}
-                className="flex items-center justify-center"
-              >
-                <BookOpen className="h-4 w-4 mr-2" />
-                Manage LifeLines
-              </Button>
-              <Button 
-                variant="secondary"
-                onClick={() => setActiveTab('users')}
-                className="flex items-center justify-center"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Manage Users
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-2">
+                <Button 
+                  onClick={() => setActiveTab('lifelines')}
+                  className="flex items-center justify-center"
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Manage LifeLines
+                </Button>
+                <Link href="/lifelines/create">
+                  <Button 
+                    variant="secondary"
+                    size="sm"
+                    className="w-full flex items-center justify-center"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New LifeLine
+                  </Button>
+                </Link>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  variant="secondary"
+                  onClick={() => setActiveTab('users')}
+                  className="flex items-center justify-center"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Users
+                </Button>
+                <Link href="/register">
+                  <Button 
+                    variant="secondary"
+                    size="sm"
+                    className="w-full flex items-center justify-center"
+                  >
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Register New User
+                  </Button>
+                </Link>
+              </div>
               <Button 
                 variant="outline"
                 className="flex items-center justify-center"
@@ -286,13 +310,15 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
                 <Download className="h-4 w-4 mr-2" />
                 Export Data
               </Button>
-              <Button 
-                variant="outline"
-                className="flex items-center justify-center"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Import Data
-              </Button>
+              <Link href="/admin/import">
+                <Button 
+                  variant="outline"
+                  className="w-full flex items-center justify-center"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import WordPress Data
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

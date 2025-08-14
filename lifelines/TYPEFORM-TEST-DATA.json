@@ -1,0 +1,117 @@
+{
+  "event_type": "form_response",
+  "event_id": "01H123ABC456DEF789GH",
+  "form_response": {
+    "form_id": "abc123def",
+    "token": "test-token-12345",
+    "submitted_at": "2024-08-14T15:30:00Z",
+    "answers": [
+      {
+        "field": {
+          "id": "field1",
+          "ref": "group_leader",
+          "type": "short_text"
+        },
+        "type": "text",
+        "text": "Maria Gonzalez"
+      },
+      {
+        "field": {
+          "id": "field2", 
+          "ref": "leader_email",
+          "type": "email"
+        },
+        "type": "email",
+        "email": "maria.gonzalez@example.com"
+      },
+      {
+        "field": {
+          "id": "field3",
+          "ref": "cell_phone",
+          "type": "phone_number"
+        },
+        "type": "phone_number",
+        "phone_number": "+1-555-123-4567"
+      },
+      {
+        "field": {
+          "id": "field4",
+          "ref": "lifeline_title",
+          "type": "short_text"
+        },
+        "type": "text",
+        "text": "Young Adults Bible Study"
+      },
+      {
+        "field": {
+          "id": "field5",
+          "ref": "lifeline_description",
+          "type": "long_text"
+        },
+        "type": "text",
+        "text": "A weekly Bible study focused on practical applications for young adults navigating career, relationships, and faith in today's world."
+      },
+      {
+        "field": {
+          "id": "field6",
+          "ref": "ages_stages",
+          "type": "multiple_choice"
+        },
+        "type": "choices",
+        "choices": {
+          "ids": ["choice1", "choice2"],
+          "labels": ["Young Adults (18-25)", "Adults (26-40)"],
+          "refs": ["young_adults", "adults"]
+        }
+      },
+      {
+        "field": {
+          "id": "field7",
+          "ref": "group_type", 
+          "type": "multiple_choice"
+        },
+        "type": "choice",
+        "choice": {
+          "id": "choice3",
+          "label": "Scripture Based",
+          "ref": "scripture"
+        }
+      },
+      {
+        "field": {
+          "id": "field8",
+          "ref": "meeting_frequency",
+          "type": "multiple_choice"
+        },
+        "type": "choice",
+        "choice": {
+          "id": "choice4",
+          "label": "Weekly",
+          "ref": "weekly"
+        }
+      },
+      {
+        "field": {
+          "id": "field9",
+          "ref": "day_of_week",
+          "type": "multiple_choice"
+        },
+        "type": "choice",
+        "choice": {
+          "id": "choice5",
+          "label": "Wednesday",
+          "ref": "wednesday"
+        }
+      },
+      {
+        "field": {
+          "id": "field10",
+          "ref": "meeting_time",
+          "type": "short_text"
+        },
+        "type": "text",
+        "text": "7:00 PM - 8:30 PM"
+      }
+    ]
+  }
+}

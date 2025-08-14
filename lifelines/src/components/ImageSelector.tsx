@@ -27,18 +27,20 @@ interface UnsplashImage {
 }
 
 interface ImageSelectorProps {
-  onImageSelect: (imageData: {
+  onSelect: (imageData: {
     url: string
     alt: string
     attribution?: string
   }) => void
+  onClose: () => void
   currentImageUrl?: string
   currentImageAlt?: string
   currentImageAttribution?: string
 }
 
-export default function ImageSelector({
-  onImageSelect,
+export function ImageSelector({
+  onSelect,
+  onClose,
   currentImageUrl,
   currentImageAlt,
   currentImageAttribution
@@ -59,7 +61,7 @@ export default function ImageSelector({
 
     try {
       const result = await uploadFile(file)
-      onImageSelect({
+      onSelect({
         url: result.fileUrl,
         alt: result.fileName || 'Uploaded image',
         attribution: undefined
@@ -115,14 +117,14 @@ export default function ImageSelector({
         })
       })
 
-      onImageSelect({
+      onSelect({
         url: image.urls.regular,
         alt: image.alt_description || 'Image from Unsplash',
         attribution: `Photo by <a href="${image.user.profile_url}" target="_blank" rel="noopener">${image.user.name}</a> on <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a>`
       })
     } catch (err) {
       // Even if tracking fails, still select the image
-      onImageSelect({
+      onSelect({
         url: image.urls.regular,
         alt: image.alt_description || 'Image from Unsplash',
         attribution: `Photo by <a href="${image.user.profile_url}" target="_blank" rel="noopener">${image.user.name}</a> on <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a>`
@@ -131,7 +133,15 @@ export default function ImageSelector({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-y-auto m-4 w-full">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Select Image</h2>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            ✕
+          </Button>
+        </div>
+        <div className="space-y-4">
       {/* Current Image Preview */}
       {currentImageUrl && (
         <div className="border rounded-lg p-4 bg-gray-50">
@@ -267,6 +277,8 @@ export default function ImageSelector({
           )}
         </div>
       )}
+        </div>
+      </div>
     </div>
   )
 }

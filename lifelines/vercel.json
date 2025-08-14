@@ -8,7 +8,13 @@
     "NEXTAUTH_URL": "https://your-domain.vercel.app"
   },
   "functions": {
-    "app/api/**/*.ts": {
+    "src/app/api/cron/**/*.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/webhooks/**/*.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/**/*.ts": {
       "maxDuration": 30
     }
   },

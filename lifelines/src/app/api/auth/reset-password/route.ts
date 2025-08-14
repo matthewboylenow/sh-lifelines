@@ -6,7 +6,7 @@ import {
   withValidation 
 } from '@/lib/api-utils'
 import { z } from 'zod'
-import { hashPassword } from '@/lib/auth-utils'
+import { hashPassword, generateResetToken } from '@/lib/auth-utils'
 import { sendPasswordResetEmail } from '@/lib/email'
 
 const requestResetSchema = z.object({
@@ -15,7 +15,9 @@ const requestResetSchema = z.object({
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
 })
 
 // POST /api/auth/reset-password - Request password reset
@@ -39,8 +41,7 @@ export const POST = withValidation(
       }
 
       // Generate reset token (expires in 1 hour)
-      const resetToken = Math.random().toString(36).substring(2, 15) + 
-                        Math.random().toString(36).substring(2, 15)
+      const resetToken = generateResetToken()
       const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
       // Save reset token to user

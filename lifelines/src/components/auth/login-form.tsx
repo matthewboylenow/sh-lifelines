@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -112,6 +113,15 @@ export function LoginForm() {
           )}
           {loading ? 'Signing in...' : 'Sign in'}
         </Button>
+      </div>
+
+      <div className="text-center">
+        <Link 
+          href="/forgot-password" 
+          className="text-sm text-primary hover:text-primary-dark underline"
+        >
+          Forgot your password?
+        </Link>
       </div>
     </form>
   )

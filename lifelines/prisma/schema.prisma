@@ -46,17 +46,24 @@ enum UserRole {
 model LifeLine {
   id                  String    @id @default(cuid())
   title               String
+  subtitle            String?
   description         String?   @db.Text
   status              LifeLineStatus @default(DRAFT)
+  isVisible           Boolean   @default(true)
   
   // Group Details
   groupLeader         String
   leaderEmail         String
+  location            String?
   agesStages          String[]  // Array of selected options
   meetingFrequency    MeetingFrequency?
   dayOfWeek           DayOfWeek?
   groupType           GroupType?
   meetingTime         String?
+  maxParticipants     Int?
+  duration            String?
+  cost                String?
+  childcare           Boolean   @default(false)
   
   // Media
   imageUrl            String?

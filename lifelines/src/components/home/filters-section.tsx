@@ -1,28 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GroupType, MeetingFrequency, DayOfWeek } from '@prisma/client'
-
-const agesStagesOptions = [
-  { label: 'All Ages & Stages', count: 19 },
-  { label: 'Women', count: 11 },
-  { label: 'Men', count: 7 },
-  { label: 'Seniors', count: 5 },
-  { label: 'Dads', count: 4 },
-]
-
-const groupTypeOptions = [
-  { value: GroupType.ACTIVITY, label: 'Activity', count: 14 },
-  { value: GroupType.SOCIAL, label: 'Social', count: 9 },
-  { value: GroupType.SCRIPTURE_BASED, label: 'Scripture-Based', count: 6 },
-  { value: GroupType.SUNDAY_BASED, label: 'Sunday-Based', count: 1 },
-]
-
-const frequencyOptions = [
-  { value: MeetingFrequency.MONTHLY, label: 'Monthly', count: 18 },
-  { value: MeetingFrequency.WEEKLY, label: 'Weekly', count: 8 },
-  { value: MeetingFrequency.SEASONALLY, label: 'Seasonally', count: 4 },
-]
+import { useLifeLinesSearch } from '@/hooks/useLifeLinesSearch'
+import { Button } from '@/components/ui/Button'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 const dayOptions = [
   { value: DayOfWeek.SUNDAY, label: 'Sunday' },
@@ -35,158 +17,261 @@ const dayOptions = [
   { value: DayOfWeek.VARIES, label: 'Varies' },
 ]
 
-interface Filters {
-  agesStages: string[]
-  groupTypes: GroupType[]
-  frequencies: MeetingFrequency[]
-  dayOfWeek?: DayOfWeek
-}
-
 export function FiltersSection() {
-  const [filters, setFilters] = useState<Filters>({
-    agesStages: [],
-    groupTypes: [],
-    frequencies: [],
+  const {
+    filters,
+    facets,
+    updateFilters,
+    clearFilters,
+    toggleFilter,
+    hasActiveFilters,
+    activeFilterCount
+  } = useLifeLinesSearch()
+
+  // State for expanded sections
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    agesStages: true,
+    groupTypes: true,
+    frequencies: true,
+    dayOfWeek: true
   })
 
-  const handleAgesStagesChange = (age: string) => {
-    setFilters(prev => ({
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
       ...prev,
-      agesStages: prev.agesStages.includes(age)
-        ? prev.agesStages.filter(a => a !== age)
-        : [...prev.agesStages, age]
+      [section]: !prev[section]
     }))
   }
 
-  const handleGroupTypeChange = (groupType: GroupType) => {
-    setFilters(prev => ({
-      ...prev,
-      groupTypes: prev.groupTypes.includes(groupType)
-        ? prev.groupTypes.filter(g => g !== groupType)
-        : [...prev.groupTypes, groupType]
-    }))
-  }
-
-  const handleFrequencyChange = (frequency: MeetingFrequency) => {
-    setFilters(prev => ({
-      ...prev,
-      frequencies: prev.frequencies.includes(frequency)
-        ? prev.frequencies.filter(f => f !== frequency)
-        : [...prev.frequencies, frequency]
-    }))
-  }
-
-  const clearFilters = () => {
-    setFilters({ agesStages: [], groupTypes: [], frequencies: [] })
+  if (!facets) {
+    return (
+      <section className="bg-gray-100 py-12">
+        <div className="container mx-auto px-4">
+          <div className="bg-white rounded-lg shadow-md border p-8 max-w-6xl mx-auto text-center">
+            <LoadingSpinner size="lg" />
+            <p className="mt-4 text-gray-600">Loading filters...</p>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (
     <section className="bg-gray-100 py-12">
       <div className="container mx-auto px-4">
         <div className="bg-white rounded-lg shadow-md border p-8 max-w-6xl mx-auto">
-          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-            LifeLine Filters
-          </h3>
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-2xl font-bold text-gray-900">
+              LifeLine Filters
+            </h3>
+            {hasActiveFilters && (
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+              </span>
+            )}
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Ages & Stages */}
-            <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-4">Ages & Stages:</label>
-              <div className="space-y-2">
-                {agesStagesOptions.map((option) => (
-                  <label key={option.label} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
-                      checked={filters.agesStages.includes(option.label)}
-                      onChange={() => handleAgesStagesChange(option.label)}
-                    />
-                    <span className="text-sm text-gray-700">
-                      {option.label} ({option.count})
-                    </span>
-                  </label>
-                ))}
-                <button className="text-sm text-blue-600 hover:text-blue-800 mt-2">
-                  See 2 more
+            {facets.agesStages.length > 0 && (
+              <div>
+                <button
+                  onClick={() => toggleSection('agesStages')}
+                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
+                >
+                  <span>Ages & Stages</span>
+                  <span className="text-sm">
+                    {expandedSections.agesStages ? '−' : '+'}
+                  </span>
                 </button>
+                {expandedSections.agesStages && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {facets.agesStages.slice(0, 10).map((option) => (
+                      <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-primary focus:ring-primary mr-3"
+                          checked={filters.agesStages?.includes(option.value) || false}
+                          onChange={() => toggleFilter('agesStages', option.value)}
+                        />
+                        <span className="text-sm text-gray-700 flex-1">
+                          {option.label} ({option.count})
+                        </span>
+                      </label>
+                    ))}
+                    {facets.agesStages.length > 10 && (
+                      <button className="text-sm text-primary hover:text-primary-dark mt-2">
+                        See {facets.agesStages.length - 10} more
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Meeting Frequency */}
-            <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-4">Meeting Frequency:</label>
-              <div className="space-y-2">
-                {frequencyOptions.map((option) => (
-                  <label key={option.value} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
-                      checked={filters.frequencies.includes(option.value)}
-                      onChange={() => handleFrequencyChange(option.value)}
-                    />
-                    <span className="text-sm text-gray-700">
-                      {option.label} ({option.count})
-                    </span>
-                  </label>
-                ))}
+            {facets.frequencies.length > 0 && (
+              <div>
+                <button
+                  onClick={() => toggleSection('frequencies')}
+                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
+                >
+                  <span>Meeting Frequency</span>
+                  <span className="text-sm">
+                    {expandedSections.frequencies ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.frequencies && (
+                  <div className="space-y-2">
+                    {facets.frequencies.map((option) => (
+                      <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-primary focus:ring-primary mr-3"
+                          checked={filters.frequencies?.includes(option.value as MeetingFrequency) || false}
+                          onChange={() => toggleFilter('frequencies', option.value)}
+                        />
+                        <span className="text-sm text-gray-700 flex-1">
+                          {option.label} ({option.count})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Day of Week */}
-            <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-4">Day of the Week:</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                value={filters.dayOfWeek || ''}
-                onChange={(e) => setFilters(prev => ({ 
-                  ...prev, 
-                  dayOfWeek: e.target.value as DayOfWeek || undefined 
-                }))}
-              >
-                <option value="">Any</option>
-                {dayOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {facets.daysOfWeek.length > 0 && (
+              <div>
+                <button
+                  onClick={() => toggleSection('dayOfWeek')}
+                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
+                >
+                  <span>Day of the Week</span>
+                  <span className="text-sm">
+                    {expandedSections.dayOfWeek ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.dayOfWeek && (
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                    value={filters.dayOfWeek || ''}
+                    onChange={(e) => updateFilters({ dayOfWeek: e.target.value as DayOfWeek || undefined })}
+                  >
+                    <option value="">Any Day</option>
+                    {dayOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
 
             {/* LifeLine Type */}
-            <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-4">LifeLine Type:</label>
-              <div className="space-y-2">
-                {groupTypeOptions.map((option) => (
-                  <label key={option.value} className="flex items-center">
+            {facets.groupTypes.length > 0 && (
+              <div>
+                <button
+                  onClick={() => toggleSection('groupTypes')}
+                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
+                >
+                  <span>LifeLine Type</span>
+                  <span className="text-sm">
+                    {expandedSections.groupTypes ? '−' : '+'}
+                  </span>
+                </button>
+                {expandedSections.groupTypes && (
+                  <div className="space-y-2">
+                    {facets.groupTypes.map((option) => (
+                      <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-primary focus:ring-primary mr-3"
+                          checked={filters.groupTypes?.includes(option.value as GroupType) || false}
+                          onChange={() => toggleFilter('groupTypes', option.value)}
+                        />
+                        <span className="text-sm text-gray-700 flex-1">
+                          {option.label} ({option.count})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Advanced Filters */}
+          {(facets.stats.free > 0 || facets.childcare.length > 1 || facets.stats.withLocation > 0) && (
+            <div className="mt-8 pt-6 border-t">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Additional Options</h4>
+              <div className="flex flex-wrap gap-4">
+                {facets.stats.free > 0 && (
+                  <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
-                      checked={filters.groupTypes.includes(option.value)}
-                      onChange={() => handleGroupTypeChange(option.value)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
+                      checked={filters.isFree || false}
+                      onChange={() => toggleFilter('isFree', true)}
                     />
                     <span className="text-sm text-gray-700">
-                      {option.label} ({option.count})
+                      Free Groups ({facets.stats.free})
                     </span>
                   </label>
-                ))}
+                )}
+
+                {facets.childcare.find(c => c.value === true) && (
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
+                      checked={filters.hasChildcare || false}
+                      onChange={() => toggleFilter('hasChildcare', true)}
+                    />
+                    <span className="text-sm text-gray-700">
+                      Childcare Available ({facets.childcare.find(c => c.value === true)?.count || 0})
+                    </span>
+                  </label>
+                )}
+
+                {facets.stats.withLocation > 0 && (
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
+                      checked={filters.hasLocation || false}
+                      onChange={() => toggleFilter('hasLocation', true)}
+                    />
+                    <span className="text-sm text-gray-700">
+                      Has Meeting Location ({facets.stats.withLocation})
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Filter Actions */}
           <div className="mt-8 flex items-center justify-between border-t pt-6">
-            <button
+            <Button
               onClick={clearFilters}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+              variant="outline"
+              size="sm"
+              disabled={!hasActiveFilters}
             >
               Clear all filters
-            </button>
+            </Button>
             
             <div className="text-sm text-gray-600 font-medium">
-              {filters.agesStages.length === 0 && filters.groupTypes.length === 0 && filters.frequencies.length === 0 && !filters.dayOfWeek
-                ? 'No filters applied'
-                : `Filters applied`
-              }
+              {!hasActiveFilters ? (
+                'No filters applied'
+              ) : (
+                <span className="text-primary">
+                  {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} applied
+                </span>
+              )}
             </div>
           </div>
         </div>

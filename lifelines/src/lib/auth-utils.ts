@@ -76,3 +76,12 @@ export function canViewInquiries(userId: string, lifeLineLeaderId: string, role:
 export function canViewSupportTickets(userId: string, ticketRequesterId: string, role: UserRole) {
   return userId === ticketRequesterId || isFormationSupport(role)
 }
+
+export function generateResetToken(): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  let token = ''
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return token
+}

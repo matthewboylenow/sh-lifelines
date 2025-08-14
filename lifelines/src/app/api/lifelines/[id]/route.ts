@@ -75,7 +75,6 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json()
-    const validatedData = updateLifeLineSchema.parse(body)
 
     // Check if LifeLine exists
     const existingLifeLine = await prisma.lifeLine.findUnique({
@@ -92,7 +91,28 @@ export async function PUT(req: NextRequest) {
     // Update the LifeLine
     const lifeLine = await prisma.lifeLine.update({
       where: { id },
-      data: validatedData,
+      data: {
+        title: body.title,
+        subtitle: body.subtitle || null,
+        description: body.description || null,
+        groupLeader: body.groupLeader,
+        leaderId: body.leaderId || null,
+        dayOfWeek: body.dayOfWeek || null,
+        meetingTime: body.meetingTime || null,
+        location: body.location || null,
+        meetingFrequency: body.meetingFrequency || null,
+        groupType: body.groupType || null,
+        agesStages: body.agesStages || [],
+        maxParticipants: body.maxParticipants || null,
+        duration: body.duration || null,
+        cost: body.cost || null,
+        childcare: body.childcare || false,
+        imageUrl: body.imageUrl || null,
+        imageAlt: body.imageAlt || null,
+        imageAttribution: body.imageAttribution || null,
+        status: body.status || 'DRAFT',
+        isVisible: body.isVisible ?? true,
+      },
       include: {
         leader: {
           select: {

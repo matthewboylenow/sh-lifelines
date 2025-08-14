@@ -1,3 +1,5 @@
+import { SearchBar } from '@/components/search/search-bar'
+
 export function HomeHero() {
   return (
     <section 
@@ -13,9 +15,20 @@ export function HomeHero() {
         <p className="text-xl md:text-2xl text-white mb-8 max-w-2xl mx-auto drop-shadow-lg font-medium">
           Connect, Grow, and Flourish in Faith Community
         </p>
+        
+        {/* Search Bar */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <SearchBar 
+            placeholder="Search for Bible studies, prayer groups, activities..."
+            size="lg"
+            showSuggestions={true}
+            className="shadow-2xl"
+          />
+        </div>
+        
         <div className="inline-block bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
           <p className="text-white font-medium">
-            Explore LifeLines below to find your perfect faith community! ↓
+            Or explore all LifeLines below to find your perfect faith community! ↓
           </p>
         </div>
       </div>

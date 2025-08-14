@@ -2,81 +2,80 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { 
   createErrorResponse, 
-  createSuccessResponse 
+  createSuccessResponse,
+  withAuth,
+  withValidation 
 } from '@/lib/api-utils'
 import { voteOnFormationRequestSchema } from '@/lib/validations'
-import { VoteType, FormationStatus } from '@prisma/client'
+import { VoteType, FormationStatus, UserRole } from '@prisma/client'
 import { sendWelcomeEmail } from '@/lib/email'
 import { hashPassword } from '@/lib/auth-utils'
-import { UserRole } from '@prisma/client'
+
+interface RouteParams {
+  params: Promise<{
+    id: string
+  }>
+}
 
 // POST /api/formation-requests/[id]/vote - Vote on formation request
-export async function POST(req: NextRequest) {
-  try {
-    // Extract ID from URL for now - this is a simplified approach
-    const url = new URL(req.url)
-    const pathParts = url.pathname.split('/')
-    const idIndex = pathParts.indexOf('formation-requests') + 1
-    const id = pathParts[idIndex]
-    
-    if (!id) {
-      return createErrorResponse('Formation request ID not found', 400)
-    }
-    const body = await req.json()
-    const validatedData = voteOnFormationRequestSchema.parse(body)
-    const { vote, comment } = validatedData
+export async function POST(req: NextRequest, context: RouteParams) {
+  return withAuth(async (req: NextRequest, session: any) => {
+    return withValidation(
+      voteOnFormationRequestSchema,
+      async (req: NextRequest, validatedData: any) => {
+        try {
+          const { params } = context
+          const { id } = await params
+          const { vote, comment } = validatedData
 
-    // Check if formation request exists
-    const formationRequest = await prisma.formationRequest.findUnique({
-      where: { id },
-      include: {
-        votes: {
-          include: {
-            user: true
+          // Check if formation request exists
+          const formationRequest = await prisma.formationRequest.findUnique({
+            where: { id },
+            include: {
+              votes: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          })
+
+          if (!formationRequest) {
+            return createErrorResponse('Formation request not found', 404)
           }
-        }
-      }
-    })
 
-    if (!formationRequest) {
-      return createErrorResponse('Formation request not found', 404)
-    }
-
-    if (formationRequest.status !== FormationStatus.SUBMITTED) {
-      return createErrorResponse('Cannot vote on this formation request', 400)
-    }
-
-    // For now, use a dummy session user ID - in production this should come from authentication
-    const dummyUserId = 'admin-user-id'
-
-    // Upsert the vote
-    const updatedVote = await prisma.formationVote.upsert({
-      where: {
-        requestId_userId: {
-          requestId: id,
-          userId: dummyUserId
-        }
-      },
-      update: {
-        vote: vote as VoteType,
-        comment: comment || null,
-      },
-      create: {
-        requestId: id,
-        userId: dummyUserId,
-        vote: vote as VoteType,
-        comment: comment || null,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            displayName: true,
-            email: true,
+          if (formationRequest.status !== FormationStatus.SUBMITTED) {
+            return createErrorResponse('Cannot vote on this formation request', 400)
           }
-        }
-      }
-    })
+
+          // Upsert the vote
+          const updatedVote = await prisma.formationVote.upsert({
+            where: {
+              requestId_userId: {
+                requestId: id,
+                userId: session.user.id
+              }
+            },
+            update: {
+              vote: vote as VoteType,
+              comment: comment || null,
+            },
+            create: {
+              requestId: id,
+              userId: session.user.id,
+              vote: vote as VoteType,
+              comment: comment || null,
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  email: true,
+                }
+              }
+            }
+          })
 
     // Check if auto-approval conditions are met
     const allVotes = await prisma.formationVote.findMany({
@@ -104,11 +103,14 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    return createSuccessResponse(updatedVote, 'Vote recorded successfully')
-  } catch (error) {
-    console.error('Error recording vote:', error)
-    return createErrorResponse('Failed to record vote', 500)
-  }
+          return createSuccessResponse(updatedVote, 'Vote recorded successfully')
+        } catch (error) {
+          console.error('Error recording vote:', error)
+          return createErrorResponse('Failed to record vote', 500)
+        }
+      }
+    )(req)
+  }, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])(req)
 }
 
 // Helper function to approve formation request and create LifeLine

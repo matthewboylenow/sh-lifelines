@@ -1,42 +1,38 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { LifeLineCard } from './lifeline-card'
-import { LifeLineWithLeader } from '@/types'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useLifeLinesSearch } from '@/hooks/useLifeLinesSearch'
+import { Button } from '@/components/ui/Button'
+import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react'
 
 export function LifeLinesGrid() {
-  const [lifeLines, setLifeLines] = useState<LifeLineWithLeader[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const {
+    results,
+    loading,
+    error,
+    search,
+    filters,
+    hasActiveFilters,
+    goToPage
+  } = useLifeLinesSearch({
+    limit: 12,
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
+  })
 
+  // Auto-search when component mounts if no active filters
   useEffect(() => {
-    fetchLifeLines()
-  }, [])
-
-  const fetchLifeLines = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/lifelines')
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch LifeLines')
-      }
-
-      setLifeLines(data.data.items || [])
-    } catch (error) {
-      console.error('Error fetching LifeLines:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load LifeLines')
-    } finally {
-      setLoading(false)
+    if (!hasActiveFilters && !results) {
+      search({}, { updateUrl: false })
     }
-  }
+  }, [hasActiveFilters, results, search])
 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <LoadingSpinner className="w-8 h-8" />
+        <LoadingSpinner size="lg" />
         <span className="ml-2 text-gray-600">Loading LifeLines...</span>
       </div>
     )
@@ -48,242 +44,125 @@ export function LifeLinesGrid() {
         <div className="text-red-600 mb-4">
           <p>Error loading LifeLines: {error}</p>
         </div>
-        <button
-          onClick={fetchLifeLines}
-          className="dashboard-button"
+        <Button
+          onClick={() => search()}
+          className="flex items-center"
         >
+          <RotateCcw className="h-4 w-4 mr-2" />
           Try Again
-        </button>
+        </Button>
       </div>
     )
   }
 
-  // Sample data for display when no real data is available
-  const sampleLifeLines: LifeLineWithLeader[] = [
-    {
-      id: 'sample-1',
-      title: 'Rosary LifeLine',
-      description: 'Join us for weekly rosary prayer and reflection',
-      imageUrl: '/images/Lifelines exmp 1.jpg',
-      imageAlt: null,
-      imageAttribution: null,
-      videoUrl: null,
-      agesStages: ['All Ages & Stages'],
-      groupLeader: 'Gail Opacitty',
-      leaderEmail: 'gail@example.com',
-      status: 'PUBLISHED',
-      groupType: 'ACTIVITY',
-      meetingFrequency: 'WEEKLY',
-      dayOfWeek: 'SUNDAY',
-      meetingTime: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      leaderId: 'leader-1',
-      formationRequestId: null,
-      leader: {
-        id: 'leader-1',
-        email: 'gail@example.com',
-        displayName: 'Gail Opacitty',
-        username: null,
-        password: 'placeholder',
-        isActive: true,
-        resetToken: null,
-        resetTokenExpiry: null,
-        role: 'LIFELINE_LEADER',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    },
-    {
-      id: 'sample-2',
-      title: 'Set the World on Fire – Uncover Your Charism',
-      description: 'Discover your spiritual gifts and charisms',
-      imageUrl: '/images/Lifelines exmp 1.jpg',
-      imageAlt: null,
-      imageAttribution: null,
-      videoUrl: null,
-      agesStages: ['All Ages & Stages'],
-      groupLeader: 'Alda Galuszki',
-      leaderEmail: 'alda@example.com',
-      status: 'PUBLISHED',
-      groupType: 'SCRIPTURE_BASED',
-      meetingFrequency: 'WEEKLY',
-      dayOfWeek: 'MONDAY',
-      meetingTime: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      leaderId: 'leader-2',
-      formationRequestId: null,
-      leader: {
-        id: 'leader-2',
-        email: 'alda@example.com',
-        displayName: 'Alda Galuszki',
-        username: null,
-        password: 'placeholder',
-        isActive: true,
-        resetToken: null,
-        resetTokenExpiry: null,
-        role: 'LIFELINE_LEADER',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    },
-    {
-      id: 'sample-3',
-      title: 'Here I am God... Separated/Divorced and Believer',
-      description: 'Support group for separated and divorced Catholics',
-      imageUrl: '/images/Lifelines exmp 1.jpg',
-      imageAlt: null,
-      imageAttribution: null,
-      videoUrl: null,
-      agesStages: ['All Ages & Stages'],
-      groupLeader: 'Barbara Sullivan',
-      leaderEmail: 'barbara@example.com',
-      status: 'PUBLISHED',
-      groupType: 'SOCIAL',
-      meetingFrequency: 'MONTHLY',
-      dayOfWeek: 'TUESDAY',
-      meetingTime: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      leaderId: 'leader-3',
-      formationRequestId: null,
-      leader: {
-        id: 'leader-3',
-        email: 'barbara@example.com',
-        displayName: 'Barbara Sullivan',
-        username: null,
-        password: 'placeholder',
-        isActive: true,
-        resetToken: null,
-        resetTokenExpiry: null,
-        role: 'LIFELINE_LEADER',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    },
-    {
-      id: 'sample-4',
-      title: 'Saint Helen Voices',
-      description: 'Parish choir and music ministry',
-      imageUrl: '/images/Lifelines exmp 1.jpg',
-      imageAlt: null,
-      imageAttribution: null,
-      videoUrl: null,
-      agesStages: ['Men, Women'],
-      groupLeader: 'Cindy Brogan',
-      leaderEmail: 'cindy@example.com',
-      status: 'PUBLISHED',
-      groupType: 'ACTIVITY',
-      meetingFrequency: 'WEEKLY',
-      dayOfWeek: 'THURSDAY',
-      meetingTime: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      leaderId: 'leader-4',
-      formationRequestId: null,
-      leader: {
-        id: 'leader-4',
-        email: 'cindy@example.com',
-        displayName: 'Cindy Brogan',
-        username: null,
-        password: 'placeholder',
-        isActive: true,
-        resetToken: null,
-        resetTokenExpiry: null,
-        role: 'LIFELINE_LEADER',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    },
-    {
-      id: 'sample-5',
-      title: 'Faith Sharing Wednesday Evenings',
-      description: 'Weekly faith sharing and discussion',
-      imageUrl: '/images/Lifelines exmp 1.jpg',
-      imageAlt: null,
-      imageAttribution: null,
-      videoUrl: null,
-      agesStages: ['All Ages & Stages'],
-      groupLeader: 'EileenPassarelli',
-      leaderEmail: 'eileen@example.com',
-      status: 'PUBLISHED',
-      groupType: 'SCRIPTURE_BASED',
-      meetingFrequency: 'WEEKLY',
-      dayOfWeek: 'WEDNESDAY',
-      meetingTime: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      leaderId: 'leader-5',
-      formationRequestId: null,
-      leader: {
-        id: 'leader-5',
-        email: 'eileen@example.com',
-        displayName: 'EileenPassarelli',
-        username: null,
-        password: 'placeholder',
-        isActive: true,
-        resetToken: null,
-        resetTokenExpiry: null,
-        role: 'LIFELINE_LEADER',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    },
-    {
-      id: 'sample-6',
-      title: 'Bible Lens',
-      description: 'In-depth Bible study and reflection',
-      imageUrl: '/images/Lifelines exmp 1.jpg',
-      imageAlt: null,
-      imageAttribution: null,
-      videoUrl: null,
-      agesStages: ['Men, Women, All Ages & Stages'],
-      groupLeader: 'Paul Maleck',
-      leaderEmail: 'paul@example.com',
-      status: 'PUBLISHED',
-      groupType: 'SCRIPTURE_BASED',
-      meetingFrequency: 'WEEKLY',
-      dayOfWeek: 'FRIDAY',
-      meetingTime: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      leaderId: 'leader-6',
-      formationRequestId: null,
-      leader: {
-        id: 'leader-6',
-        email: 'paul@example.com',
-        displayName: 'Paul Maleck',
-        username: null,
-        password: 'placeholder',
-        isActive: true,
-        resetToken: null,
-        resetTokenExpiry: null,
-        role: 'LIFELINE_LEADER',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    }
-  ]
+  if (!results) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 mb-4">No search results yet. Try adjusting your filters or search terms.</p>
+        <Button
+          onClick={() => search()}
+        >
+          Load LifeLines
+        </Button>
+      </div>
+    )
+  }
 
-  const displayLifeLines = lifeLines.length > 0 ? lifeLines : sampleLifeLines
+  const { items: lifeLines, totalItems, currentPage, totalPages, hasNextPage, hasPrevPage } = results
+
+  if (lifeLines.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">No LifeLines Found</h2>
+        <p className="text-gray-600 mb-8">
+          {hasActiveFilters 
+            ? 'No groups match your current filters. Try adjusting your search criteria.'
+            : 'No LifeLines are currently available.'
+          }
+        </p>
+        {hasActiveFilters && (
+          <Button
+            onClick={() => search({ 
+              page: 1, 
+              search: undefined, 
+              groupTypes: [], 
+              frequencies: [], 
+              agesStages: [],
+              dayOfWeek: undefined,
+              hasLocation: undefined,
+              hasChildcare: undefined,
+              isFree: undefined
+            })}
+            variant="outline"
+          >
+            Clear All Filters
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Available LifeLines
-        </h2>
-        <p className="text-gray-600">
-          Found {displayLifeLines.length} group{displayLifeLines.length !== 1 ? 's' : ''} for you to explore
-        </p>
+      {/* Results Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Available LifeLines
+          </h2>
+          <p className="text-gray-600">
+            {hasActiveFilters ? (
+              <>Showing {lifeLines.length} of {totalItems} filtered result{totalItems !== 1 ? 's' : ''}</>
+            ) : (
+              <>Found {totalItems} group{totalItems !== 1 ? 's' : ''} for you to explore</>
+            )}
+          </p>
+        </div>
+        
+        {results.metadata && (
+          <div className="text-sm text-gray-500">
+            Page {currentPage} of {totalPages}
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayLifeLines.map((lifeLine) => (
+      {/* LifeLines Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {lifeLines.map((lifeLine) => (
           <LifeLineCard key={lifeLine.id} lifeLine={lifeLine} />
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center space-x-4">
+          <Button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={!hasPrevPage}
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Previous
+          </Button>
+          
+          <span className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <Button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={!hasNextPage}
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+          >
+            Next
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

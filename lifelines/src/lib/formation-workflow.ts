@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import { sendWelcomeEmail } from './email'
+import { sendWelcomeEmail, sendFormationRequestRejectionEmail } from './email'
 import { FormationStatus, VoteType, UserRole, LifeLineStatus } from '@prisma/client'
 import { hashPassword } from './auth-utils'
 
@@ -153,6 +153,14 @@ export async function approveFormationRequest(requestId: string) {
 
 // Reject formation request
 export async function rejectFormationRequest(requestId: string, reason?: string) {
+  const formationRequest = await prisma.formationRequest.findUnique({
+    where: { id: requestId }
+  })
+  
+  if (!formationRequest) {
+    throw new Error('Formation request not found')
+  }
+
   await prisma.formationRequest.update({
     where: { id: requestId },
     data: {
@@ -160,7 +168,22 @@ export async function rejectFormationRequest(requestId: string, reason?: string)
     }
   })
 
-  // TODO: Send rejection email to requester
+  // Send rejection email to requester
+  try {
+    await sendFormationRequestRejectionEmail(
+      {
+        groupLeader: formationRequest.groupLeader,
+        leaderEmail: formationRequest.leaderEmail,
+        title: formationRequest.title
+      },
+      reason
+    )
+    console.log('Rejection email sent to:', formationRequest.leaderEmail)
+  } catch (error) {
+    console.error('Failed to send rejection email:', error)
+    // Don't fail the whole process if email fails
+  }
+
   console.log(`Formation request ${requestId} rejected. Reason: ${reason}`)
 }
 
