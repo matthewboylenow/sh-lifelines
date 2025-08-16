@@ -126,8 +126,19 @@ export async function POST(request: NextRequest) {
         }
 
         // Create or find the leader user
-        let leaderId: string | null = null
-        if (validatedData.groupLeader) {
+        let leaderId: string
+        let leaderEmail: string
+        
+        if (!validatedData.groupLeader) {
+          results.details.push({
+            identifier,
+            status: 'skipped',
+            message: 'Group leader is required'
+          })
+          continue
+        }
+        
+        {
           // Try to find existing leader by name
           let leader = await prisma.user.findFirst({
             where: { displayName: validatedData.groupLeader }
@@ -135,7 +146,7 @@ export async function POST(request: NextRequest) {
 
           if (!leader) {
             // Create a new leader user
-            const leaderEmail = `${validatedData.groupLeader.toLowerCase().replace(/\s+/g, '.')}@sainthelen.org`
+            leaderEmail = `${validatedData.groupLeader.toLowerCase().replace(/\s+/g, '.')}@sainthelen.org`
             const tempPassword = Math.random().toString(36).slice(-12)
             const hashedPassword = await bcrypt.hash(tempPassword, 12)
 
@@ -160,9 +171,12 @@ export async function POST(request: NextRequest) {
                 where: { email: leaderEmail }
               })
             }
+          } else {
+            // Use existing leader's email
+            leaderEmail = leader.email
           }
 
-          leaderId = leader?.id || null
+          leaderId = leader!.id
         }
 
         // Map status to our enum values
@@ -180,7 +194,8 @@ export async function POST(request: NextRequest) {
             description: validatedData.description || null,
             subtitle: validatedData.subtitle || null,
             groupLeader: validatedData.groupLeader,
-            ...(leaderId && { leaderId }),
+            leaderEmail: leaderEmail,
+            leaderId: leaderId,
             dayOfWeek: dayOfWeek,
             meetingTime: validatedData.meetingTime || null,
             location: validatedData.location || null,
