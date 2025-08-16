@@ -128,7 +128,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
   useEffect(() => {
     const fetchLeaders = async () => {
       try {
-        const response = await fetch('/api/users?role=LEADER')
+        const response = await fetch('/api/users?role=LIFELINE_LEADER')
         if (response.ok) {
           const data = await response.json()
           setLeaders(data.data || [])

@@ -145,8 +145,7 @@ export async function POST(request: NextRequest) {
                   email: leaderEmail,
                   displayName: validatedData.groupLeader,
                   password: hashedPassword,
-                  role: UserRole.LEADER,
-                  emailVerified: new Date(),
+                  role: UserRole.LIFELINE_LEADER,
                 }
               })
               
@@ -181,7 +180,7 @@ export async function POST(request: NextRequest) {
             description: validatedData.description || null,
             subtitle: validatedData.subtitle || null,
             groupLeader: validatedData.groupLeader,
-            leaderId: leaderId,
+            ...(leaderId && { leaderId }),
             dayOfWeek: dayOfWeek,
             meetingTime: validatedData.meetingTime || null,
             location: validatedData.location || null,
@@ -250,38 +249,32 @@ function mapStatusToEnum(status?: string): 'PUBLISHED' | 'DRAFT' | 'ARCHIVED' | 
   return 'PUBLISHED'
 }
 
-function mapGroupTypeToEnum(groupType?: string): 'MEN_ONLY' | 'WOMEN_ONLY' | 'MIXED' | 'COUPLES' | 'FAMILIES' | null {
+function mapGroupTypeToEnum(groupType?: string): 'SOCIAL' | 'ACTIVITY' | 'SCRIPTURE_BASED' | 'SUNDAY_BASED' | null {
   if (!groupType) return null
   
   const typeUpper = groupType.toUpperCase()
-  if (['MEN', 'MEN_ONLY', 'MALE'].includes(typeUpper)) {
-    return 'MEN_ONLY'
-  } else if (['WOMEN', 'WOMEN_ONLY', 'FEMALE'].includes(typeUpper)) {
-    return 'WOMEN_ONLY'
-  } else if (['MIXED', 'COED', 'CO-ED', 'ALL'].includes(typeUpper)) {
-    return 'MIXED'
-  } else if (['COUPLES', 'COUPLE', 'MARRIED'].includes(typeUpper)) {
-    return 'COUPLES'
-  } else if (['FAMILIES', 'FAMILY', 'KIDS'].includes(typeUpper)) {
-    return 'FAMILIES'
+  if (['SOCIAL', 'FELLOWSHIP', 'COMMUNITY', 'COFFEE'].includes(typeUpper)) {
+    return 'SOCIAL'
+  } else if (['ACTIVITY', 'ACTIVITIES', 'SPORTS', 'HOBBY', 'CRAFT'].includes(typeUpper)) {
+    return 'ACTIVITY'
+  } else if (['SCRIPTURE', 'SCRIPTURE_BASED', 'BIBLE', 'STUDY', 'DEVOTION'].includes(typeUpper)) {
+    return 'SCRIPTURE_BASED'
+  } else if (['SUNDAY', 'SUNDAY_BASED', 'WORSHIP', 'SERVICE'].includes(typeUpper)) {
+    return 'SUNDAY_BASED'
   }
-  return null
+  return 'SOCIAL' // Default fallback
 }
 
-function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'AS_NEEDED' | null {
+function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'MONTHLY' | 'SEASONALLY' | null {
   if (!frequency) return null
   
   const freqUpper = frequency.toUpperCase()
-  if (['WEEKLY', 'WEEK', 'EVERY_WEEK'].includes(freqUpper)) {
+  if (['WEEKLY', 'WEEK', 'EVERY_WEEK', 'BIWEEKLY', 'BI-WEEKLY'].includes(freqUpper)) {
     return 'WEEKLY'
-  } else if (['BIWEEKLY', 'BI-WEEKLY', 'EVERY_TWO_WEEKS', '2_WEEKS'].includes(freqUpper)) {
-    return 'BIWEEKLY'
   } else if (['MONTHLY', 'MONTH', 'EVERY_MONTH'].includes(freqUpper)) {
     return 'MONTHLY'
-  } else if (['QUARTERLY', 'QUARTER', 'EVERY_QUARTER', '3_MONTHS'].includes(freqUpper)) {
-    return 'QUARTERLY'
-  } else if (['AS_NEEDED', 'FLEXIBLE', 'VARIES', 'OCCASIONAL'].includes(freqUpper)) {
-    return 'AS_NEEDED'
+  } else if (['QUARTERLY', 'QUARTER', 'SEASONALLY', 'SEASONAL', 'AS_NEEDED', 'FLEXIBLE', 'VARIES'].includes(freqUpper)) {
+    return 'SEASONALLY'
   }
   return null
 }
