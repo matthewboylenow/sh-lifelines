@@ -141,7 +141,10 @@ export async function POST(req: NextRequest) {
           subject: ticket.subject,
           description: ticket.description || '',
           priority: ticket.priority,
-          requester: ticket.requester
+          requester: {
+            ...ticket.requester,
+            displayName: ticket.requester.displayName || ticket.requester.email
+          }
         })
       } catch (emailError) {
         console.error('Failed to send support ticket creation email:', emailError)

@@ -70,15 +70,15 @@ const VALUE_MAPPING = {
   },
   meetingFrequency: {
     'Weekly': MeetingFrequency.WEEKLY,
-    'Bi-weekly': MeetingFrequency.BIWEEKLY,
+    'Bi-weekly': MeetingFrequency.MONTHLY, // Map to closest available value
     'Monthly': MeetingFrequency.MONTHLY,
-    'Quarterly': MeetingFrequency.QUARTERLY,
-    'As Needed': MeetingFrequency.AS_NEEDED,
+    'Quarterly': MeetingFrequency.SEASONALLY, // Map seasonal to SEASONALLY
+    'As Needed': MeetingFrequency.SEASONALLY,
     'weekly': MeetingFrequency.WEEKLY,
-    'biweekly': MeetingFrequency.BIWEEKLY,
+    'biweekly': MeetingFrequency.MONTHLY,
     'monthly': MeetingFrequency.MONTHLY,
-    'quarterly': MeetingFrequency.QUARTERLY,
-    'as-needed': MeetingFrequency.AS_NEEDED
+    'quarterly': MeetingFrequency.SEASONALLY,
+    'as-needed': MeetingFrequency.SEASONALLY
   },
   dayOfWeek: {
     'Sunday': DayOfWeek.SUNDAY,
@@ -147,12 +147,12 @@ function mapTypeformData(answers: TypeformAnswer[]): Partial<any> {
     const value = answerMap.get(typeformRef)
     if (value) {
       // Apply value mapping for enum fields
-      if (dbField === 'groupType' && VALUE_MAPPING.groupType[value]) {
-        data[dbField] = VALUE_MAPPING.groupType[value]
-      } else if (dbField === 'meetingFrequency' && VALUE_MAPPING.meetingFrequency[value]) {
-        data[dbField] = VALUE_MAPPING.meetingFrequency[value]
-      } else if (dbField === 'dayOfWeek' && VALUE_MAPPING.dayOfWeek[value]) {
-        data[dbField] = VALUE_MAPPING.dayOfWeek[value]
+      if (dbField === 'groupType' && VALUE_MAPPING.groupType[value as keyof typeof VALUE_MAPPING.groupType]) {
+        data[dbField] = VALUE_MAPPING.groupType[value as keyof typeof VALUE_MAPPING.groupType]
+      } else if (dbField === 'meetingFrequency' && VALUE_MAPPING.meetingFrequency[value as keyof typeof VALUE_MAPPING.meetingFrequency]) {
+        data[dbField] = VALUE_MAPPING.meetingFrequency[value as keyof typeof VALUE_MAPPING.meetingFrequency]
+      } else if (dbField === 'dayOfWeek' && VALUE_MAPPING.dayOfWeek[value as keyof typeof VALUE_MAPPING.dayOfWeek]) {
+        data[dbField] = VALUE_MAPPING.dayOfWeek[value as keyof typeof VALUE_MAPPING.dayOfWeek]
       } else {
         data[dbField] = value
       }
@@ -224,6 +224,9 @@ export async function POST(req: NextRequest) {
     // Create formation request
     const formationRequest = await prisma.formationRequest.create({
       data: {
+        title: formData.title || 'Formation Request from Typeform',
+        groupLeader: formData.groupLeader || 'Unknown Leader',
+        leaderEmail: formData.leaderEmail || 'unknown@example.com',
         ...formData,
         status: FormationStatus.SUBMITTED,
         // Schedule auto-approval for 48 hours from now

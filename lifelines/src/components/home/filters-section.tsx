@@ -48,7 +48,7 @@ export function FiltersSection() {
       <section className="bg-gray-100 py-12">
         <div className="container mx-auto px-4">
           <div className="bg-white rounded-lg shadow-md border p-8 max-w-6xl mx-auto text-center">
-            <LoadingSpinner size="lg" />
+            <LoadingSpinner />
             <p className="mt-4 text-gray-600">Loading filters...</p>
           </div>
         </div>
@@ -256,7 +256,7 @@ export function FiltersSection() {
           {/* Filter Actions */}
           <div className="mt-8 flex items-center justify-between border-t pt-6">
             <Button
-              onClick={clearFilters}
+              onClick={() => clearFilters()}
               variant="outline"
               size="sm"
               disabled={!hasActiveFilters}

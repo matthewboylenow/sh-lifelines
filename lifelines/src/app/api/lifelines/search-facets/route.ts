@@ -29,24 +29,24 @@ export async function GET(req: NextRequest) {
       prisma.lifeLine.groupBy({
         by: ['groupType'],
         where: { ...baseWhere, groupType: { not: null } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } }
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } }
       }),
 
       // Meeting Frequency facets
       prisma.lifeLine.groupBy({
         by: ['meetingFrequency'],
         where: { ...baseWhere, meetingFrequency: { not: null } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } }
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } }
       }),
 
       // Day of Week facets
       prisma.lifeLine.groupBy({
         by: ['dayOfWeek'],
         where: { ...baseWhere, dayOfWeek: { not: null } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } }
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } }
       }),
 
       // Get unique ages/stages values (this is more complex with array fields)
@@ -64,8 +64,8 @@ export async function GET(req: NextRequest) {
       prisma.lifeLine.groupBy({
         by: ['status'],
         where: includeHidden ? {} : { isVisible: true },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } }
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } }
       }),
 
       // Location facets (non-null locations)
@@ -82,8 +82,7 @@ export async function GET(req: NextRequest) {
         where: baseWhere,
         _count: { cost: true },
         _min: { cost: true },
-        _max: { cost: true },
-        _avg: { cost: true }
+        _max: { cost: true }
       }),
 
       // Participants stats
@@ -99,15 +98,16 @@ export async function GET(req: NextRequest) {
       prisma.lifeLine.groupBy({
         by: ['childcare'],
         where: baseWhere,
-        _count: { _all: true }
+        _count: { id: true }
       }),
 
       // Top leaders
-      prisma.lifeLine.groupBy({
-        by: ['groupLeader'],
-        where: { ...baseWhere, groupLeader: { not: null } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } },
+      prisma.lifeLine.findMany({
+        where: baseWhere,
+        select: {
+          groupLeader: true
+        },
+        distinct: ['groupLeader'],
         take: 10
       })
     ])
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
       prisma.lifeLine.count({ 
         where: { 
           ...baseWhere, 
-          OR: [{ cost: null }, { cost: 0 }] 
+          OR: [{ cost: null }, { cost: "" }, { cost: "0" }, { cost: "Free" }] 
         } 
       }),
       prisma.lifeLine.count({ 
@@ -131,19 +131,19 @@ export async function GET(req: NextRequest) {
       groupTypes: groupTypeFacets.map(item => ({
         value: item.groupType,
         label: item.groupType?.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || 'Other',
-        count: item._count._all
+        count: item._count.id
       })),
 
       frequencies: frequencyFacets.map(item => ({
         value: item.meetingFrequency,
         label: item.meetingFrequency?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || 'Other',
-        count: item._count._all
+        count: item._count.id
       })),
 
       daysOfWeek: dayOfWeekFacets.map(item => ({
         value: item.dayOfWeek,
         label: item.dayOfWeek?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || 'Other',
-        count: item._count._all
+        count: item._count.id
       })),
 
       agesStages: agesStagesFacets.map(item => ({
@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
       statuses: includeHidden ? statusFacets.map(item => ({
         value: item.status,
         label: item.status.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
-        count: item._count._all
+        count: item._count.id
       })) : [],
 
       locations: locationFacets
@@ -166,16 +166,18 @@ export async function GET(req: NextRequest) {
           count: 1 // We'd need a more complex query to get exact counts per location
         })),
 
-      leaders: leaderFacets.map(item => ({
-        value: item.groupLeader,
-        label: item.groupLeader!,
-        count: item._count._all
-      })),
+      leaders: leaderFacets
+        .filter(item => item.groupLeader)
+        .map(item => ({
+          value: item.groupLeader,
+          label: item.groupLeader!,
+          count: 1 // Would need groupBy to get actual counts
+        })),
 
       childcare: childcareFacets.map(item => ({
         value: item.childcare,
         label: item.childcare ? 'With Childcare' : 'No Childcare',
-        count: item._count._all
+        count: item._count.id
       })),
 
       // Summary statistics
@@ -184,9 +186,8 @@ export async function GET(req: NextRequest) {
         free: freeCount,
         withLocation: withLocationCount,
         costRange: {
-          min: costFacets._min.cost || 0,
-          max: costFacets._max.cost || 0,
-          average: costFacets._avg.cost || 0
+          min: costFacets._min.cost || "0",
+          max: costFacets._max.cost || "0"
         },
         participantsRange: {
           min: participantsFacets._min.maxParticipants || 0,

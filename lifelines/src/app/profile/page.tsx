@@ -200,7 +200,7 @@ export default function ProfilePage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }
@@ -339,9 +339,11 @@ export default function ProfilePage() {
                     type="text"
                     value={formData.displayName}
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    error={errors.displayName}
                     placeholder="Enter your display name"
                   />
+                  {errors.displayName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.displayName}</p>
+                  )}
                 </div>
 
                 <div>
@@ -351,9 +353,11 @@ export default function ProfilePage() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    error={errors.email}
                     placeholder="Enter your email address"
                   />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  )}
                 </div>
 
                 {/* Password Change Section */}
@@ -380,7 +384,6 @@ export default function ProfilePage() {
                             type={showPasswords.current ? 'text' : 'password'}
                             value={formData.currentPassword}
                             onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                            error={errors.currentPassword}
                             placeholder="Enter your current password"
                             className="pr-10"
                           />
@@ -396,6 +399,9 @@ export default function ProfilePage() {
                             )}
                           </button>
                         </div>
+                        {errors.currentPassword && (
+                          <p className="mt-1 text-sm text-red-600">{errors.currentPassword}</p>
+                        )}
                       </div>
 
                       <div>
@@ -406,7 +412,6 @@ export default function ProfilePage() {
                             type={showPasswords.new ? 'text' : 'password'}
                             value={formData.newPassword}
                             onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                            error={errors.newPassword}
                             placeholder="Enter your new password"
                             className="pr-10"
                           />
@@ -422,6 +427,9 @@ export default function ProfilePage() {
                             )}
                           </button>
                         </div>
+                        {errors.newPassword && (
+                          <p className="mt-1 text-sm text-red-600">{errors.newPassword}</p>
+                        )}
                         <p className="mt-1 text-sm text-gray-600">
                           Must be at least 8 characters with uppercase, lowercase, and number
                         </p>
@@ -435,7 +443,6 @@ export default function ProfilePage() {
                             type={showPasswords.confirm ? 'text' : 'password'}
                             value={formData.confirmPassword}
                             onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                            error={errors.confirmPassword}
                             placeholder="Confirm your new password"
                             className="pr-10"
                           />
@@ -451,6 +458,9 @@ export default function ProfilePage() {
                             )}
                           </button>
                         </div>
+                        {errors.confirmPassword && (
+                          <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -463,7 +473,7 @@ export default function ProfilePage() {
                     className="flex items-center"
                   >
                     {saving ? (
-                      <LoadingSpinner size="sm" className="mr-2" />
+                      <LoadingSpinner className="mr-2" />
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
                     )}

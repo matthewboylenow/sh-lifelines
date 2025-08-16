@@ -234,7 +234,7 @@ export function SearchBar({
         >
           {suggestionsLoading ? (
             <div className="p-4 text-center">
-              <LoadingSpinner size="sm" className="mx-auto mb-2" />
+              <LoadingSpinner className="mx-auto mb-2" />
               <p className="text-sm text-gray-600">Loading suggestions...</p>
             </div>
           ) : allSuggestions.length > 0 ? (
@@ -242,7 +242,7 @@ export function SearchBar({
               {allSuggestions.map((suggestion, index) => (
                 <div
                   key={`${suggestion.type}-${index}`}
-                  ref={el => suggestionRefs.current[index] = el}
+                  ref={el => { suggestionRefs.current[index] = el }}
                   onClick={() => handleSuggestionClick(suggestion.text)}
                   className={`
                     px-4 py-2 cursor-pointer flex items-center space-x-3

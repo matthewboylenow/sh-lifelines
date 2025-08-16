@@ -21,7 +21,7 @@ async function getLifeLineForEdit(id: string, userId: string, userRole: string) 
         leader: {
           select: {
             id: true,
-            name: true,
+            displayName: true,
             email: true,
           }
         }
@@ -69,7 +69,7 @@ export default async function EditLifeLinePage({ params }: PageProps) {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <Link 
-                href={`/lifelines/${params.id}`}
+                href={`/lifelines/${resolvedParams.id}`}
                 className="inline-flex items-center text-primary-600 hover:text-primary-700 transition-colors"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -77,7 +77,7 @@ export default async function EditLifeLinePage({ params }: PageProps) {
               </Link>
               
               <Link
-                href={`/lifelines/${params.id}`}
+                href={`/lifelines/${resolvedParams.id}`}
                 className="text-sm text-gray-600 hover:text-primary-600 transition-colors"
               >
                 View Public Page →
@@ -95,7 +95,7 @@ export default async function EditLifeLinePage({ params }: PageProps) {
           {/* Form */}
           <LifeLineForm 
             mode="edit" 
-            initialData={lifeLine}
+            initialData={lifeLine as any}
           />
         </div>
       </div>
@@ -105,8 +105,9 @@ export default async function EditLifeLinePage({ params }: PageProps) {
 
 export async function generateMetadata({ params }: PageProps) {
   try {
+    const resolvedParams = await params
     const lifeLine = await prisma.lifeLine.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       select: { title: true }
     })
 

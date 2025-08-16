@@ -29,9 +29,8 @@ async function getLifeLine(id: string): Promise<LifeLineWithLeader | null> {
         leader: {
           select: {
             id: true,
-            name: true,
+            displayName: true,
             email: true,
-            phone: true,
           }
         },
         inquiries: {
@@ -49,8 +48,8 @@ async function getLifeLine(id: string): Promise<LifeLineWithLeader | null> {
 
     return {
       ...lifeLine,
-      groupLeader: lifeLine.leader?.name || lifeLine.groupLeader || 'TBD'
-    }
+      groupLeader: lifeLine.leader?.displayName || lifeLine.groupLeader || 'TBD'
+    } as any
   } catch (error) {
     console.error('Error fetching LifeLine:', error)
     return null
@@ -69,12 +68,12 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
   // Check if user can edit this LifeLine
   const canEdit = session && (
     session.user.role === 'ADMIN' || 
-    session.user.role === 'FORMATION_SUPPORT' ||
+    session.user.role === 'FORMATION_SUPPORT_TEAM' ||
     session.user.id === lifeLine.leaderId
   )
 
   const defaultImage = '/images/default-lifeline.jpg'
-  const activeInquiries = lifeLine.inquiries?.filter(i => i.status === 'PENDING').length || 0
+  const activeInquiries = lifeLine.inquiries?.filter(i => i.status === 'UNDECIDED').length || 0
   const totalInquiries = lifeLine.inquiries?.length || 0
 
   return (
@@ -273,14 +272,6 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
                           <Mail className="mr-2 h-4 w-4" />
                           <a href={`mailto:${lifeLine.leader.email}`} className="hover:text-primary-600 transition-colors">
                             {lifeLine.leader.email}
-                          </a>
-                        </div>
-                      )}
-                      {lifeLine.leader.phone && (
-                        <div className="flex items-center justify-center">
-                          <Phone className="mr-2 h-4 w-4" />
-                          <a href={`tel:${lifeLine.leader.phone}`} className="hover:text-primary-600 transition-colors">
-                            {lifeLine.leader.phone}
                           </a>
                         </div>
                       )}

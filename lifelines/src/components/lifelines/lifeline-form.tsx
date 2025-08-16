@@ -263,14 +263,16 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <Label htmlFor="title" required>LifeLine Title</Label>
+              <Label htmlFor="title">LifeLine Title *</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 placeholder="e.g., Young Adults Bible Study"
-                error={validationErrors.title}
               />
+              {validationErrors.title && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.title}</p>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -296,14 +298,16 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
             </div>
 
             <div>
-              <Label htmlFor="groupLeader" required>Group Leader Name</Label>
+              <Label htmlFor="groupLeader">Group Leader Name *</Label>
               <Input
                 id="groupLeader"
                 value={formData.groupLeader}
                 onChange={(e) => handleInputChange('groupLeader', e.target.value)}
                 placeholder="Leader's full name"
-                error={validationErrors.groupLeader}
               />
+              {validationErrors.groupLeader && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.groupLeader}</p>
+              )}
             </div>
 
             <div>
@@ -317,7 +321,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 <option value="">Select existing leader account...</option>
                 {leaders.map(leader => (
                   <option key={leader.id} value={leader.id}>
-                    {leader.name} ({leader.email})
+                    {leader.displayName || leader.email} ({leader.email})
                   </option>
                 ))}
               </select>
@@ -428,8 +432,10 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 value={formData.maxParticipants}
                 onChange={(e) => handleInputChange('maxParticipants', e.target.value)}
                 placeholder="e.g., 12"
-                error={validationErrors.maxParticipants}
               />
+              {validationErrors.maxParticipants && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.maxParticipants}</p>
+              )}
             </div>
 
             <div>
@@ -441,8 +447,10 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 value={formData.cost}
                 onChange={(e) => handleInputChange('cost', e.target.value)}
                 placeholder="0.00"
-                error={validationErrors.cost}
               />
+              {validationErrors.cost && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.cost}</p>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">

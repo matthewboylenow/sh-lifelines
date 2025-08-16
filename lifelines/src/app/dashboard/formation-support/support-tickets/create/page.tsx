@@ -25,7 +25,12 @@ export default function CreateSupportTicketPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    subject: string
+    description: string
+    priority: TicketPriority
+    ticketType: string
+  }>({
     subject: '',
     description: '',
     priority: TicketPriority.MEDIUM,
@@ -96,7 +101,7 @@ export default function CreateSupportTicketPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }
@@ -147,10 +152,12 @@ export default function CreateSupportTicketPage() {
                 type="text"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                error={errors.subject}
                 placeholder="Brief description of your issue"
                 maxLength={200}
               />
+              {errors.subject && (
+                <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
+              )}
               <p className="mt-1 text-sm text-gray-500">
                 {formData.subject.length}/200 characters
               </p>
@@ -186,7 +193,6 @@ export default function CreateSupportTicketPage() {
                   <option value={TicketPriority.LOW}>Low - General question</option>
                   <option value={TicketPriority.MEDIUM}>Medium - Standard issue</option>
                   <option value={TicketPriority.HIGH}>High - Important issue</option>
-                  <option value={TicketPriority.URGENT}>Urgent - Critical problem</option>
                 </select>
               </div>
             </div>
@@ -224,7 +230,7 @@ export default function CreateSupportTicketPage() {
             </div>
 
             {/* Priority Warning */}
-            {formData.priority === TicketPriority.URGENT && (
+            {formData.priority === TicketPriority.HIGH && (
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0" />
@@ -250,7 +256,7 @@ export default function CreateSupportTicketPage() {
                 className="flex items-center"
               >
                 {loading ? (
-                  <LoadingSpinner size="sm" className="mr-2" />
+                  <LoadingSpinner className="mr-2" />
                 ) : (
                   <Send className="h-4 w-4 mr-2" />
                 )}

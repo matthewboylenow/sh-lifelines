@@ -12,7 +12,13 @@ import { UserRole } from '@prisma/client'
 export default function RegisterPage() {
   const { data: session } = useSession()
   const router = useRouter()
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    email: string
+    password: string
+    confirmPassword: string
+    displayName: string
+    role: UserRole
+  }>({
     email: '',
     password: '',
     confirmPassword: '',
@@ -123,8 +129,10 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                error={errors.email}
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -136,8 +144,10 @@ export default function RegisterPage() {
                 required
                 value={formData.displayName}
                 onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                error={errors.displayName}
               />
+              {errors.displayName && (
+                <p className="mt-1 text-sm text-red-600">{errors.displayName}</p>
+              )}
             </div>
 
             <div>
@@ -164,8 +174,10 @@ export default function RegisterPage() {
                 required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                error={errors.password}
               />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
               <p className="mt-1 text-sm text-gray-600">
                 Must be at least 8 characters with uppercase, lowercase, and number
               </p>
@@ -180,8 +192,10 @@ export default function RegisterPage() {
                 required
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                error={errors.confirmPassword}
               />
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
             </div>
 
             <div>

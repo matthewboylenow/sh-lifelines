@@ -153,7 +153,10 @@ export async function PUT(req: NextRequest, context: RouteParams) {
           await sendSupportTicketResolvedEmail({
             referenceNumber: ticket.referenceNumber || 'Unknown',
             subject: ticket.subject,
-            requester: ticket.requester
+            requester: {
+              ...ticket.requester,
+              displayName: ticket.requester.displayName || ticket.requester.email
+            }
           })
         } catch (emailError) {
           console.error('Failed to send ticket resolved email:', emailError)

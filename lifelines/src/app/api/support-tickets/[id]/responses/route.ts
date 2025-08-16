@@ -129,12 +129,18 @@ export async function POST(req: NextRequest, context: RouteParams) {
           {
             referenceNumber: ticket.referenceNumber || 'Unknown',
             subject: ticket.subject,
-            requester: ticket.requester
+            requester: {
+              ...ticket.requester,
+              displayName: ticket.requester.displayName || ticket.requester.email
+            }
           },
           {
             content: response.content,
             isFromSupport: isSupport,
-            author: response.author
+            author: {
+              ...response.author,
+              displayName: response.author.displayName || response.author.email
+            }
           }
         )
       } catch (emailError) {

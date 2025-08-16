@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { 
   createErrorResponse, 
@@ -11,8 +11,7 @@ import { hashPassword } from '@/lib/auth-utils'
 import { z } from 'zod'
 
 // GET /api/users/profile - Get current user profile
-export async function GET(req: NextRequest) {
-  return withAuth(async (req: NextRequest, session: any) => {
+export const GET = withAuth(async (req: NextRequest, session: any) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -54,8 +53,7 @@ export async function GET(req: NextRequest) {
     console.error('Error fetching user profile:', error)
     return createErrorResponse('Failed to fetch user profile', 500)
   }
-  })(req)
-}
+})
 
 // PUT /api/users/profile - Update current user profile
 const updateProfileWithPasswordSchema = updateProfileSchema.extend({
@@ -78,8 +76,7 @@ const updateProfileWithPasswordSchema = updateProfileSchema.extend({
   path: ["currentPassword"]
 })
 
-export async function PUT(req: NextRequest) {
-  return withAuth(
+export const PUT = withAuth(
   async (req: NextRequest, session: any) => {
     return withValidation(
       updateProfileWithPasswordSchema,
@@ -142,5 +139,5 @@ export async function PUT(req: NextRequest) {
         }
       }
     )(req)
-  })(req)
-}
+  }
+)

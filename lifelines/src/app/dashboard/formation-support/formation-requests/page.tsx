@@ -175,7 +175,7 @@ export default function FormationRequestsPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }

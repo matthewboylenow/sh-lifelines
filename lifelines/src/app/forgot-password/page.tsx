@@ -118,8 +118,10 @@ export default function ForgotPasswordPage() {
                 placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                error={error && !email ? 'Email is required' : ''}
               />
+              {error && !email && (
+                <p className="mt-1 text-sm text-red-600">Email is required</p>
+              )}
             </div>
 
             <div>

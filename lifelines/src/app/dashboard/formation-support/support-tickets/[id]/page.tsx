@@ -209,8 +209,8 @@ export default function SupportTicketDetailPage() {
 
   const getPriorityIcon = (priority: TicketPriority) => {
     switch (priority) {
-      case 'URGENT': return <AlertTriangle className="h-4 w-4 text-red-600" />
-      case 'HIGH': return <AlertTriangle className="h-4 w-4 text-orange-600" />
+      case TicketPriority.HIGH: return <AlertTriangle className="h-4 w-4 text-red-600" />
+      case TicketPriority.MEDIUM: return <AlertTriangle className="h-4 w-4 text-orange-600" />
       default: return null
     }
   }
@@ -218,7 +218,7 @@ export default function SupportTicketDetailPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }
@@ -389,7 +389,7 @@ export default function SupportTicketDetailPage() {
                     className="flex items-center"
                   >
                     {responding ? (
-                      <LoadingSpinner size="sm" className="mr-2" />
+                      <LoadingSpinner className="mr-2" />
                     ) : (
                       <Send className="h-4 w-4 mr-2" />
                     )}
@@ -491,7 +491,7 @@ export default function SupportTicketDetailPage() {
                     size="sm"
                   >
                     {updating ? (
-                      <LoadingSpinner size="sm" className="mr-2" />
+                      <LoadingSpinner className="mr-2" />
                     ) : (
                       <Settings className="h-4 w-4 mr-2" />
                     )}

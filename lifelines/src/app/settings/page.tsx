@@ -86,7 +86,7 @@ export default function SettingsPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }
@@ -360,7 +360,7 @@ export default function SettingsPage() {
             className="flex items-center px-6 py-2"
           >
             {saving ? (
-              <LoadingSpinner size="sm" className="mr-2" />
+              <LoadingSpinner className="mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}

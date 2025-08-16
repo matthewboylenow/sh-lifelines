@@ -227,7 +227,7 @@ export default function FormationRequestDetailPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }
@@ -546,7 +546,7 @@ export default function FormationRequestDetailPage() {
                     className="w-full flex items-center justify-center"
                   >
                     {voting ? (
-                      <LoadingSpinner size="sm" className="mr-2" />
+                      <LoadingSpinner className="mr-2" />
                     ) : (
                       <Send className="h-4 w-4 mr-2" />
                     )}

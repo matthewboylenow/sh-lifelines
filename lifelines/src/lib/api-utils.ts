@@ -24,7 +24,7 @@ export function createSuccessResponse<T>(data: T, message?: string) {
   })
 }
 
-export async function withAuth(
+export function withAuth(
   handler: (req: NextRequest, session: any) => Promise<NextResponse>,
   allowedRoles?: UserRole[]
 ) {

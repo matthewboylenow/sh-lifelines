@@ -32,7 +32,7 @@ export function LifeLinesGrid() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
         <span className="ml-2 text-gray-600">Loading LifeLines...</span>
       </div>
     )

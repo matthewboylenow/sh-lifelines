@@ -291,9 +291,12 @@ export async function GET(req: NextRequest) {
     }
 
     const response = createPaginatedResponse(lifeLines, total, page, limit)
-    response.metadata = searchMetadata
+    const responseWithMetadata = {
+      ...response,
+      metadata: searchMetadata
+    }
 
-    return createSuccessResponse(response)
+    return createSuccessResponse(responseWithMetadata)
   } catch (error) {
     console.error('Error fetching LifeLines:', error)
     return createErrorResponse('Failed to fetch LifeLines', 500)
@@ -312,6 +315,7 @@ export async function POST(req: NextRequest) {
         subtitle: body.subtitle || null,
         description: body.description || null,
         groupLeader: body.groupLeader,
+        leaderEmail: body.leaderEmail,
         leaderId: body.leaderId || null,
         dayOfWeek: body.dayOfWeek || null,
         meetingTime: body.meetingTime || null,
@@ -333,7 +337,7 @@ export async function POST(req: NextRequest) {
         leader: {
           select: {
             id: true,
-            name: true,
+            displayName: true,
             email: true,
           }
         },

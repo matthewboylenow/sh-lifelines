@@ -297,12 +297,12 @@ export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
   
   const toggleFilter = useCallback((filterKey: keyof SearchFilters, value: any) => {
     const currentValue = filters[filterKey]
-    let newValue
+    let newValue: any
     
     if (Array.isArray(currentValue)) {
-      newValue = currentValue.includes(value) 
-        ? currentValue.filter(v => v !== value)
-        : [...currentValue, value]
+      newValue = (currentValue as any[]).includes(value) 
+        ? (currentValue as any[]).filter((v: any) => v !== value)
+        : [...(currentValue as any[]), value]
     } else if (typeof currentValue === 'boolean') {
       newValue = !currentValue
     } else {
