@@ -75,6 +75,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json()
+    const validatedData = updateLifeLineSchema.parse(body)
 
     // Check if LifeLine exists
     const existingLifeLine = await prisma.lifeLine.findUnique({
@@ -88,30 +89,30 @@ export async function PUT(req: NextRequest) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    // Update the LifeLine
+    // Update the LifeLine with validated data
     const lifeLine = await prisma.lifeLine.update({
       where: { id },
       data: {
-        title: body.title,
-        subtitle: body.subtitle || null,
-        description: body.description || null,
-        groupLeader: body.groupLeader,
-        leaderId: body.leaderId || null,
-        dayOfWeek: body.dayOfWeek || null,
-        meetingTime: body.meetingTime || null,
-        location: body.location || null,
-        meetingFrequency: body.meetingFrequency || null,
-        groupType: body.groupType || null,
-        agesStages: body.agesStages || [],
-        maxParticipants: body.maxParticipants || null,
-        duration: body.duration || null,
-        cost: body.cost || null,
-        childcare: body.childcare || false,
-        imageUrl: body.imageUrl || null,
-        imageAlt: body.imageAlt || null,
-        imageAttribution: body.imageAttribution || null,
-        status: body.status || 'DRAFT',
-        isVisible: body.isVisible ?? true,
+        ...(validatedData.title && { title: validatedData.title }),
+        ...(body.subtitle !== undefined && { subtitle: body.subtitle || null }),
+        ...(validatedData.description !== undefined && { description: validatedData.description || null }),
+        ...(body.groupLeader && { groupLeader: body.groupLeader }),
+        ...(body.leaderId !== undefined && { leaderId: body.leaderId || null }),
+        ...(validatedData.dayOfWeek !== undefined && { dayOfWeek: validatedData.dayOfWeek || null }),
+        ...(validatedData.meetingTime !== undefined && { meetingTime: validatedData.meetingTime || null }),
+        ...(body.location !== undefined && { location: body.location || null }),
+        ...(validatedData.meetingFrequency !== undefined && { meetingFrequency: validatedData.meetingFrequency || null }),
+        ...(validatedData.groupType !== undefined && { groupType: validatedData.groupType || null }),
+        ...(validatedData.agesStages && { agesStages: validatedData.agesStages }),
+        ...(body.maxParticipants !== undefined && { maxParticipants: body.maxParticipants || null }),
+        ...(body.duration !== undefined && { duration: body.duration || null }),
+        ...(body.cost !== undefined && { cost: body.cost || null }),
+        ...(body.childcare !== undefined && { childcare: body.childcare || false }),
+        ...(validatedData.imageUrl !== undefined && { imageUrl: validatedData.imageUrl || null }),
+        ...(validatedData.imageAlt !== undefined && { imageAlt: validatedData.imageAlt || null }),
+        ...(validatedData.imageAttribution !== undefined && { imageAttribution: validatedData.imageAttribution || null }),
+        ...(body.status && { status: body.status }),
+        ...(body.isVisible !== undefined && { isVisible: body.isVisible }),
       },
       include: {
         leader: {

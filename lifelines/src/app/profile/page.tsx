@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { MainLayout } from '@/components/layout/main-layout'
 import { 
   User, 
   Mail, 
@@ -239,8 +240,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <MainLayout>
+      <div className="bg-gradient-to-br from-blue-50 to-teal-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -484,7 +486,8 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </MainLayout>
   )
 }

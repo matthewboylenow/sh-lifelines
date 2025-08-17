@@ -27,6 +27,7 @@ import { LifeLineWithLeader } from '@/types'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { UserManagement } from './user-management'
 
 interface AdminDashboardProps {
   userId: string
@@ -472,19 +473,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
 
       {/* Users Management Tab */}
       {activeTab === 'users' && (
-        <div className="dashboard-card">
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">User Management</h3>
-            <p className="text-gray-600 mb-6">
-              Manage users, assign roles, and control permissions.
-            </p>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
-          </div>
-        </div>
+        <UserManagement currentUserRole={userRole} />
       )}
 
       {/* Settings Tab */}
@@ -496,10 +485,12 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
             <p className="text-gray-600 mb-6">
               Configure system settings, email templates, and integrations.
             </p>
-            <Button>
-              <Settings className="h-4 w-4 mr-2" />
-              Configure Settings
-            </Button>
+            <Link href="/dashboard/admin/settings">
+              <Button>
+                <Settings className="h-4 w-4 mr-2" />
+                Configure Settings
+              </Button>
+            </Link>
           </div>
         </div>
       )}

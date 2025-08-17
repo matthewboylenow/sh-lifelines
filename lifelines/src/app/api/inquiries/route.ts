@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     const filters = {
       status: searchParams.get('status') as InquiryStatus | undefined,
       lifeLineId: searchParams.get('lifeLineId'),
+      leaderId: searchParams.get('leaderId'),
       search: searchParams.get('search'),
       recent: searchParams.get('recent') === 'true',
     }
@@ -33,6 +34,12 @@ export async function GET(req: NextRequest) {
 
     if (filters.lifeLineId) {
       where.lifeLineId = filters.lifeLineId
+    }
+
+    if (filters.leaderId) {
+      where.lifeLine = {
+        leaderId: filters.leaderId
+      }
     }
 
     if (filters.search) {

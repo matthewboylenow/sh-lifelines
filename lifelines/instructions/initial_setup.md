@@ -96,8 +96,8 @@ SENDGRID_API_KEY="your-sendgrid-key"
 
 ## After Installing Dependencies
 
-1. Install Claude Code following the official documentation
-2. Upload the documentation files provided separately
+1. Set up your development environment
+2. Configure the database connection
 3. Begin with the database schema setup
 4. Proceed with authentication system
 5. Build core functionality components

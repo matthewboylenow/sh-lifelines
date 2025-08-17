@@ -149,12 +149,15 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
   }
 
   const handleAgesStagesChange = (stage: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      agesStages: checked 
-        ? [...prev.agesStages, stage]
-        : prev.agesStages.filter(s => s !== stage)
-    }))
+    setFormData(prev => {
+      const currentAges = Array.isArray(prev.agesStages) ? prev.agesStages : []
+      return {
+        ...prev,
+        agesStages: checked 
+          ? [...currentAges, stage]
+          : currentAges.filter(s => s !== stage)
+      }
+    })
   }
 
   const validateForm = (): boolean => {
@@ -319,7 +322,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Select existing leader account...</option>
-                {leaders.map(leader => (
+                {Array.isArray(leaders) && leaders.map(leader => (
                   <option key={leader.id} value={leader.id}>
                     {leader.displayName || leader.email} ({leader.email})
                   </option>
@@ -474,7 +477,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                   <input
                     type="checkbox"
                     id={`stage-${stage}`}
-                    checked={formData.agesStages.includes(stage)}
+                    checked={Array.isArray(formData.agesStages) && formData.agesStages.includes(stage)}
                     onChange={(e) => handleAgesStagesChange(stage, e.target.checked)}
                     className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />

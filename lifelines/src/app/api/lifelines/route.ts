@@ -307,29 +307,30 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    const validatedData = createLifeLineSchema.parse(body)
     
-    // Create the LifeLine with the provided data
+    // Create the LifeLine with the validated data
     const lifeLine = await prisma.lifeLine.create({
       data: {
-        title: body.title,
+        title: validatedData.title,
         subtitle: body.subtitle || null,
-        description: body.description || null,
+        description: validatedData.description || null,
         groupLeader: body.groupLeader,
         leaderEmail: body.leaderEmail,
         leaderId: body.leaderId || null,
-        dayOfWeek: body.dayOfWeek || null,
-        meetingTime: body.meetingTime || null,
+        dayOfWeek: validatedData.dayOfWeek || null,
+        meetingTime: validatedData.meetingTime || null,
         location: body.location || null,
-        meetingFrequency: body.meetingFrequency || null,
-        groupType: body.groupType || null,
-        agesStages: body.agesStages || [],
+        meetingFrequency: validatedData.meetingFrequency || null,
+        groupType: validatedData.groupType || null,
+        agesStages: validatedData.agesStages || [],
         maxParticipants: body.maxParticipants || null,
         duration: body.duration || null,
         cost: body.cost || null,
         childcare: body.childcare || false,
-        imageUrl: body.imageUrl || null,
-        imageAlt: body.imageAlt || null,
-        imageAttribution: body.imageAttribution || null,
+        imageUrl: validatedData.imageUrl || null,
+        imageAlt: validatedData.imageAlt || null,
+        imageAttribution: validatedData.imageAttribution || null,
         status: body.status || 'DRAFT',
         isVisible: body.isVisible ?? true,
       },

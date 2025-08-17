@@ -81,19 +81,7 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
   return (
     <div className="space-y-8">
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/lifelines/create" className="dashboard-card hover:shadow-md transition-shadow">
-          <div className="flex items-center">
-            <div className="bg-primary-100 p-3 rounded-lg">
-              <Plus className="h-6 w-6 text-primary-600" />
-            </div>
-            <div className="ml-4">
-              <h3 className="font-semibold text-gray-900">Create LifeLine</h3>
-              <p className="text-sm text-gray-600">Start a new group</p>
-            </div>
-          </div>
-        </Link>
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/dashboard/leader/inquiries" className="dashboard-card hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="bg-secondary-100 p-3 rounded-lg">
@@ -137,24 +125,13 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
       <div className="dashboard-card">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">My LifeLines</h2>
-          <Link href="/lifelines/create">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create New
-            </Button>
-          </Link>
         </div>
 
         {lifeLines.length === 0 ? (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No LifeLines yet</h3>
-            <p className="text-gray-600 mb-4">Create your first LifeLine to get started.</p>
-            <Link href="/lifelines/create">
-              <Button>
-                Create LifeLine
-              </Button>
-            </Link>
+            <p className="text-gray-600">Your LifeLines will appear here once they have been approved and published by the admin team.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

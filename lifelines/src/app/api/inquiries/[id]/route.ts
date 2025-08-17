@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PUT /api/inquiries/[id] - Update inquiry status
-export async function PUT(req: NextRequest) {
+// PATCH /api/inquiries/[id] - Update inquiry status
+export async function PATCH(req: NextRequest) {
   try {
     // Extract ID from URL
     const url = new URL(req.url)
@@ -98,4 +98,9 @@ export async function PUT(req: NextRequest) {
     console.error('Error updating inquiry:', error)
     return createErrorResponse('Failed to update inquiry', 500)
   }
+}
+
+// PUT /api/inquiries/[id] - Update inquiry status (backward compatibility)
+export async function PUT(req: NextRequest) {
+  return PATCH(req)
 }
