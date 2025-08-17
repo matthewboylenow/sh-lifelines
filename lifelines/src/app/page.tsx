@@ -19,7 +19,7 @@ function HomeContent() {
 
 export default function HomePage() {
   return (
-    <MainLayout>
+    <MainLayout noPadding>
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center">
           <LoadingSpinner />

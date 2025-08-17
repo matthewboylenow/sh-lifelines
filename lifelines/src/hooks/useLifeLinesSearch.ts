@@ -145,11 +145,11 @@ export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
       urlFilters.searchFields = searchParams.get('searchFields')!.split(',').filter(Boolean)
     }
     
-    return { ...initialFilters, ...urlFilters }
-  }, [searchParams, initialFilters])
+    return urlFilters
+  }, [searchParams])
   
   // State
-  const [filters, setFilters] = useState<SearchFilters>(getFiltersFromUrl)
+  const [filters, setFilters] = useState<SearchFilters>(() => ({ ...initialFilters, ...getFiltersFromUrl() }))
   const [results, setResults] = useState<SearchResponse | null>(null)
   const [facets, setFacets] = useState<SearchFacets | null>(null)
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
@@ -336,9 +336,11 @@ export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
   
   // Initial search if filters are present
   useEffect(() => {
-    if (Object.keys(getFiltersFromUrl()).length > 0) {
+    const urlFilters = getFiltersFromUrl()
+    if (Object.keys(urlFilters).length > 0) {
       search({}, { updateUrl: false })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run on mount
   
   return {

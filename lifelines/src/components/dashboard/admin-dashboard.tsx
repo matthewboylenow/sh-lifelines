@@ -60,15 +60,23 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
     try {
       setLoading(true)
       
-      // Fetch admin stats
-      setStats({
-        totalLifeLines: 42,
-        totalUsers: 156,
-        pendingFormationRequests: 3,
-        totalInquiries: 87,
-        activeLeaders: 28,
-        hiddenLifeLines: 5
-      })
+      // Fetch admin stats from API
+      const statsResponse = await fetch('/api/admin/stats')
+      const statsData = await statsResponse.json()
+      
+      if (statsResponse.ok) {
+        setStats(statsData.data)
+      } else {
+        // Fallback to defaults if stats API doesn't exist yet
+        setStats({
+          totalLifeLines: 0,
+          totalUsers: 0,
+          pendingFormationRequests: 0,
+          totalInquiries: 0,
+          activeLeaders: 0,
+          hiddenLifeLines: 0
+        })
+      }
 
       // Fetch all LifeLines for admin management
       const response = await fetch('/api/lifelines?includeAll=true')
@@ -76,6 +84,19 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
       
       if (response.ok) {
         setLifeLines(data.data.items || [])
+        
+        // Calculate stats from the actual data if API doesn't exist
+        if (!statsResponse.ok) {
+          const lifeLines = data.data.items || []
+          setStats({
+            totalLifeLines: lifeLines.length,
+            totalUsers: 0, // This would need a separate API call
+            pendingFormationRequests: 0, // This would need a separate API call
+            totalInquiries: lifeLines.reduce((sum: number, ll: any) => sum + (ll._count?.inquiries || 0), 0),
+            activeLeaders: new Set(lifeLines.map((ll: any) => ll.leaderId).filter(Boolean)).size,
+            hiddenLifeLines: lifeLines.filter((ll: any) => ll.status === 'ARCHIVED' || !ll.isVisible).length
+          })
+        }
       }
       
     } catch (error) {

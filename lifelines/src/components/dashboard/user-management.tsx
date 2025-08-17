@@ -239,7 +239,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
             </div>
             <div className="ml-4">
               <h3 className="text-2xl font-bold text-gray-900">
-                {users.filter(u => u.isActive).length}
+                {Array.isArray(users) ? users.filter(u => u.isActive).length : 0}
               </h3>
               <p className="text-sm text-gray-600">Active Users</p>
             </div>
@@ -253,7 +253,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
             </div>
             <div className="ml-4">
               <h3 className="text-2xl font-bold text-gray-900">
-                {users.filter(u => u.role === UserRole.LIFELINE_LEADER).length}
+                {Array.isArray(users) ? users.filter(u => u.role === UserRole.LIFELINE_LEADER).length : 0}
               </h3>
               <p className="text-sm text-gray-600">Leaders</p>
             </div>
@@ -267,7 +267,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
             </div>
             <div className="ml-4">
               <h3 className="text-2xl font-bold text-gray-900">
-                {users.filter(u => !u.isActive).length}
+                {Array.isArray(users) ? users.filter(u => !u.isActive).length : 0}
               </h3>
               <p className="text-sm text-gray-600">Inactive Users</p>
             </div>
@@ -457,7 +457,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
 
       {/* Results Summary */}
       <div className="text-center text-sm text-gray-500">
-        Showing {filteredUsers.length} of {users.length} users
+        Showing {filteredUsers.length} of {Array.isArray(users) ? users.length : 0} users
       </div>
     </div>
   )

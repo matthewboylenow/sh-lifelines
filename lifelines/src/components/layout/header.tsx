@@ -61,8 +61,8 @@ export function Header() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          {/* Desktop Navigation - All aligned to the right */}
+          <div className="hidden md:flex items-center space-x-6">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -89,10 +89,7 @@ export function Header() {
                   ))}
               </>
             )}
-          </nav>
 
-          {/* User Menu */}
-          <div className="flex items-center space-x-4">
             {session ? (
               <div className="relative group">
                 <button className="flex items-center space-x-2 text-white hover:text-secondary-500 transition-colors">
@@ -127,30 +124,28 @@ export function Header() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-4">
-                <Link
-                  href="/login"
-                  className="site-nav-link"
-                >
-                  Log In
-                </Link>
-              </div>
-            )}
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                type="button"
-                className="text-white hover:text-secondary-500 transition-colors"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              <Link
+                href="/login"
+                className="site-nav-link"
               >
-                {mobileMenuOpen ? (
-                  <X className="h-6 w-6" />
-                ) : (
-                  <Menu className="h-6 w-6" />
-                )}
-              </button>
-            </div>
+                Log In
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button
+              type="button"
+              className="text-white hover:text-secondary-500 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -169,7 +164,7 @@ export function Header() {
                 </Link>
               ))}
 
-              {session && (
+              {session ? (
                 <>
                   <div className="border-t border-blue-400 my-2"></div>
                   {dashboardNavigation
@@ -202,6 +197,17 @@ export function Header() {
                   >
                     Sign out
                   </button>
+                </>
+              ) : (
+                <>
+                  <div className="border-t border-blue-400 my-2"></div>
+                  <Link
+                    href="/login"
+                    className="block px-3 py-2 text-white hover:text-secondary-500 transition-colors font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Log In
+                  </Link>
                 </>
               )}
             </div>
