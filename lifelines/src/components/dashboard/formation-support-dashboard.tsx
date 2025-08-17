@@ -42,13 +42,26 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
     try {
       setLoading(true)
       
-      // In a real implementation, you'd have a stats API endpoint
-      // For now, we'll use placeholder data
+      // Fetch real stats from API endpoints
+      const [formationRes, ticketsRes, inquiriesRes, lifelinesRes] = await Promise.all([
+        fetch('/api/formation-requests?status=SUBMITTED'),
+        fetch('/api/support-tickets?status=PENDING_REVIEW,IN_PROGRESS'),
+        fetch('/api/inquiries'),
+        fetch('/api/lifelines')
+      ])
+      
+      const [formations, tickets, inquiries, lifelines] = await Promise.all([
+        formationRes.json().catch(() => ({ data: { items: [] } })),
+        ticketsRes.json().catch(() => ({ data: { items: [] } })),
+        inquiriesRes.json().catch(() => ({ data: { items: [] } })),
+        lifelinesRes.json().catch(() => ({ data: { items: [] } }))
+      ])
+      
       setStats({
-        pendingFormationRequests: 3,
-        openSupportTickets: 7,
-        totalInquiries: 24,
-        totalLifeLines: 42,
+        pendingFormationRequests: formations.data?.items?.length || 0,
+        openSupportTickets: tickets.data?.items?.length || 0,
+        totalInquiries: inquiries.data?.items?.length || 0,
+        totalLifeLines: lifelines.data?.items?.length || 0,
       })
       
     } catch (error) {

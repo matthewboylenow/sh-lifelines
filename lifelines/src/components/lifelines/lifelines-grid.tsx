@@ -80,24 +80,34 @@ export function LifeLinesGrid() {
             : 'No LifeLines are currently available.'
           }
         </p>
-        {hasActiveFilters && (
-          <Button
-            onClick={() => search({ 
-              page: 1, 
-              search: undefined, 
-              groupTypes: [], 
-              frequencies: [], 
-              agesStages: [],
-              dayOfWeek: undefined,
-              hasLocation: undefined,
-              hasChildcare: undefined,
-              isFree: undefined
-            })}
-            variant="outline"
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {hasActiveFilters && (
+            <Button
+              onClick={() => search({ 
+                page: 1, 
+                search: undefined, 
+                groupTypes: [], 
+                frequencies: [], 
+                agesStages: [],
+                dayOfWeek: undefined,
+                hasLocation: undefined,
+                hasChildcare: undefined,
+                isFree: undefined
+              })}
+              variant="outline"
+            >
+              Clear All Filters
+            </Button>
+          )}
+          <a
+            href="https://sainthelen.org/lifelines"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors"
           >
-            Clear All Filters
-          </Button>
-        )}
+            Don't See A LifeLine You're Interested In? Start A LifeLine!
+          </a>
+        </div>
       </div>
     )
   }

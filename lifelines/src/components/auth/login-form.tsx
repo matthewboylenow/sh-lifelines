@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
+import { UserRole } from '@prisma/client'
 
 export function LoginForm() {
   const router = useRouter()
@@ -34,7 +35,21 @@ export function LoginForm() {
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
-        router.push('/dashboard/leader')
+        // Get session to determine user role and redirect appropriately
+        const session = await getSession()
+        const userRole = session?.user?.role
+        
+        // Redirect based on role hierarchy: ADMIN > FORMATION_SUPPORT_TEAM > LIFELINE_LEADER > MEMBER
+        if (userRole === UserRole.ADMIN) {
+          router.push('/dashboard/admin')
+        } else if (userRole === UserRole.FORMATION_SUPPORT_TEAM) {
+          router.push('/dashboard/formation-support')
+        } else if (userRole === UserRole.LIFELINE_LEADER) {
+          router.push('/dashboard/leader')
+        } else {
+          // Default redirect for MEMBER or unknown roles
+          router.push('/profile')
+        }
       }
     } catch (error) {
       setError('An error occurred during sign in')

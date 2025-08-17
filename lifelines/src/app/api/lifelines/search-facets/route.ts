@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         where: { ...baseWhere, groupType: { not: null } },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } }
-      }),
+      }).catch(() => []),
 
       // Meeting Frequency facets
       prisma.lifeLine.groupBy({
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         where: { ...baseWhere, meetingFrequency: { not: null } },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } }
-      }),
+      }).catch(() => []),
 
       // Day of Week facets
       prisma.lifeLine.groupBy({
@@ -47,18 +47,25 @@ export async function GET(req: NextRequest) {
         where: { ...baseWhere, dayOfWeek: { not: null } },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } }
-      }),
+      }).catch(() => []),
 
       // Get unique ages/stages values (this is more complex with array fields)
-      prisma.$queryRaw<Array<{ agesStage: string, count: number }>>`
-        SELECT unnest("agesStages") as "agesStage", COUNT(*) as count
-        FROM "LifeLine" 
-        WHERE ${includeHidden ? 'TRUE' : '"isVisible" = true AND "status" = \'PUBLISHED\''}
-        AND "agesStages" IS NOT NULL 
-        AND array_length("agesStages", 1) > 0
-        GROUP BY unnest("agesStages")
-        ORDER BY count DESC
-      `,
+      (async () => {
+        try {
+          return await prisma.$queryRaw<Array<{ agesStage: string, count: number }>>`
+            SELECT unnest("agesStages") as "agesStage", COUNT(*) as count
+            FROM "LifeLine" 
+            WHERE ${includeHidden ? 'TRUE' : '"isVisible" = true AND "status" = \'PUBLISHED\''}
+            AND "agesStages" IS NOT NULL 
+            AND array_length("agesStages", 1) > 0
+            GROUP BY unnest("agesStages")
+            ORDER BY count DESC
+          `
+        } catch (error) {
+          console.error('Error in agesStages query:', error)
+          return []
+        }
+      })(),
 
       // Status facets
       prisma.lifeLine.groupBy({
@@ -66,7 +73,7 @@ export async function GET(req: NextRequest) {
         where: includeHidden ? {} : { isVisible: true },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } }
-      }),
+      }).catch(() => []),
 
       // Location facets (non-null locations)
       prisma.lifeLine.findMany({
@@ -75,7 +82,7 @@ export async function GET(req: NextRequest) {
         distinct: ['location'],
         take: 20,
         orderBy: { location: 'asc' }
-      }),
+      }).catch(() => []),
 
       // Cost-related stats
       prisma.lifeLine.aggregate({
@@ -83,7 +90,7 @@ export async function GET(req: NextRequest) {
         _count: { cost: true },
         _min: { cost: true },
         _max: { cost: true }
-      }),
+      }).catch(() => ({ _count: { cost: 0 }, _min: { cost: null }, _max: { cost: null } })),
 
       // Participants stats
       prisma.lifeLine.aggregate({
@@ -92,14 +99,14 @@ export async function GET(req: NextRequest) {
         _min: { maxParticipants: true },
         _max: { maxParticipants: true },
         _avg: { maxParticipants: true }
-      }),
+      }).catch(() => ({ _count: { maxParticipants: 0 }, _min: { maxParticipants: null }, _max: { maxParticipants: null }, _avg: { maxParticipants: null } })),
 
       // Childcare facets
       prisma.lifeLine.groupBy({
         by: ['childcare'],
         where: baseWhere,
         _count: { id: true }
-      }),
+      }).catch(() => []),
 
       // Top leaders
       prisma.lifeLine.findMany({
@@ -109,21 +116,21 @@ export async function GET(req: NextRequest) {
         },
         distinct: ['groupLeader'],
         take: 10
-      })
+      }).catch(() => [])
     ])
 
     // Calculate additional stats
     const [totalCount, freeCount, withLocationCount] = await Promise.all([
-      prisma.lifeLine.count({ where: baseWhere }),
+      prisma.lifeLine.count({ where: baseWhere }).catch(() => 0),
       prisma.lifeLine.count({ 
         where: { 
           ...baseWhere, 
           OR: [{ cost: null }, { cost: "" }, { cost: "0" }, { cost: "Free" }] 
         } 
-      }),
+      }).catch(() => 0),
       prisma.lifeLine.count({ 
         where: { ...baseWhere, location: { not: null } } 
-      })
+      }).catch(() => 0)
     ])
 
     // Format the response

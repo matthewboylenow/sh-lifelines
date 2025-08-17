@@ -132,7 +132,7 @@ export function Header() {
                   href="/login"
                   className="site-nav-link"
                 >
-                  Leader Log-In
+                  Log In
                 </Link>
               </div>
             )}
