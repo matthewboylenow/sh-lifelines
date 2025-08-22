@@ -261,7 +261,7 @@ export function ImageSelector({
                     alt={image.alt_description}
                     className="w-full h-24 object-cover group-hover:scale-105 transition-transform"
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-colors" />
+                  <div className="absolute inset-0 bg-transparent group-hover:bg-black group-hover:bg-opacity-20 transition-colors" />
                   <div className="absolute bottom-1 right-1 text-xs text-white bg-black bg-opacity-50 px-1 rounded">
                     {image.user.name}
                   </div>
