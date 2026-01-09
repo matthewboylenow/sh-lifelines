@@ -13,7 +13,7 @@ export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
 
   return (
     <Link href={`/lifelines/${lifeLine.id}`} className="block group">
-      <div className="relative h-64 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden shadow-lg transform group-hover:scale-105 transition-all duration-200 border border-gray-200"
+      <div className="relative h-64 bg-cover bg-center bg-no-repeat rounded-2xl overflow-hidden shadow-md group-hover:shadow-xl transform group-hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-200 group-hover:border-gray-300"
            style={{
              backgroundImage: `linear-gradient(rgba(31, 52, 109, 0.4), rgba(31, 52, 109, 0.6)), url(${lifeLine.imageUrl || defaultImage})`
            }}>

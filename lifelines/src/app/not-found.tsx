@@ -31,7 +31,7 @@ export default function NotFound() {
         {/* Quick Search */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Search className="w-5 h-5 mr-2" />
+            <Search className="w-5 h-5 mr-2" aria-hidden="true" />
             Quick Search
           </h2>
           
@@ -45,44 +45,44 @@ export default function NotFound() {
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <Home className="w-5 h-5 mr-3 text-primary-600" />
+              <Home className="w-5 h-5 mr-3 text-primary-600" aria-hidden="true" />
               <div>
                 <div className="font-medium text-gray-900">Homepage</div>
                 <div className="text-sm text-gray-500">Browse all LifeLines</div>
               </div>
             </Link>
-            
-            <Link 
-              href="/dashboard" 
+
+            <Link
+              href="/dashboard/leader"
               className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <MessageCircle className="w-5 h-5 mr-3 text-primary-600" />
+              <MessageCircle className="w-5 h-5 mr-3 text-primary-600" aria-hidden="true" />
               <div>
                 <div className="font-medium text-gray-900">Dashboard</div>
                 <div className="text-sm text-gray-500">Your account area</div>
               </div>
             </Link>
-            
-            <Link 
-              href="/resources" 
+
+            <Link
+              href="/resources"
               className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <Search className="w-5 h-5 mr-3 text-primary-600" />
+              <Search className="w-5 h-5 mr-3 text-primary-600" aria-hidden="true" />
               <div>
                 <div className="font-medium text-gray-900">Resources</div>
                 <div className="text-sm text-gray-500">Leader materials</div>
               </div>
             </Link>
-            
-            <Link 
-              href="/login" 
+
+            <Link
+              href="/login"
               className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 mr-3 text-primary-600" />
+              <ArrowLeft className="w-5 h-5 mr-3 text-primary-600" aria-hidden="true" />
               <div>
                 <div className="font-medium text-gray-900">Sign In</div>
                 <div className="text-sm text-gray-500">Access your account</div>
@@ -93,18 +93,18 @@ export default function NotFound() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
-          <Button 
-            onClick={() => window.history.back()} 
+          <Button
+            onClick={() => window.history.back()}
             variant="outline"
             className="flex items-center justify-center"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
             Go Back
           </Button>
-          
+
           <Link href="/">
             <Button className="flex items-center justify-center w-full sm:w-auto">
-              <Home className="w-4 h-4 mr-2" />
+              <Home className="w-4 h-4 mr-2" aria-hidden="true" />
               Return Home
             </Button>
           </Link>
@@ -126,7 +126,7 @@ export default function NotFound() {
         
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2024 LifeLines at Saint Helen Church</p>
+          <p>© 2025 LifeLines at Saint Helen Church</p>
         </div>
       </div>
     </div>

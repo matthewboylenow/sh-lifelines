@@ -2,6 +2,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* Navy - Primary brand color */
   --color-primary-50: #f0f4ff;
   --color-primary-100: #e6edff;
   --color-primary-500: #1f346d;
@@ -9,7 +10,8 @@
   --color-primary-700: #15254a;
   --color-primary-800: #101d39;
   --color-primary-900: #0b1527;
-  
+
+  /* Teal - Secondary color */
   --color-secondary-50: #f0fdfa;
   --color-secondary-100: #ccfbf1;
   --color-secondary-500: #019e7c;
@@ -17,44 +19,62 @@
   --color-secondary-700: #016b52;
   --color-secondary-800: #01523e;
   --color-secondary-900: #003829;
-  
-  --color-background: #f3f4f6;
+
+  /* Rust - Accent color for CTAs and highlights */
+  --color-accent-50: #fef5f3;
+  --color-accent-100: #fde8e3;
+  --color-accent-500: #cd5334;
+  --color-accent-600: #b8442a;
+  --color-accent-700: #9a3823;
+  --color-accent-800: #7d2e1c;
+  --color-accent-900: #672618;
+
+  /* Backgrounds */
+  --color-background: #faf9f7;
+  --color-background-alt: #f5f3f0;
   --color-background-card: #ffffff;
   --color-background-secondary: #f9fafb;
-  
-  --color-border: #e5e7eb;
-  
+
+  --color-border: #e5e5e5;
+
   --color-text-primary: #111827;
   --color-text-secondary: #374151;
   --color-text-muted: #6b7280;
-  
+
   --color-status-success: #16a34a;
   --color-status-warning: #f59e0b;
   --color-status-error: #dc2626;
   --color-status-info: #2563eb;
-  
+
   --font-family-sans: 'Libre Franklin', sans-serif;
   --font-family-serif: 'Libre Baskerville', serif;
 }
 
 body {
   font-family: 'Libre Franklin', sans-serif;
-  background-color: #f3f4f6;
+  background-color: #faf9f7;
   color: #111827;
+}
+
+/* Headings use serif font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Libre Baskerville', serif;
 }
 
 /* Dashboard Components */
 .dashboard-card {
   background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.15s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .dashboard-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px rgba(31, 52, 109, 0.15);
+  border-color: #d1d5db;
 }
 
 .dashboard-button {
@@ -110,6 +130,27 @@ body {
 .dashboard-button-outline:hover {
   background-color: #1f346d;
   color: white;
+}
+
+/* Accent Button (Rust color for emphasis CTAs) */
+.dashboard-button-accent {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #cd5334;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.dashboard-button-accent:hover {
+  background-color: #b8442a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(205, 83, 52, 0.3);
 }
 
 /* Status Badges */

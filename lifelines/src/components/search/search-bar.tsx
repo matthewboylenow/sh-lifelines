@@ -197,7 +197,7 @@ export function SearchBar({
       <form onSubmit={handleFormSubmit} className="relative">
         {/* Search Input */}
         <div className="relative">
-          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${iconSizes[size]}`} />
+          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${iconSizes[size]}`} aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -207,11 +207,15 @@ export function SearchBar({
             onFocus={() => showSuggestions && setShowSuggestionsDropdown(true)}
             placeholder={placeholder}
             autoFocus={autoFocus}
+            aria-label="Search LifeLines"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestionsDropdown}
             className={`
-              w-full ${sizeClasses[size]} pl-10 pr-12 
-              border border-gray-300 rounded-lg 
-              focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-              bg-white shadow-sm transition-all duration-200
+              w-full ${sizeClasses[size]} pl-10 pr-12
+              border border-gray-300 rounded-lg
+              focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+              bg-white text-gray-900 placeholder-gray-500
+              shadow-sm transition-all duration-200
             `}
           />
           {query && (
@@ -219,8 +223,9 @@ export function SearchBar({
               type="button"
               onClick={clearSearch}
               className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 ${iconSizes[size]}`}
+              aria-label="Clear search"
             >
-              <X />
+              <X aria-hidden="true" />
             </button>
           )}
         </div>

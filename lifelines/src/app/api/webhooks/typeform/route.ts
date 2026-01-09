@@ -211,11 +211,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (existingRequest) {
-      console.log('Duplicate submission detected, ignoring:', {
-        email: formData.leaderEmail,
-        existingId: existingRequest.id
-      })
-      return createSuccessResponse({ 
+      return createSuccessResponse({
         message: 'Duplicate submission ignored',
         existingRequestId: existingRequest.id
       })
@@ -232,13 +228,6 @@ export async function POST(req: NextRequest) {
         // Schedule auto-approval for 48 hours from now
         autoApprovalScheduled: new Date(Date.now() + 48 * 60 * 60 * 1000),
       }
-    })
-
-    console.log('Formation request created from Typeform:', {
-      id: formationRequest.id,
-      groupLeader: formationRequest.groupLeader,
-      leaderEmail: formationRequest.leaderEmail,
-      source: 'Typeform'
     })
 
     // Send notification to formation support team

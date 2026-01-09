@@ -36,7 +36,6 @@ export async function sendEmail({
     }
 
     await sgMail.send(msg)
-    console.log('Email sent successfully via SendGrid')
     return { success: true, messageId: 'sendgrid-success' }
   } catch (error) {
     console.error('Email sending failed:', error)

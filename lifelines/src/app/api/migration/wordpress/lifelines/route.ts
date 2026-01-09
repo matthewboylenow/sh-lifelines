@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { 
-  createErrorResponse, 
-  createSuccessResponse
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  withAuth
 } from '@/lib/api-utils'
 import { UserRole, GroupType, MeetingFrequency, DayOfWeek, LifeLineStatus } from '@prisma/client'
 import { z } from 'zod'
@@ -74,11 +75,14 @@ function mapDayOfWeek(metaValue: string | undefined): DayOfWeek | undefined {
 
 // POST /api/migration/wordpress/lifelines - Import WordPress LifeLines
 export async function POST(req: NextRequest) {
-  try {
-    // TODO: Add authentication middleware back in production
-    // Currently allowing access for build purposes - should verify admin role
+  return withAuth(async (req: NextRequest, session: any) => {
+    // Only admins can import data
+    if (session.user.role !== UserRole.ADMIN) {
+      return createErrorResponse('Only administrators can import data', 403)
+    }
 
-    const body = await req.json()
+    try {
+      const body = await req.json()
     const { lifelines } = wordpressLifeLineSchema.parse(body)
 
     const results = {
@@ -165,8 +169,9 @@ export async function POST(req: NextRequest) {
       `Import completed: ${results.imported} imported, ${results.skipped} skipped, ${results.errors} errors`
     )
 
-  } catch (error) {
-    console.error('Error importing WordPress LifeLines:', error)
-    return createErrorResponse('Failed to import WordPress LifeLines', 500)
-  }
+    } catch (error) {
+      console.error('Error importing WordPress LifeLines:', error)
+      return createErrorResponse('Failed to import WordPress LifeLines', 500)
+    }
+  })(req)
 }

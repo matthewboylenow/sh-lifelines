@@ -138,7 +138,6 @@ export async function approveFormationRequest(requestId: string) {
       tempPassword,
       formationRequest.title
     )
-    console.log('Welcome email sent to new leader:', formationRequest.leaderEmail)
   } catch (error) {
     console.error('Failed to send welcome email:', error)
     // Don't fail the whole process if email fails
@@ -178,13 +177,10 @@ export async function rejectFormationRequest(requestId: string, reason?: string)
       },
       reason
     )
-    console.log('Rejection email sent to:', formationRequest.leaderEmail)
   } catch (error) {
     console.error('Failed to send rejection email:', error)
     // Don't fail the whole process if email fails
   }
-
-  console.log(`Formation request ${requestId} rejected. Reason: ${reason}`)
 }
 
 // Check all submitted formation requests for auto-approval

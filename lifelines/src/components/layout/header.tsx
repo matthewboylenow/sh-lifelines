@@ -92,8 +92,12 @@ export function Header() {
 
             {session ? (
               <div className="relative group">
-                <button className="flex items-center space-x-2 text-white hover:text-secondary-500 transition-colors">
-                  <User className="h-5 w-5" />
+                <button
+                  className="flex items-center space-x-2 text-white hover:text-secondary-500 transition-colors"
+                  aria-label="User menu"
+                  aria-haspopup="true"
+                >
+                  <User className="h-5 w-5" aria-hidden="true" />
                   <span className="hidden sm:block font-medium">
                     {session.user.name || session.user.email}
                   </span>
@@ -108,8 +112,8 @@ export function Header() {
                         href={item.href}
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        {item.name === 'Your Profile' && <User className="h-4 w-4 mr-2" />}
-                        {item.name === 'Settings' && <Settings className="h-4 w-4 mr-2" />}
+                        {item.name === 'Your Profile' && <User className="h-4 w-4 mr-2" aria-hidden="true" />}
+                        {item.name === 'Settings' && <Settings className="h-4 w-4 mr-2" aria-hidden="true" />}
                         {item.name}
                       </Link>
                     ))}
@@ -117,7 +121,7 @@ export function Header() {
                       onClick={handleSignOut}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <LogOut className="h-4 w-4 mr-2" />
+                      <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
                       Sign out
                     </button>
                   </div>
@@ -139,11 +143,13 @@ export function Header() {
               type="button"
               className="text-white hover:text-secondary-500 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-6 w-6" aria-hidden="true" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-6 w-6" aria-hidden="true" />
               )}
             </button>
           </div>

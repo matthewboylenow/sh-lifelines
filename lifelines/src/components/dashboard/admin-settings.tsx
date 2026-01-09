@@ -45,10 +45,8 @@ export function AdminSettings() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // In a real implementation, you would save to the database
-      console.log(`Saving ${section} settings:`, settings[section as keyof typeof settings])
-      
+
+      // TODO: In a real implementation, save to the database via API
     } catch (error) {
       console.error('Error saving settings:', error)
       alert('Failed to save settings')

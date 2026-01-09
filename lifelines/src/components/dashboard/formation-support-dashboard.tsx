@@ -193,8 +193,8 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
             </div>
           </Link>
 
-          <Link 
-            href="/lifelines" 
+          <Link
+            href="/dashboard/formation-support/lifelines"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Users className="h-6 w-6 text-green-600 mr-3" />

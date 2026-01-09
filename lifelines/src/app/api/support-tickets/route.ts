@@ -40,7 +40,17 @@ export async function GET(req: NextRequest) {
     }
 
     if (filters.status) {
-      where.status = filters.status
+      // Handle comma-separated status values (e.g., "PENDING_REVIEW,IN_PROGRESS")
+      if (filters.status.includes(',')) {
+        const statuses = filters.status.split(',').filter(s =>
+          Object.values(TicketStatus).includes(s as TicketStatus)
+        ) as TicketStatus[]
+        if (statuses.length > 0) {
+          where.status = { in: statuses }
+        }
+      } else {
+        where.status = filters.status
+      }
     }
 
     if (filters.priority) {
