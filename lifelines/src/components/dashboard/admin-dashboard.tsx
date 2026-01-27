@@ -28,6 +28,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { UserManagement } from './user-management'
+import { ResourceManagement } from '@/components/admin/resource-management'
 
 interface AdminDashboardProps {
   userId: string
@@ -44,7 +45,7 @@ interface AdminStats {
 }
 
 export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'lifelines' | 'users' | 'settings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'lifelines' | 'users' | 'resources' | 'settings'>('overview')
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [lifeLines, setLifeLines] = useState<LifeLineWithLeader[]>([])
   const [loading, setLoading] = useState(true)
@@ -171,6 +172,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
             { id: 'overview', name: 'Overview', icon: Shield },
             { id: 'lifelines', name: 'LifeLines Management', icon: BookOpen },
             { id: 'users', name: 'User Management', icon: Users },
+            { id: 'resources', name: 'Resources', icon: FileText },
             { id: 'settings', name: 'System Settings', icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon
@@ -495,6 +497,11 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
       {/* Users Management Tab */}
       {activeTab === 'users' && (
         <UserManagement currentUserRole={userRole} />
+      )}
+
+      {/* Resources Management Tab */}
+      {activeTab === 'resources' && (
+        <ResourceManagement />
       )}
 
       {/* Settings Tab */}

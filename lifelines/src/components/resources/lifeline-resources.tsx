@@ -1,129 +1,97 @@
 'use client'
 
-import { useState } from 'react'
-import { UserRole } from '@prisma/client'
-import { BookOpen, Video, FileText, Download, ExternalLink, Users, MessageCircle, Calendar } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { UserRole, ResourceType } from '@prisma/client'
+import { BookOpen, Video, FileText, Download, ExternalLink, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface LifeLineResourcesProps {
   userRole: UserRole
 }
 
-interface ResourceItem {
+interface Resource {
   id: string
   title: string
-  description: string
-  type: 'document' | 'video' | 'link' | 'guide'
-  category: 'training' | 'materials' | 'support' | 'forms'
-  url?: string
-  downloadUrl?: string
-  icon: any
+  description: string | null
+  websiteUrl: string | null
+  resourceType: ResourceType
+  fileUrl: string | null
+  fileName: string | null
+  fileSize: number | null
+  isActive: boolean
 }
 
-const mockResources: ResourceItem[] = [
-  {
-    id: '1',
-    title: 'LifeLine Leader Training Guide',
-    description: 'Complete guide for new LifeLine leaders covering group management, facilitation techniques, and pastoral care.',
-    type: 'document',
-    category: 'training',
-    downloadUrl: '/resources/leader-training-guide.pdf',
-    icon: BookOpen
-  },
-  {
-    id: '2',
-    title: 'Leading Small Groups - Video Series',
-    description: 'Comprehensive video training series on effective small group leadership and community building.',
-    type: 'video',
-    category: 'training',
-    url: 'https://vimeo.com/example-training-series',
-    icon: Video
-  },
-  {
-    id: '3',
-    title: 'Bible Study Discussion Guides',
-    description: 'Ready-to-use discussion guides for various Bible study topics and seasonal studies.',
-    type: 'document',
-    category: 'materials',
-    downloadUrl: '/resources/bible-study-guides.pdf',
-    icon: FileText
-  },
-  {
-    id: '4',
-    title: 'Group Member Information Form',
-    description: 'Template form for collecting member information, contact details, and prayer requests.',
-    type: 'document',
-    category: 'forms',
-    downloadUrl: '/resources/member-info-form.pdf',
-    icon: Users
-  },
-  {
-    id: '5',
-    title: 'Handling Difficult Conversations',
-    description: 'Guidance for pastoral care situations and navigating challenging group dynamics.',
-    type: 'guide',
-    category: 'support',
-    url: '/resources/difficult-conversations',
-    icon: MessageCircle
-  },
-  {
-    id: '6',
-    title: 'LifeLine Event Planning Toolkit',
-    description: 'Resources for planning group events, retreats, and special activities.',
-    type: 'document',
-    category: 'materials',
-    downloadUrl: '/resources/event-planning-toolkit.pdf',
-    icon: Calendar
-  }
-]
+const resourceTypeLabels: Record<ResourceType, string> = {
+  BIBLE_STUDY_REFLECTIONS: 'Bible Study & Reflections',
+  SERIES_PROGRAMS: 'Series & Programs',
+  LEADER_FAITH_FORMATION: 'Leader Faith Formation'
+}
+
+const resourceTypeIcons: Record<ResourceType, any> = {
+  BIBLE_STUDY_REFLECTIONS: BookOpen,
+  SERIES_PROGRAMS: Video,
+  LEADER_FAITH_FORMATION: FileText
+}
 
 export function LifeLineResources({ userRole }: LifeLineResourcesProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [resources, setResources] = useState<Resource[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<ResourceType | 'all'>('all')
 
-  const categories = [
-    { key: 'all', label: 'All Resources', count: mockResources.length },
-    { key: 'training', label: 'Training', count: mockResources.filter(r => r.category === 'training').length },
-    { key: 'materials', label: 'Materials', count: mockResources.filter(r => r.category === 'materials').length },
-    { key: 'support', label: 'Support', count: mockResources.filter(r => r.category === 'support').length },
-    { key: 'forms', label: 'Forms', count: mockResources.filter(r => r.category === 'forms').length }
-  ]
+  useEffect(() => {
+    fetchResources()
+  }, [])
 
-  const filteredResources = activeCategory === 'all' 
-    ? mockResources 
-    : mockResources.filter(resource => resource.category === activeCategory)
+  const fetchResources = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/resources?limit=100')
+      const data = await response.json()
 
-  const getResourceIcon = (type: string) => {
-    switch (type) {
-      case 'document':
-        return FileText
-      case 'video':
-        return Video
-      case 'link':
-        return ExternalLink
-      case 'guide':
-        return BookOpen
-      default:
-        return FileText
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch resources')
+      }
+
+      setResources(data.data.items || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load resources')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getResourceAction = (resource: ResourceItem) => {
-    if (resource.downloadUrl) {
+  const filteredResources = activeCategory === 'all'
+    ? resources
+    : resources.filter(resource => resource.resourceType === activeCategory)
+
+  const categories = [
+    { key: 'all' as const, label: 'All Resources', count: resources.length },
+    ...Object.entries(resourceTypeLabels).map(([key, label]) => ({
+      key: key as ResourceType,
+      label,
+      count: resources.filter(r => r.resourceType === key).length
+    }))
+  ]
+
+  const getResourceAction = (resource: Resource) => {
+    if (resource.fileUrl) {
       return (
-        <a href={resource.downloadUrl} download>
+        <a href={resource.fileUrl} download={resource.fileName} target="_blank" rel="noopener noreferrer">
           <Button size="sm" variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 mr-2" aria-hidden="true" />
             Download
           </Button>
         </a>
       )
     }
-    
-    if (resource.url) {
+
+    if (resource.websiteUrl) {
       return (
-        <a href={resource.url} target="_blank" rel="noopener noreferrer">
+        <a href={resource.websiteUrl} target="_blank" rel="noopener noreferrer">
           <Button size="sm" variant="outline">
-            <ExternalLink className="h-4 w-4 mr-2" />
+            <ExternalLink className="h-4 w-4 mr-2" aria-hidden="true" />
             View
           </Button>
         </a>
@@ -131,6 +99,25 @@ export function LifeLineResources({ userRole }: LifeLineResourcesProps) {
     }
 
     return null
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <LoadingSpinner className="w-8 h-8" />
+        <span className="ml-2 text-gray-600">Loading resources...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-red-600 mb-4">{error}</p>
+        <Button onClick={fetchResources}>Try Again</Button>
+      </div>
+    )
   }
 
   return (
@@ -149,70 +136,81 @@ export function LifeLineResources({ userRole }: LifeLineResourcesProps) {
       </div>
 
       {/* Quick Start Section */}
-      <div className="dashboard-card bg-gradient-to-r from-primary-50 to-secondary-50">
-        <div className="flex items-start gap-4">
-          <div className="bg-primary-100 p-3 rounded-lg">
-            <BookOpen className="h-6 w-6 text-primary-600" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">New to Leading a LifeLine?</h3>
-            <p className="text-gray-600 mb-4">
-              Start with our comprehensive training guide and video series to build confidence in your leadership journey.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Download Training Guide
-              </Button>
-              <Button size="sm" variant="outline">
-                <Video className="h-4 w-4 mr-2" />
-                Watch Training Videos
-              </Button>
+      {resources.length > 0 && (
+        <div className="dashboard-card bg-gradient-to-r from-primary-50 to-secondary-50">
+          <div className="flex items-start gap-4">
+            <div className="bg-primary-100 p-3 rounded-lg">
+              <BookOpen className="h-6 w-6 text-primary-600" aria-hidden="true" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">New to Leading a LifeLine?</h3>
+              <p className="text-gray-600 mb-4">
+                Explore our training materials and guides to build confidence in your leadership journey.
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Resources Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredResources.map(resource => {
-          const IconComponent = resource.icon
-          const ResourceIcon = getResourceIcon(resource.type)
-          
-          return (
-            <div key={resource.id} className="dashboard-card hover:shadow-md transition-shadow">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="bg-gray-100 p-2 rounded-lg">
-                  <IconComponent className="h-5 w-5 text-gray-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-1">{resource.title}</h3>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                    <ResourceIcon className="h-3 w-3" />
-                    <span className="capitalize">{resource.type}</span>
-                    <span>•</span>
-                    <span className="capitalize">{resource.category}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <p className="text-sm text-gray-600 mb-4">{resource.description}</p>
-              
-              <div className="flex justify-end">
-                {getResourceAction(resource)}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {filteredResources.length === 0 && (
-        <div className="text-center py-12">
+      {filteredResources.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
           <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
           <p className="text-gray-600">
-            No resources found in the {activeCategory} category.
+            {activeCategory === 'all'
+              ? 'No resources have been added yet. Check back later!'
+              : `No resources found in the ${resourceTypeLabels[activeCategory as ResourceType]} category.`
+            }
           </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredResources.map(resource => {
+            const Icon = resourceTypeIcons[resource.resourceType]
+
+            return (
+              <div key={resource.id} className="dashboard-card hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="bg-gray-100 p-2 rounded-lg">
+                    <Icon className="h-5 w-5 text-gray-600" aria-hidden="true" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 mb-1">{resource.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                      <span>{resourceTypeLabels[resource.resourceType]}</span>
+                      {resource.fileUrl && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center">
+                            <FileText className="h-3 w-3 mr-1" aria-hidden="true" />
+                            {resource.fileName || 'Download'}
+                          </span>
+                        </>
+                      )}
+                      {resource.websiteUrl && !resource.fileUrl && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center">
+                            <ExternalLink className="h-3 w-3 mr-1" aria-hidden="true" />
+                            External Link
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {resource.description && (
+                  <p className="text-sm text-gray-600 mb-4">{resource.description}</p>
+                )}
+
+                <div className="flex justify-end">
+                  {getResourceAction(resource)}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -220,7 +218,7 @@ export function LifeLineResources({ userRole }: LifeLineResourcesProps) {
       <div className="dashboard-card border-l-4 border-l-secondary-500">
         <div className="flex items-start gap-4">
           <div className="bg-secondary-100 p-3 rounded-lg">
-            <MessageCircle className="h-6 w-6 text-secondary-600" />
+            <MessageCircle className="h-6 w-6 text-secondary-600" aria-hidden="true" />
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">Need Additional Support?</h3>
