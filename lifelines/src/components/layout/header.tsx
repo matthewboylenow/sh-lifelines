@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
-import { Menu, X, LogOut, User, Settings } from 'lucide-react'
+import { Menu, X, LogOut, User } from 'lucide-react'
 import { UserRole } from '@prisma/client'
 
 export function Header() {
@@ -35,7 +35,6 @@ export function Header() {
 
   const userNavigation = [
     { name: 'Your Profile', href: '/profile' },
-    { name: 'Settings', href: '/settings' },
   ]
 
   const handleSignOut = async () => {
@@ -112,8 +111,7 @@ export function Header() {
                         href={item.href}
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        {item.name === 'Your Profile' && <User className="h-4 w-4 mr-2" aria-hidden="true" />}
-                        {item.name === 'Settings' && <Settings className="h-4 w-4 mr-2" aria-hidden="true" />}
+                        <User className="h-4 w-4 mr-2" aria-hidden="true" />
                         {item.name}
                       </Link>
                     ))}

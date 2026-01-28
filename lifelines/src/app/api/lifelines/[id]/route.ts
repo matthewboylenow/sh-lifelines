@@ -29,6 +29,14 @@ export async function GET(req: NextRequest) {
             email: true,
           }
         },
+        supportContact: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+            cellPhone: true,
+          }
+        },
         inquiries: {
           select: {
             id: true,
@@ -113,6 +121,7 @@ export async function PUT(req: NextRequest) {
         ...(validatedData.imageAttribution !== undefined && { imageAttribution: validatedData.imageAttribution || null }),
         ...(body.status && { status: body.status }),
         ...(body.isVisible !== undefined && { isVisible: body.isVisible }),
+        ...(body.supportContactId !== undefined && { supportContactId: body.supportContactId || null }),
       },
       include: {
         leader: {
@@ -120,6 +129,14 @@ export async function PUT(req: NextRequest) {
             id: true,
             displayName: true,
             email: true,
+          }
+        },
+        supportContact: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+            cellPhone: true,
           }
         },
         _count: {

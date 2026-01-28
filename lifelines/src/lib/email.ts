@@ -739,6 +739,91 @@ export async function sendSupportTicketResponseEmail(
   }
 }
 
+// Leader email to LifeLine members
+export async function sendLeaderMemberEmail(
+  leader: {
+    displayName: string
+    email: string
+  },
+  lifeLineTitle: string,
+  recipients: string[],
+  subject: string,
+  message: string
+) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>${subject}</title>
+        <style>
+            body { font-family: 'Libre Franklin', Arial, sans-serif; line-height: 1.6; color: #374151; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1f346d; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background: #f9fafb; }
+            .footer { padding: 20px; text-align: center; color: #6b7280; font-size: 14px; }
+            .message-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #019e7c; }
+            .lifeline-badge { display: inline-block; background: #019e7c; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <span class="lifeline-badge">${lifeLineTitle}</span>
+                <h1>${subject}</h1>
+            </div>
+
+            <div class="content">
+                <div class="message-box">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+
+                <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                    This message was sent by <strong>${leader.displayName}</strong>,
+                    the leader of the "${lifeLineTitle}" LifeLine.
+                </p>
+            </div>
+
+            <div class="footer">
+                <p style="background: #f3f4f6; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">
+                    <strong>This is an outgoing announcement only.</strong><br>
+                    Please do not reply to this email. To contact your LifeLine leader,
+                    please reach out to them directly at your next meeting or through the parish.
+                </p>
+                <p>Sent via LifeLines at Saint Helen Parish</p>
+                <p>You received this because you're a member of the "${lifeLineTitle}" LifeLine</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `
+
+  // Send emails in batches to avoid rate limits
+  const batchSize = 50
+  const results = []
+
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize)
+
+    try {
+      await sendEmail({
+        to: batch,
+        subject: `[${lifeLineTitle}] ${subject}`,
+        html
+      })
+      results.push({ batch: i / batchSize + 1, success: true, count: batch.length })
+    } catch (error) {
+      console.error(`Failed to send batch ${i / batchSize + 1}:`, error)
+      results.push({ batch: i / batchSize + 1, success: false, error })
+    }
+  }
+
+  return {
+    totalRecipients: recipients.length,
+    batches: results
+  }
+}
+
 export async function sendSupportTicketResolvedEmail(
   ticket: {
     referenceNumber: string

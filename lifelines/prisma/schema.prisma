@@ -17,21 +17,25 @@ model User {
   username          String?   @unique
   password          String
   displayName       String?
+  cellPhone         String?
   role              UserRole  @default(MEMBER)
   isActive          Boolean   @default(true)
+  emailVerified     Boolean   @default(false)
+  lastLoginAt       DateTime?
   resetToken        String?
   resetTokenExpiry  DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
   // Relationships
-  ledLifeLines        LifeLine[]        @relation("LifeLineLeader")
-  formationRequests   FormationRequest[]
-  supportTickets     SupportTicket[]
-  votes              FormationVote[]
-  formationComments  FormationComment[]
-  ticketResponses    TicketResponse[]
-  
+  ledLifeLines         LifeLine[]        @relation("LifeLineLeader")
+  supportedLifeLines   LifeLine[]        @relation("LifeLineSupportContact")
+  formationRequests    FormationRequest[]
+  supportTickets       SupportTicket[]
+  votes                FormationVote[]
+  formationComments    FormationComment[]
+  ticketResponses      TicketResponse[]
+
   @@map("users")
 }
 
@@ -78,10 +82,12 @@ model LifeLine {
   // Relationships
   leaderId            String
   leader              User      @relation("LifeLineLeader", fields: [leaderId], references: [id])
+  supportContactId    String?
+  supportContact      User?     @relation("LifeLineSupportContact", fields: [supportContactId], references: [id])
   inquiries           Inquiry[]
   formationRequestId  String?   @unique
   formationRequest    FormationRequest? @relation("CreatedLifeLine", fields: [formationRequestId], references: [id])
-  
+
   @@map("lifelines")
 }
 

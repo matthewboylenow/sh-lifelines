@@ -131,9 +131,12 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* Spacer under hero */}
+        <div className="h-8 md:h-12"></div>
+
         {/* Main Content */}
-        <div className="container-responsive py-12">
-          <div className="grid lg:grid-cols-3 gap-12">
+        <div className="container-responsive py-8 md:py-12">
+          <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
               {/* Description */}
@@ -264,42 +267,34 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
                     </span>
                   </div>
                   <h4 className="font-semibold text-gray-900 mb-2">{lifeLine.groupLeader}</h4>
-                  
-                  {lifeLine.leader && (
-                    <div className="space-y-2 text-sm text-gray-600">
-                      {lifeLine.leader.email && (
-                        <div className="flex items-center justify-center">
-                          <Mail className="mr-2 h-4 w-4" />
-                          <a href={`mailto:${lifeLine.leader.email}`} className="hover:text-primary-600 transition-colors">
-                            {lifeLine.leader.email}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <p className="text-sm text-gray-600">
+                    Submit an inquiry above to connect with the leader
+                  </p>
                 </div>
               </div>
 
-              {/* Quick Stats */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-primary-900 mb-4">Quick Stats</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Current Interest:</span>
-                    <span className="font-semibold text-primary-600">{activeInquiries} people</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total Inquiries:</span>
-                    <span className="font-semibold text-gray-900">{totalInquiries}</span>
-                  </div>
-                  {lifeLine.maxParticipants && (
+              {/* Quick Stats - Only visible to leaders/admins */}
+              {canEdit && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-xl font-bold text-primary-900 mb-4">Quick Stats</h3>
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Max Size:</span>
-                      <span className="font-semibold text-gray-900">{lifeLine.maxParticipants} people</span>
+                      <span className="text-gray-600">Current Interest:</span>
+                      <span className="font-semibold text-primary-600">{activeInquiries} people</span>
                     </div>
-                  )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Total Inquiries:</span>
+                      <span className="font-semibold text-gray-900">{totalInquiries}</span>
+                    </div>
+                    {lifeLine.maxParticipants && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Max Size:</span>
+                        <span className="font-semibold text-gray-900">{lifeLine.maxParticipants} people</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

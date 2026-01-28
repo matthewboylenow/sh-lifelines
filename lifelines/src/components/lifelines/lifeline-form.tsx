@@ -36,6 +36,7 @@ interface FormData {
   description: string
   groupLeader: string
   leaderId: string
+  supportContactId: string
   dayOfWeek: DayOfWeek | ''
   meetingTime: string
   location: string
@@ -59,6 +60,7 @@ const INITIAL_FORM_DATA: FormData = {
   description: '',
   groupLeader: '',
   leaderId: '',
+  supportContactId: '',
   dayOfWeek: '',
   meetingTime: '',
   location: '',
@@ -91,6 +93,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
   const router = useRouter()
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [leaders, setLeaders] = useState<User[]>([])
+  const [supportContacts, setSupportContacts] = useState<User[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showImageSelector, setShowImageSelector] = useState(false)
@@ -105,6 +108,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         description: initialData.description || '',
         groupLeader: initialData.groupLeader || '',
         leaderId: initialData.leaderId || '',
+        supportContactId: (initialData as any).supportContactId || '',
         dayOfWeek: initialData.dayOfWeek || '',
         meetingTime: initialData.meetingTime || '',
         location: initialData.location || '',
@@ -124,7 +128,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
     }
   }, [initialData])
 
-  // Load leaders
+  // Load leaders and support contacts
   useEffect(() => {
     const fetchLeaders = async () => {
       try {
@@ -137,7 +141,22 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         console.error('Failed to load leaders:', error)
       }
     }
+
+    const fetchSupportContacts = async () => {
+      try {
+        // Fetch Formation Support Team members and Admins as potential support contacts
+        const response = await fetch('/api/users?roles=FORMATION_SUPPORT_TEAM,ADMIN')
+        if (response.ok) {
+          const data = await response.json()
+          setSupportContacts(data.data || [])
+        }
+      } catch (error) {
+        console.error('Failed to load support contacts:', error)
+      }
+    }
+
     fetchLeaders()
+    fetchSupportContacts()
   }, [])
 
   const handleInputChange = (field: keyof FormData, value: any) => {
@@ -200,7 +219,8 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         dayOfWeek: formData.dayOfWeek || null,
         meetingFrequency: formData.meetingFrequency || null,
         groupType: formData.groupType || null,
-        leaderId: formData.leaderId || null
+        leaderId: formData.leaderId || null,
+        supportContactId: formData.supportContactId || null
       }
 
       if (onSubmit) {
@@ -328,6 +348,26 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="supportContactId">Support Contact (Formation Team)</Label>
+              <select
+                id="supportContactId"
+                value={formData.supportContactId}
+                onChange={(e) => handleInputChange('supportContactId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="">Assign a support contact...</option>
+                {Array.isArray(supportContacts) && supportContacts.map(contact => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.displayName || contact.email} ({contact.email})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                This person will be the point of contact for the LifeLine leader
+              </p>
             </div>
           </div>
         </div>

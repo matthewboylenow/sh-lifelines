@@ -245,6 +245,14 @@ export async function GET(req: NextRequest) {
               email: true,
             }
           },
+          supportContact: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+              cellPhone: true,
+            }
+          },
           _count: {
             select: {
               inquiries: true

@@ -2,12 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Users, MessageSquare, BookOpen, Eye, Edit, Trash2 } from 'lucide-react'
+import { Plus, Users, MessageSquare, BookOpen, Eye, Edit, Trash2, Mail, Phone, User } from 'lucide-react'
 import { UserRole } from '@prisma/client'
 import { LifeLineWithLeader, InquiryWithLifeLine } from '@/types'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/Button'
 import { formatDate, formatInquiryStatus } from '@/utils/formatters'
+import { EmailMembersModal } from './email-members-modal'
+
+interface SupportContact {
+  id: string
+  displayName: string | null
+  email: string
+  cellPhone: string | null
+}
+
+interface LifeLineWithSupport extends LifeLineWithLeader {
+  supportContact?: SupportContact | null
+}
 
 interface LeaderDashboardProps {
   userId: string
@@ -15,10 +27,17 @@ interface LeaderDashboardProps {
 }
 
 export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
-  const [lifeLines, setLifeLines] = useState<LifeLineWithLeader[]>([])
+  const [lifeLines, setLifeLines] = useState<LifeLineWithSupport[]>([])
   const [recentInquiries, setRecentInquiries] = useState<InquiryWithLifeLine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
+  const [selectedLifeLine, setSelectedLifeLine] = useState<{ id: string; title: string } | null>(null)
+
+  const openEmailModal = (lifeLineId: string, title: string) => {
+    setSelectedLifeLine({ id: lifeLineId, title })
+    setEmailModalOpen(true)
+  }
 
   useEffect(() => {
     fetchDashboardData()
@@ -190,6 +209,41 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                   </p>
                 )}
 
+                {/* Support Contact */}
+                {lifeLine.supportContact && (
+                  <div className="mb-4 p-3 bg-secondary-50 rounded-lg border border-secondary-100">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-secondary-100 p-2 rounded-full">
+                        <User className="h-4 w-4 text-secondary-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-secondary-700 uppercase tracking-wide">Your Support Contact</p>
+                        <p className="font-medium text-gray-900 truncate">
+                          {lifeLine.supportContact.displayName || 'Formation Support'}
+                        </p>
+                        <div className="flex flex-wrap gap-3 mt-1 text-xs">
+                          <a
+                            href={`mailto:${lifeLine.supportContact.email}`}
+                            className="text-secondary-600 hover:text-secondary-700 flex items-center gap-1"
+                          >
+                            <Mail className="h-3 w-3" />
+                            {lifeLine.supportContact.email}
+                          </a>
+                          {lifeLine.supportContact.cellPhone && (
+                            <a
+                              href={`tel:${lifeLine.supportContact.cellPhone}`}
+                              className="text-secondary-600 hover:text-secondary-700 flex items-center gap-1"
+                            >
+                              <Phone className="h-3 w-3" />
+                              {lifeLine.supportContact.cellPhone}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <span>
                     {lifeLine._count?.inquiries || 0} inquir{lifeLine._count?.inquiries === 1 ? 'y' : 'ies'}
@@ -197,6 +251,19 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                   <span>
                     Created {formatDate(lifeLine.createdAt)}
                   </span>
+                </div>
+
+                {/* Email Members Button */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEmailModal(lifeLine.id, lifeLine.title)}
+                    className="w-full"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email Members
+                  </Button>
                 </div>
               </div>
             ))}
@@ -228,7 +295,7 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                 </div>
                 <div className="text-right">
                   <span className={`status-badge ${
-                    inquiry.status === 'JOINED' 
+                    inquiry.status === 'JOINED'
                       ? 'status-badge-joined'
                       : inquiry.status === 'NOT_JOINED'
                       ? 'status-badge-not-joined'
@@ -244,6 +311,19 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Email Members Modal */}
+      {selectedLifeLine && (
+        <EmailMembersModal
+          isOpen={emailModalOpen}
+          onClose={() => {
+            setEmailModalOpen(false)
+            setSelectedLifeLine(null)
+          }}
+          lifeLineId={selectedLifeLine.id}
+          lifeLineTitle={selectedLifeLine.title}
+        />
       )}
     </div>
   )

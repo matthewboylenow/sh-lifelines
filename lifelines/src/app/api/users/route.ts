@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     // Parse filters
     const filters = {
       role: searchParams.get('role') as UserRole | undefined,
+      roles: searchParams.get('roles')?.split(',').filter(Boolean) as UserRole[] | undefined,
       search: searchParams.get('search'),
       active: searchParams.get('active') === 'true' ? true : searchParams.get('active') === 'false' ? false : undefined,
     }
@@ -26,8 +27,11 @@ export async function GET(req: NextRequest) {
     // Build where clause
     const where: any = {}
 
+    // Support single role or multiple roles
     if (filters.role) {
       where.role = filters.role
+    } else if (filters.roles && filters.roles.length > 0) {
+      where.role = { in: filters.roles }
     }
 
     if (filters.active !== undefined) {
@@ -48,6 +52,7 @@ export async function GET(req: NextRequest) {
           id: true,
           email: true,
           displayName: true,
+          cellPhone: true,
           role: true,
           isActive: true,
           createdAt: true,
