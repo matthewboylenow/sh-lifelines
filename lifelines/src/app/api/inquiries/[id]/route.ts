@@ -75,9 +75,20 @@ export async function PATCH(req: NextRequest) {
       return createErrorResponse('Inquiry not found', 404)
     }
 
+    // Determine if we need to set or clear joinedAt based on status change
+    const updateData: any = { ...validatedData }
+
+    if (validatedData.status === 'JOINED' && existingInquiry.status !== 'JOINED') {
+      // Setting status to JOINED - record the timestamp
+      updateData.joinedAt = new Date()
+    } else if (validatedData.status !== 'JOINED' && existingInquiry.status === 'JOINED') {
+      // Changing away from JOINED - clear the timestamp
+      updateData.joinedAt = null
+    }
+
     const inquiry = await prisma.inquiry.update({
       where: { id },
-      data: validatedData,
+      data: updateData,
       include: {
         lifeLine: {
           include: {

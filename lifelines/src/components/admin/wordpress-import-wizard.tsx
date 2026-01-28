@@ -45,12 +45,16 @@ const LIFELINE_FIELD_MAPPINGS: FieldMapping[] = [
   { source: '', target: 'status', required: false, type: 'text' },
 ]
 
+type DuplicateHandling = 'skip' | 'update' | 'replace_all'
+
 export function WordPressImportWizard() {
   const [currentStep, setCurrentStep] = useState(0)
   const [importData, setImportData] = useState<ImportData | null>(null)
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>(LIFELINE_FIELD_MAPPINGS)
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<any>(null)
+  const [duplicateHandling, setDuplicateHandling] = useState<DuplicateHandling>('skip')
+  const [clearExisting, setClearExisting] = useState(false)
 
   const steps: ImportStep[] = [
     {
@@ -187,7 +191,7 @@ export function WordPressImportWizard() {
         return transformed
       })
 
-      // Import the data
+      // Import the data with options
       const response = await fetch('/api/admin/import/lifelines', {
         method: 'POST',
         headers: {
@@ -195,7 +199,8 @@ export function WordPressImportWizard() {
         },
         body: JSON.stringify({
           data: transformedData,
-          clearExisting: true // Option to clear demo data
+          clearExisting: clearExisting,
+          duplicateHandling: duplicateHandling,
         }),
       })
 
@@ -416,15 +421,77 @@ export function WordPressImportWizard() {
               </p>
             </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <AlertTriangle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-800">
-                  <p className="font-medium">Warning: This will replace your existing demo data.</p>
-                  <p className="mt-1">All current LifeLines will be deleted and replaced with your imported data.</p>
+            {/* Import Options */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
+              <h3 className="font-semibold text-gray-900">Import Options</h3>
+
+              {/* Duplicate Handling */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  How should duplicates be handled? (matched by title)
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="duplicateHandling"
+                      value="skip"
+                      checked={duplicateHandling === 'skip'}
+                      onChange={() => setDuplicateHandling('skip')}
+                      className="mr-2 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      <strong>Skip duplicates</strong> - Keep existing records, only import new ones
+                    </span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="duplicateHandling"
+                      value="update"
+                      checked={duplicateHandling === 'update'}
+                      onChange={() => setDuplicateHandling('update')}
+                      className="mr-2 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      <strong>Update existing</strong> - Update matching records with imported data
+                    </span>
+                  </label>
                 </div>
               </div>
+
+              {/* Clear Existing Option */}
+              <div className="pt-2 border-t border-gray-200">
+                <label className="flex items-start">
+                  <input
+                    type="checkbox"
+                    checked={clearExisting}
+                    onChange={(e) => setClearExisting(e.target.checked)}
+                    className="mt-1 mr-3 text-red-600 focus:ring-red-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-red-700">
+                      Clear all existing data before import
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      This will delete ALL existing LifeLines, inquiries, and related data. Use with caution.
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
+
+            {clearExisting && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Warning: This will delete all existing data.</p>
+                    <p className="mt-1">All current LifeLines, inquiries, and related records will be permanently removed.</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="overflow-x-auto">
               <table className="min-w-full border border-gray-200 rounded-lg">
@@ -456,12 +523,12 @@ export function WordPressImportWizard() {
               <Button onClick={() => setCurrentStep(1)} variant="outline">
                 Back
               </Button>
-              <Button 
+              <Button
                 onClick={handleImport}
                 disabled={isImporting}
-                className="bg-red-600 hover:bg-red-700"
+                className={clearExisting ? "bg-red-600 hover:bg-red-700" : ""}
               >
-                {isImporting ? 'Importing...' : 'Import Data'}
+                {isImporting ? 'Importing...' : clearExisting ? 'Clear & Import Data' : 'Import Data'}
               </Button>
             </div>
           </div>

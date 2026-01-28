@@ -33,8 +33,8 @@ async function getLifeLineForEdit(id: string, userId: string, userRole: string) 
     }
 
     // Check permissions - only admin, formation support, or the leader can edit
-    if (userRole !== 'ADMIN' && 
-        userRole !== 'FORMATION_SUPPORT' && 
+    if (userRole !== 'ADMIN' &&
+        userRole !== 'FORMATION_SUPPORT_TEAM' &&
         lifeLine.leaderId !== userId) {
       return null
     }

@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { 
-  FileText, 
-  MessageSquare, 
-  HeadphonesIcon, 
-  Vote, 
-  CheckCircle, 
+import {
+  FileText,
+  MessageSquare,
+  HeadphonesIcon,
+  Vote,
+  CheckCircle,
   XCircle,
   Clock,
   Users,
-  Download
+  Download,
+  UserCheck,
+  AlertTriangle
 } from 'lucide-react'
 import { UserRole } from '@prisma/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -160,8 +162,22 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Link 
-            href="/dashboard/formation-support/formation-requests" 
+          {/* Featured: Inquiry Tracking */}
+          <Link
+            href="/dashboard/formation-support/inquiry-tracking"
+            className="flex items-center p-4 border-2 border-secondary-200 rounded-lg bg-secondary-50 hover:bg-secondary-100 transition-colors col-span-1 md:col-span-2 lg:col-span-1"
+          >
+            <div className="bg-secondary-500 p-2 rounded-lg mr-3">
+              <UserCheck className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Inquiry Tracking</h3>
+              <p className="text-sm text-gray-600">Bird&apos;s eye view of all join requests</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/formation-support/formation-requests"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Vote className="h-6 w-6 text-primary-600 mr-3" />
@@ -171,8 +187,8 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
             </div>
           </Link>
 
-          <Link 
-            href="/dashboard/formation-support/support-tickets" 
+          <Link
+            href="/dashboard/formation-support/support-tickets"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <HeadphonesIcon className="h-6 w-6 text-red-600 mr-3" />
@@ -182,8 +198,8 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
             </div>
           </Link>
 
-          <Link 
-            href="/dashboard/formation-support/inquiries" 
+          <Link
+            href="/dashboard/formation-support/inquiries"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <MessageSquare className="h-6 w-6 text-blue-600 mr-3" />

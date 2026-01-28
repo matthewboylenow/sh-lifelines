@@ -45,9 +45,9 @@ export function FiltersSection() {
 
   if (!facets) {
     return (
-      <section className="bg-gray-100 py-12">
+      <section className="section-alt">
         <div className="container mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md border p-8 max-w-6xl mx-auto text-center">
+          <div className="dashboard-card p-8 max-w-6xl mx-auto text-center">
             <LoadingSpinner />
             <p className="mt-4 text-gray-600">Loading filters...</p>
           </div>
@@ -57,15 +57,15 @@ export function FiltersSection() {
   }
 
   return (
-    <section className="bg-gray-100 py-12">
+    <section className="section-alt">
       <div className="container mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-md border p-8 max-w-6xl mx-auto">
+        <div className="dashboard-card-gradient p-8 max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-bold text-gray-900">
-              LifeLine Filters
+            <h3 className="section-heading text-2xl">
+              Find Your LifeLine
             </h3>
             {hasActiveFilters && (
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              <span className="bg-secondary-100 text-secondary-700 px-4 py-1.5 rounded-full text-sm font-semibold">
                 {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
               </span>
             )}
@@ -90,7 +90,7 @@ export function FiltersSection() {
                       <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"
-                          className="rounded border-gray-300 text-primary focus:ring-primary mr-3"
+                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 mr-3"
                           checked={filters.agesStages?.includes(option.value) || false}
                           onChange={() => toggleFilter('agesStages', option.value)}
                         />
@@ -127,7 +127,7 @@ export function FiltersSection() {
                       <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"
-                          className="rounded border-gray-300 text-primary focus:ring-primary mr-3"
+                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 mr-3"
                           checked={filters.frequencies?.includes(option.value as MeetingFrequency) || false}
                           onChange={() => toggleFilter('frequencies', option.value)}
                         />
@@ -188,7 +188,7 @@ export function FiltersSection() {
                       <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"
-                          className="rounded border-gray-300 text-primary focus:ring-primary mr-3"
+                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 mr-3"
                           checked={filters.groupTypes?.includes(option.value as GroupType) || false}
                           onChange={() => toggleFilter('groupTypes', option.value)}
                         />

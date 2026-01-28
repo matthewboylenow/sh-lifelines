@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Users, 
@@ -45,13 +46,27 @@ interface AdminStats {
 }
 
 export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'lifelines' | 'users' | 'resources' | 'settings'>('overview')
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // Read initial tab from URL query param
+  const tabParam = searchParams.get('tab')
+  const validTabs = ['overview', 'lifelines', 'users', 'resources', 'settings'] as const
+  const initialTab = validTabs.includes(tabParam as any) ? (tabParam as typeof validTabs[number]) : 'overview'
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'lifelines' | 'users' | 'resources' | 'settings'>(initialTab)
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [lifeLines, setLifeLines] = useState<LifeLineWithLeader[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<LifeLineStatus | 'ALL'>('ALL')
+
+  // Update URL when tab changes (without full navigation)
+  const handleTabChange = (tab: typeof validTabs[number]) => {
+    setActiveTab(tab)
+    router.replace(`/dashboard/admin?tab=${tab}`, { scroll: false })
+  }
 
   useEffect(() => {
     fetchAdminData()
@@ -179,7 +194,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => handleTabChange(tab.id as any)}
                 className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-primary-500 text-primary-600'
@@ -289,8 +304,8 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={() => setActiveTab('lifelines')}
+                <Button
+                  onClick={() => handleTabChange('lifelines')}
                   className="flex items-center justify-center"
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
@@ -308,9 +323,9 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
                 </Link>
               </div>
               <div className="flex flex-col gap-2">
-                <Button 
+                <Button
                   variant="secondary"
-                  onClick={() => setActiveTab('users')}
+                  onClick={() => handleTabChange('users')}
                   className="flex items-center justify-center"
                 >
                   <Users className="h-4 w-4 mr-2" />

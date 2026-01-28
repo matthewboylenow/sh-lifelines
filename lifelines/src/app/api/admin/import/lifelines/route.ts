@@ -28,7 +28,8 @@ const ImportLifeLineSchema = z.object({
 
 const ImportRequestSchema = z.object({
   data: z.array(ImportLifeLineSchema),
-  clearExisting: z.boolean().default(false)
+  clearExisting: z.boolean().default(false),
+  duplicateHandling: z.enum(['skip', 'update', 'replace_all']).default('skip'),
 })
 
 export async function POST(request: NextRequest) {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { data: importData, clearExisting } = ImportRequestSchema.parse(body)
+    const { data: importData, clearExisting, duplicateHandling } = ImportRequestSchema.parse(body)
 
     const results = {
       imported: 0,
@@ -116,13 +117,52 @@ export async function POST(request: NextRequest) {
         })
 
         if (existingLifeLine && !clearExisting) {
-          results.skipped++
-          results.details.push({
-            identifier,
-            status: 'skipped',
-            message: 'LifeLine with this title already exists'
-          })
-          continue
+          if (duplicateHandling === 'skip') {
+            results.skipped++
+            results.details.push({
+              identifier,
+              status: 'skipped',
+              message: 'LifeLine with this title already exists (skipped)'
+            })
+            continue
+          } else if (duplicateHandling === 'update') {
+            // Update the existing LifeLine with imported data
+            const groupType = mapGroupTypeToEnum(validatedData.groupType)
+            const meetingFrequency = mapMeetingFrequencyToEnum(validatedData.meetingFrequency)
+            const dayOfWeek = mapDayOfWeekToEnum(validatedData.dayOfWeek)
+            const status = mapStatusToEnum(validatedData.status)
+
+            await prisma.lifeLine.update({
+              where: { id: existingLifeLine.id },
+              data: {
+                description: validatedData.description || existingLifeLine.description,
+                subtitle: validatedData.subtitle || existingLifeLine.subtitle,
+                groupLeader: validatedData.groupLeader || existingLifeLine.groupLeader,
+                dayOfWeek: dayOfWeek || existingLifeLine.dayOfWeek,
+                meetingTime: validatedData.meetingTime || existingLifeLine.meetingTime,
+                location: validatedData.location || existingLifeLine.location,
+                meetingFrequency: meetingFrequency || existingLifeLine.meetingFrequency,
+                groupType: groupType || existingLifeLine.groupType,
+                agesStages: validatedData.agesStages || existingLifeLine.agesStages,
+                maxParticipants: validatedData.maxParticipants || existingLifeLine.maxParticipants,
+                duration: validatedData.duration || existingLifeLine.duration,
+                cost: validatedData.cost ? String(validatedData.cost) : existingLifeLine.cost,
+                childcare: validatedData.childcare !== undefined ? validatedData.childcare : existingLifeLine.childcare,
+                imageUrl: validatedData.imageUrl || existingLifeLine.imageUrl,
+                status: status,
+                isVisible: status === 'PUBLISHED',
+              }
+            })
+
+            results.imported++
+            results.details.push({
+              identifier,
+              status: 'imported',
+              message: 'Updated existing LifeLine with imported data'
+            })
+            continue
+          }
+          // If duplicateHandling is 'replace_all', continue to create new (though this shouldn't happen with clearExisting false)
         }
 
         // Create or find the leader user

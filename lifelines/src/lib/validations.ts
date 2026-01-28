@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { UserRole, GroupType, MeetingFrequency, DayOfWeek, TicketPriority, ResourceType } from '@prisma/client'
+import { UserRole, GroupType, MeetingFrequency, DayOfWeek, TicketPriority, ResourceType, InquirySource } from '@prisma/client'
 
 // User validations
 export const registerSchema = z.object({
@@ -66,10 +66,14 @@ export const createInquirySchema = z.object({
   personPhone: z.string().optional(),
   message: z.string().optional(),
   lifeLineId: z.string().cuid('Invalid LifeLine ID'),
+  source: z.nativeEnum(InquirySource).optional().default('PUBLIC_WEBSITE'),
 })
 
 export const updateInquiryStatusSchema = z.object({
   status: z.enum(['UNDECIDED', 'JOINED', 'NOT_JOINED']),
+  notJoinedReason: z.string().optional().nullable(),
+  leaderNotes: z.string().optional().nullable(),
+  lastContactedAt: z.string().datetime().optional().nullable(),
 })
 
 // Support Ticket validations

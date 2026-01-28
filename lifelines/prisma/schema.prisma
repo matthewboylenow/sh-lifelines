@@ -209,15 +209,20 @@ model Inquiry {
   personPhone     String?
   message         String?       @db.Text
   status          InquiryStatus @default(UNDECIDED)
-  
+  source          InquirySource @default(PUBLIC_WEBSITE)
+  notJoinedReason String?       @db.Text  // Required when status is NOT_JOINED
+  leaderNotes     String?       @db.Text  // Optional notes from the leader
+
   // Timestamps
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  
+  joinedAt        DateTime?     // When status changed to JOINED
+  lastContactedAt DateTime?     // When leader last reached out
+
   // Relationships
   lifeLineId      String
   lifeLine        LifeLine      @relation(fields: [lifeLineId], references: [id])
-  
+
   @@map("inquiries")
 }
 
@@ -225,6 +230,15 @@ enum InquiryStatus {
   UNDECIDED
   JOINED
   NOT_JOINED
+}
+
+enum InquirySource {
+  PUBLIC_WEBSITE
+  DIRECT_REFERRAL
+  SOCIAL_MEDIA
+  PARISH_EVENT
+  WORD_OF_MOUTH
+  OTHER
 }
 
 // Support Ticket System

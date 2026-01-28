@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Users, MessageSquare, BookOpen, Eye, Edit, Trash2, Mail, Phone, User } from 'lucide-react'
+import { Plus, Users, MessageSquare, BookOpen, Eye, Edit, Trash2, Mail, Phone, User, UserCheck, Download, Calendar } from 'lucide-react'
 import { UserRole } from '@prisma/client'
 import { LifeLineWithLeader, InquiryWithLifeLine } from '@/types'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/Button'
 import { formatDate, formatInquiryStatus } from '@/utils/formatters'
 import { EmailMembersModal } from './email-members-modal'
+import { RequestMeetingModal } from './request-meeting-modal'
 
 interface SupportContact {
   id: string
@@ -33,10 +34,27 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
   const [error, setError] = useState<string | null>(null)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [selectedLifeLine, setSelectedLifeLine] = useState<{ id: string; title: string } | null>(null)
+  const [meetingModalOpen, setMeetingModalOpen] = useState(false)
+  const [selectedMeetingLifeLine, setSelectedMeetingLifeLine] = useState<{
+    id: string
+    title: string
+    supportContact: { id: string; displayName: string | null; email: string }
+  } | null>(null)
 
   const openEmailModal = (lifeLineId: string, title: string) => {
     setSelectedLifeLine({ id: lifeLineId, title })
     setEmailModalOpen(true)
+  }
+
+  const openMeetingModal = (lifeLine: LifeLineWithSupport) => {
+    if (lifeLine.supportContact) {
+      setSelectedMeetingLifeLine({
+        id: lifeLine.id,
+        title: lifeLine.title,
+        supportContact: lifeLine.supportContact
+      })
+      setMeetingModalOpen(true)
+    }
   }
 
   useEffect(() => {
@@ -100,7 +118,23 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
   return (
     <div className="space-y-8">
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Featured: My Members */}
+        <Link
+          href="/dashboard/leader/members"
+          className="dashboard-card-gradient hover:shadow-lg transition-all col-span-1 md:col-span-2 lg:col-span-1"
+        >
+          <div className="flex items-center">
+            <div className="bg-green-500 p-3 rounded-lg">
+              <UserCheck className="h-6 w-6 text-white" />
+            </div>
+            <div className="ml-4">
+              <h3 className="font-semibold text-gray-900">My Members</h3>
+              <p className="text-sm text-gray-600">View joined members & export</p>
+            </div>
+          </div>
+        </Link>
+
         <Link href="/dashboard/leader/inquiries" className="dashboard-card hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="bg-secondary-100 p-3 rounded-lg">
@@ -127,8 +161,8 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
 
         <div className="dashboard-card">
           <div className="flex items-center">
-            <div className="bg-green-100 p-3 rounded-lg">
-              <Users className="h-6 w-6 text-green-600" />
+            <div className="bg-primary-100 p-3 rounded-lg">
+              <Users className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
               <h3 className="font-semibold text-gray-900">
@@ -239,6 +273,14 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                             </a>
                           )}
                         </div>
+                        {/* Request Meeting Button */}
+                        <button
+                          onClick={() => openMeetingModal(lifeLine)}
+                          className="mt-3 inline-flex items-center text-xs font-medium text-secondary-700 hover:text-secondary-800 bg-secondary-100 hover:bg-secondary-200 px-3 py-1.5 rounded-full transition-colors"
+                        >
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Request a Meeting
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -323,6 +365,21 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
           }}
           lifeLineId={selectedLifeLine.id}
           lifeLineTitle={selectedLifeLine.title}
+        />
+      )}
+
+      {/* Request Meeting Modal */}
+      {selectedMeetingLifeLine && (
+        <RequestMeetingModal
+          isOpen={meetingModalOpen}
+          onClose={() => {
+            setMeetingModalOpen(false)
+            setSelectedMeetingLifeLine(null)
+          }}
+          lifeLineId={selectedMeetingLifeLine.id}
+          lifeLineTitle={selectedMeetingLifeLine.title}
+          supportContact={selectedMeetingLifeLine.supportContact}
+          leaderId={userId}
         />
       )}
     </div>

@@ -109,9 +109,16 @@ export async function POST(req: NextRequest) {
       return createErrorResponse('This LifeLine is not accepting inquiries', 400)
     }
 
-    // Create the inquiry
+    // Create the inquiry with source tracking
     const inquiry = await prisma.inquiry.create({
-      data: validatedData,
+      data: {
+        personName: validatedData.personName,
+        personEmail: validatedData.personEmail,
+        personPhone: validatedData.personPhone,
+        message: validatedData.message,
+        lifeLineId: validatedData.lifeLineId,
+        source: validatedData.source || 'PUBLIC_WEBSITE',
+      },
       include: {
         lifeLine: {
           include: {

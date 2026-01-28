@@ -10,7 +10,7 @@ export default async function CreateLifeLinePage() {
   const session = await getServerSession(authOptions)
 
   // Check if user is authenticated and has permission to create LifeLines
-  if (!session || !['ADMIN', 'FORMATION_SUPPORT'].includes(session.user.role)) {
+  if (!session || !['ADMIN', 'FORMATION_SUPPORT_TEAM'].includes(session.user.role)) {
     redirect('/login')
   }
 
