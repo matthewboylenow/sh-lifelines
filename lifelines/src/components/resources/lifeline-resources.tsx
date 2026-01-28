@@ -226,7 +226,7 @@ export function LifeLineResources({ userRole }: LifeLineResourcesProps) {
               Our Formation & Support team is here to help with any questions about leading your LifeLine.
             </p>
             <div className="flex flex-wrap gap-2">
-              <a href="mailto:support@sainthelen.org">
+              <a href="mailto:lifelines@sainthelen.org">
                 <Button size="sm" variant="outline">
                   Contact Support Team
                 </Button>

@@ -56,8 +56,8 @@ model LifeLine {
   isVisible           Boolean   @default(true)
   
   // Group Details
-  groupLeader         String
-  leaderEmail         String
+  groupLeader         String?
+  leaderEmail         String?
   location            String?
   agesStages          String[]  // Array of selected options
   meetingFrequency    MeetingFrequency?
@@ -80,8 +80,8 @@ model LifeLine {
   updatedAt           DateTime  @updatedAt
   
   // Relationships
-  leaderId            String
-  leader              User      @relation("LifeLineLeader", fields: [leaderId], references: [id])
+  leaderId            String?
+  leader              User?     @relation("LifeLineLeader", fields: [leaderId], references: [id])
   supportContactId    String?
   supportContact      User?     @relation("LifeLineSupportContact", fields: [supportContactId], references: [id])
   inquiries           Inquiry[]

@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { 
-  createErrorResponse, 
-  createSuccessResponse, 
+import {
+  createErrorResponse,
+  createSuccessResponse,
   parsePaginationParams,
-  createPaginatedResponse 
+  createPaginatedResponse
 } from '@/lib/api-utils'
 import { createLifeLineSchema } from '@/lib/validations'
 import { LifeLineStatus, GroupType, MeetingFrequency, DayOfWeek } from '@prisma/client'
+import { ZodError } from 'zod'
 
 // GET /api/lifelines - List LifeLines with advanced filtering and search
 export async function GET(req: NextRequest) {
@@ -315,35 +316,45 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+
+    // Validate the incoming data
     const validatedData = createLifeLineSchema.parse(body)
-    
+
     // Create the LifeLine with the validated data
     const lifeLine = await prisma.lifeLine.create({
       data: {
         title: validatedData.title,
-        subtitle: body.subtitle || null,
+        subtitle: validatedData.subtitle || null,
         description: validatedData.description || null,
-        groupLeader: body.groupLeader,
-        leaderEmail: body.leaderEmail,
-        leaderId: body.leaderId || null,
+        groupLeader: validatedData.groupLeader || null,
+        leaderEmail: validatedData.leaderEmail || null,
+        leaderId: validatedData.leaderId || null,
+        supportContactId: validatedData.supportContactId || null,
         dayOfWeek: validatedData.dayOfWeek || null,
         meetingTime: validatedData.meetingTime || null,
-        location: body.location || null,
+        location: validatedData.location || null,
         meetingFrequency: validatedData.meetingFrequency || null,
         groupType: validatedData.groupType || null,
         agesStages: validatedData.agesStages || [],
-        maxParticipants: body.maxParticipants || null,
-        duration: body.duration || null,
-        cost: body.cost || null,
-        childcare: body.childcare || false,
+        maxParticipants: validatedData.maxParticipants || null,
+        duration: validatedData.duration || null,
+        cost: validatedData.cost || null,
+        childcare: validatedData.childcare || false,
         imageUrl: validatedData.imageUrl || null,
         imageAlt: validatedData.imageAlt || null,
         imageAttribution: validatedData.imageAttribution || null,
-        status: body.status || 'DRAFT',
-        isVisible: body.isVisible ?? true,
+        status: validatedData.status || 'DRAFT',
+        isVisible: validatedData.isVisible ?? true,
       },
       include: {
         leader: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+          }
+        },
+        supportContact: {
           select: {
             id: true,
             displayName: true,
@@ -361,6 +372,24 @@ export async function POST(req: NextRequest) {
     return createSuccessResponse(lifeLine, 'LifeLine created successfully')
   } catch (error) {
     console.error('Error creating LifeLine:', error)
+
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
+      const errorMessages = error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      return createErrorResponse(`Validation error: ${errorMessages}`, 400)
+    }
+
+    // Handle Prisma errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const prismaError = error as { code: string; message?: string }
+      if (prismaError.code === 'P2002') {
+        return createErrorResponse('A LifeLine with this information already exists', 409)
+      }
+      if (prismaError.code === 'P2003') {
+        return createErrorResponse('Invalid reference: leader or support contact not found', 400)
+      }
+    }
+
     return createErrorResponse('Failed to create LifeLine', 500)
   }
 }

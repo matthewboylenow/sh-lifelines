@@ -75,17 +75,19 @@ export async function POST(
         return createErrorResponse('No members with email addresses found', 400)
       }
 
-      // Get leader info
-      const leader = lifeLine.leader || {
-        displayName: lifeLine.groupLeader,
-        email: lifeLine.leaderEmail
+      // Get leader info - use leader account if available, otherwise use stored groupLeader/leaderEmail
+      const leaderDisplayName = lifeLine.leader?.displayName || lifeLine.groupLeader || 'LifeLine Leader'
+      const leaderEmail = lifeLine.leader?.email || lifeLine.leaderEmail
+
+      if (!leaderEmail) {
+        return createErrorResponse('No leader email configured for this LifeLine', 400)
       }
 
       // Send the email
       const result = await sendLeaderMemberEmail(
         {
-          displayName: leader.displayName || lifeLine.groupLeader,
-          email: leader.email || lifeLine.leaderEmail
+          displayName: leaderDisplayName,
+          email: leaderEmail
         },
         lifeLine.title,
         recipientEmails,

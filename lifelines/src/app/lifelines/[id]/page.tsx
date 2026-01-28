@@ -258,20 +258,22 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
               </div>
 
               {/* Leader Information */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-primary-900 mb-4">LifeLine Leader</h3>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl font-bold text-primary-600">
-                      {lifeLine.groupLeader.charAt(0).toUpperCase()}
-                    </span>
+              {lifeLine.groupLeader && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-xl font-bold text-primary-900 mb-4">LifeLine Leader</h3>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl font-bold text-primary-600">
+                        {lifeLine.groupLeader.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">{lifeLine.groupLeader}</h4>
+                    <p className="text-sm text-gray-600">
+                      Submit an inquiry above to connect with the leader
+                    </p>
                   </div>
-                  <h4 className="font-semibold text-gray-900 mb-2">{lifeLine.groupLeader}</h4>
-                  <p className="text-sm text-gray-600">
-                    Submit an inquiry above to connect with the leader
-                  </p>
                 </div>
-              </div>
+              )}
 
               {/* Quick Stats - Only visible to leaders/admins */}
               {canEdit && (

@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       try {
         await sendInquiryNotification(
           lifeLine.leader.email,
-          lifeLine.leader.displayName || lifeLine.groupLeader,
+          lifeLine.leader.displayName || lifeLine.groupLeader || 'LifeLine Leader',
           lifeLine.title,
           {
             personName: inquiry.personName,

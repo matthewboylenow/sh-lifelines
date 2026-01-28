@@ -151,7 +151,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
 
   const filteredLifeLines = lifeLines.filter(lifeline => {
     const matchesSearch = lifeline.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lifeline.groupLeader.toLowerCase().includes(searchTerm.toLowerCase())
+                         (lifeline.groupLeader?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
     const matchesStatus = statusFilter === 'ALL' || lifeline.status === statusFilter
     return matchesSearch && matchesStatus
   })

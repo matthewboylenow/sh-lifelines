@@ -77,12 +77,21 @@ function DefaultErrorFallback({ error, resetError }: ErrorBoundaryFallbackProps)
         
         <div className="mt-6 pt-4 border-t border-gray-200">
           <p className="text-sm text-gray-500">
-            If this problem continues, please contact{' '}
-            <a 
-              href="mailto:support@sainthelen.org" 
+            For general help, contact{' '}
+            <a
+              href="mailto:lifelines@sainthelen.org"
               className="text-primary-600 hover:underline"
             >
-              support@sainthelen.org
+              lifelines@sainthelen.org
+            </a>
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            For technical issues, contact{' '}
+            <a
+              href="mailto:mboyle@sainthelen.org"
+              className="text-primary-600 hover:underline"
+            >
+              mboyle@sainthelen.org
             </a>
           </p>
         </div>

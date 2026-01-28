@@ -269,9 +269,15 @@ export default function CreateSupportTicketPage() {
           <div className="mt-8 pt-6 border-t border-gray-200">
             <h3 className="text-sm font-medium text-gray-900 mb-2">Need Immediate Help?</h3>
             <p className="text-sm text-gray-600">
-              For urgent issues outside business hours, you can also contact us at{' '}
-              <a href="mailto:support@sainthelen.org" className="text-primary hover:underline">
-                support@sainthelen.org
+              For urgent issues, contact{' '}
+              <a href="mailto:lifelines@sainthelen.org" className="text-primary hover:underline">
+                lifelines@sainthelen.org
+              </a>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              For technical issues:{' '}
+              <a href="mailto:mboyle@sainthelen.org" className="text-primary hover:underline">
+                mboyle@sainthelen.org
               </a>
             </p>
           </div>

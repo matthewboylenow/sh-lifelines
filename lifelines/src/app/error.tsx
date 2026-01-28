@@ -99,18 +99,28 @@ export default function Error({ error, reset }: ErrorPageProps) {
               <MessageCircle className="w-4 h-4 mr-2" />
               Need help?
             </div>
-            
+
             <p className="text-sm text-gray-500">
-              Contact our support team at{' '}
-              <a 
-                href="mailto:support@sainthelen.org" 
+              For general help, contact{' '}
+              <a
+                href="mailto:lifelines@sainthelen.org"
                 className="text-primary-600 hover:text-primary-800 underline font-medium"
               >
-                support@sainthelen.org
+                lifelines@sainthelen.org
               </a>
             </p>
-            
-            <p className="text-xs text-gray-400 mt-2">
+
+            <p className="text-sm text-gray-500 mt-2">
+              For technical issues, contact{' '}
+              <a
+                href="mailto:mboyle@sainthelen.org"
+                className="text-primary-600 hover:text-primary-800 underline font-medium"
+              >
+                mboyle@sainthelen.org
+              </a>
+            </p>
+
+            <p className="text-xs text-gray-400 mt-3">
               Please include what you were doing when this error occurred.
             </p>
           </div>

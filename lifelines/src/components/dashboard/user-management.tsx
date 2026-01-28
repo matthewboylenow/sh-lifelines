@@ -75,7 +75,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
         throw new Error(data.error || 'Failed to fetch users')
       }
       
-      setUsers(data.data || [])
+      setUsers(data.data?.items || [])
       
     } catch (error) {
       console.error('Users error:', error)

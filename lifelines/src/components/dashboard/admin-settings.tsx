@@ -57,9 +57,9 @@ export function AdminSettings() {
                   </a>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Support</h3>
-                  <a href="mailto:support@sainthelen.org" className="text-primary-600 hover:text-primary-700 font-medium">
-                    support@sainthelen.org
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Technical Support</h3>
+                  <a href="mailto:mboyle@sainthelen.org" className="text-primary-600 hover:text-primary-700 font-medium">
+                    mboyle@sainthelen.org
                   </a>
                 </div>
               </div>

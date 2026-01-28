@@ -113,15 +113,26 @@ export default function NotFound() {
         {/* Contact Support */}
         <div className="text-center bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-2">Still need help?</h3>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 mb-3">
             If you believe this page should exist, please let us know.
           </p>
-          <a 
-            href="mailto:support@sainthelen.org?subject=404 Error - Page Not Found"
-            className="text-primary-600 hover:text-primary-800 underline font-medium"
-          >
-            Contact Support Team
-          </a>
+          <p className="text-sm">
+            <a
+              href="mailto:lifelines@sainthelen.org?subject=404 Error - Page Not Found"
+              className="text-primary-600 hover:text-primary-800 underline font-medium"
+            >
+              lifelines@sainthelen.org
+            </a>
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            For technical issues:{' '}
+            <a
+              href="mailto:mboyle@sainthelen.org?subject=Technical Issue - 404 Error"
+              className="text-primary-600 hover:text-primary-800 underline"
+            >
+              mboyle@sainthelen.org
+            </a>
+          </p>
         </div>
         
         {/* Footer */}
