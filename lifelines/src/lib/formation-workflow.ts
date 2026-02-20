@@ -146,7 +146,6 @@ export async function approveFormationRequest(requestId: string) {
   return {
     lifeLine,
     leader,
-    tempPassword // Only for logging/debugging - don't expose this in API responses
   }
 }
 

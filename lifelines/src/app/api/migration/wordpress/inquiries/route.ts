@@ -1,10 +1,12 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { 
-  createErrorResponse, 
-  createSuccessResponse 
+import {
+  createErrorResponse,
+  createSuccessResponse
 } from '@/lib/api-utils'
 import { InquiryStatus } from '@prisma/client'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 
 // WordPress inquiry import schema
@@ -38,6 +40,12 @@ function mapInquiryStatus(wpStatus: string | undefined): InquiryStatus {
 // POST /api/migration/wordpress/inquiries - Import WordPress inquiries
 export async function POST(req: NextRequest) {
   try {
+    // Auth check: require Admin role
+    const session = await getServerSession(authOptions)
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return createErrorResponse('Unauthorized: Admin access required', 401)
+    }
+
     const body = await req.json()
     const { inquiries } = wordpressInquirySchema.parse(body)
 

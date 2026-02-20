@@ -47,6 +47,59 @@ const LIFELINE_FIELD_MAPPINGS: FieldMapping[] = [
 
 type DuplicateHandling = 'skip' | 'update' | 'replace_all'
 
+// RFC 4180-compliant CSV parser that handles quoted fields, commas in values, and escaped quotes
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = []
+  let current = ''
+  let inQuotes = false
+  let row: string[] = []
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+    const next = text[i + 1]
+
+    if (inQuotes) {
+      if (char === '"' && next === '"') {
+        // Escaped quote inside quoted field
+        current += '"'
+        i++ // skip next quote
+      } else if (char === '"') {
+        // End of quoted field
+        inQuotes = false
+      } else {
+        current += char
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true
+      } else if (char === ',') {
+        row.push(current.trim())
+        current = ''
+      } else if (char === '\n' || (char === '\r' && next === '\n')) {
+        row.push(current.trim())
+        if (row.some(cell => cell !== '')) {
+          rows.push(row)
+        }
+        row = []
+        current = ''
+        if (char === '\r') i++ // skip \n after \r
+      } else {
+        current += char
+      }
+    }
+  }
+
+  // Handle last row (no trailing newline)
+  if (current || row.length > 0) {
+    row.push(current.trim())
+    if (row.some(cell => cell !== '')) {
+      rows.push(row)
+    }
+  }
+
+  return rows
+}
+
 export function WordPressImportWizard() {
   const [currentStep, setCurrentStep] = useState(0)
   const [importData, setImportData] = useState<ImportData | null>(null)
@@ -99,10 +152,13 @@ export function WordPressImportWizard() {
           headers = data.length > 0 ? Object.keys(data[0]) : []
         } else if (file.name.endsWith('.csv')) {
           const csvText = e.target?.result as string
-          const lines = csvText.split('\n').filter(line => line.trim())
-          headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
-          data = lines.slice(1).map(line => {
-            const values = line.split(',').map(v => v.trim().replace(/"/g, ''))
+          const rows = parseCSV(csvText)
+          if (rows.length === 0) {
+            alert('CSV file appears to be empty')
+            return
+          }
+          headers = rows[0]
+          data = rows.slice(1).map(values => {
             const row: any = {}
             headers.forEach((header, index) => {
               row[header] = values[index] || ''

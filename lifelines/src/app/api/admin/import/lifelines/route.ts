@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
               results.details.push({
                 identifier,
                 status: 'imported',
-                message: `Created new leader account: ${leaderEmail} (temp password: ${tempPassword})`
+                message: `Created new leader account: ${leaderEmail}`
               })
             } catch (error) {
               // If email already exists, try to find the user

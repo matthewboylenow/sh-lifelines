@@ -35,6 +35,7 @@ model User {
   votes                FormationVote[]
   formationComments    FormationComment[]
   ticketResponses      TicketResponse[]
+  removedInquiries     Inquiry[]         @relation("InquiryRemovedBy")
 
   @@map("users")
 }
@@ -212,6 +213,10 @@ model Inquiry {
   source          InquirySource @default(PUBLIC_WEBSITE)
   notJoinedReason String?       @db.Text  // Required when status is NOT_JOINED
   leaderNotes     String?       @db.Text  // Optional notes from the leader
+  removedReason   String?       @db.Text  // Required when status is REMOVED
+  removedAt       DateTime?               // When member was removed
+  removedById     String?                 // Who removed the member
+  removedBy       User?         @relation("InquiryRemovedBy", fields: [removedById], references: [id])
 
   // Timestamps
   createdAt       DateTime      @default(now())
@@ -230,6 +235,7 @@ enum InquiryStatus {
   UNDECIDED
   JOINED
   NOT_JOINED
+  REMOVED
 }
 
 enum InquirySource {

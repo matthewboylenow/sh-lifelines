@@ -89,6 +89,10 @@ export const updateInquiryStatusSchema = z.object({
   lastContactedAt: z.string().datetime().optional().nullable(),
 })
 
+export const removeInquiryMemberSchema = z.object({
+  removedReason: z.string().min(1, 'A reason for removal is required'),
+})
+
 // Support Ticket validations
 export const createSupportTicketSchema = z.object({
   subject: z.string().min(3, 'Subject must be at least 3 characters'),
@@ -141,7 +145,7 @@ export const formationRequestFiltersSchema = z.object({
 })
 
 export const inquiryFiltersSchema = z.object({
-  status: z.enum(['UNDECIDED', 'JOINED', 'NOT_JOINED']).optional(),
+  status: z.enum(['UNDECIDED', 'JOINED', 'NOT_JOINED', 'REMOVED']).optional(),
   lifeLineId: z.string().cuid().optional(),
   search: z.string().optional(),
 })

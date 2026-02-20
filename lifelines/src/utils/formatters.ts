@@ -68,6 +68,7 @@ export function formatInquiryStatus(status: InquiryStatus): string {
     [InquiryStatus.UNDECIDED]: 'Undecided',
     [InquiryStatus.JOINED]: 'Joined',
     [InquiryStatus.NOT_JOINED]: 'Not Joined',
+    [InquiryStatus.REMOVED]: 'Removed',
   }
   return statusMap[status] || status
 }
