@@ -11,6 +11,10 @@ import { prisma } from '@/lib/prisma'
 import { LifeLineWithLeader } from '@/types'
 import { formatGroupType, formatMeetingFrequency, formatDayOfWeek } from '@/utils/formatters'
 
+function decodeEntities(str: string) {
+  return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
+}
+
 interface PageProps {
   params: Promise<{
     id: string
@@ -120,7 +124,7 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
           <div className="absolute top-6 right-6 flex gap-2">
             {lifeLine.agesStages && lifeLine.agesStages.length > 0 && (
               <span className="bg-secondary-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                {lifeLine.agesStages[0]}
+                {decodeEntities(lifeLine.agesStages[0])}
               </span>
             )}
             {lifeLine.status === 'FULL' && (

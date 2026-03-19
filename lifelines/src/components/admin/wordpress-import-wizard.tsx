@@ -234,7 +234,23 @@ export function WordPressImportWizard() {
                 value = ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())
                 break
               case 'array':
-                value = typeof value === 'string' ? value.split(',').map(v => v.trim()) : []
+                if (typeof value === 'string') {
+                  const cleaned = value.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
+                  // Handle JSON array format like ["Men","Seniors"]
+                  if (cleaned.startsWith('[')) {
+                    try {
+                      value = JSON.parse(cleaned)
+                    } catch {
+                      value = cleaned.replace(/[\[\]"]/g, '').split(',').map(v => v.trim()).filter(Boolean)
+                    }
+                  } else {
+                    value = cleaned.split(',').map(v => v.trim()).filter(Boolean)
+                  }
+                } else if (Array.isArray(value)) {
+                  // Already an array (from JSON import)
+                } else {
+                  value = []
+                }
                 break
               case 'date':
                 value = new Date(value).toISOString()

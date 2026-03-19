@@ -178,6 +178,10 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
     }
   }
 
+  const stripHtml = (html: string) => {
+    return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
+  }
+
   const filteredLifeLines = lifeLines.filter(lifeline => {
     const matchesSearch = lifeline.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (lifeline.groupLeader?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
@@ -464,7 +468,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
                               {lifeline.title}
                             </div>
                             <div className="text-sm text-gray-500 max-w-xs truncate">
-                              {lifeline.description}
+                              {lifeline.description ? stripHtml(lifeline.description) : ''}
                             </div>
                           </div>
                         </div>

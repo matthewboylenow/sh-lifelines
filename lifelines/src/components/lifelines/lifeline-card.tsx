@@ -8,6 +8,10 @@ interface LifeLineCardProps {
   lifeLine: LifeLineWithLeader
 }
 
+function decodeEntities(str: string) {
+  return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
+}
+
 export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
   const defaultImage = '/images/default-lifeline.jpg'
 
@@ -22,7 +26,7 @@ export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
         {lifeLine.agesStages && lifeLine.agesStages.length > 0 && (
           <div className="absolute top-4 left-4">
             <span className="bg-secondary-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-              {lifeLine.agesStages[0]}
+              {decodeEntities(lifeLine.agesStages[0])}
             </span>
           </div>
         )}
