@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { formatDate, formatInquiryStatus } from '@/utils/formatters'
 import { EmailMembersModal } from './email-members-modal'
 import { RequestMeetingModal } from './request-meeting-modal'
+import { useToast } from '@/components/ui/toast'
 
 interface SupportContact {
   id: string
@@ -28,6 +29,7 @@ interface LeaderDashboardProps {
 }
 
 export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
+  const { toast } = useToast()
   const [lifeLines, setLifeLines] = useState<LifeLineWithSupport[]>([])
   const [recentInquiries, setRecentInquiries] = useState<InquiryWithLifeLine[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,6 +62,25 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
   useEffect(() => {
     fetchDashboardData()
   }, [userId])
+
+  const deleteLifeLine = async (lifeLineId: string, title: string) => {
+    try {
+      const response = await fetch(`/api/lifelines/${lifeLineId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setLifeLines(prev => prev.filter(ll => ll.id !== lifeLineId))
+        toast({ title: 'LifeLine deleted', description: `"${title}" has been removed.`, type: 'success' })
+      } else {
+        const data = await response.json()
+        toast({ title: 'Delete failed', description: data.error || 'Could not delete LifeLine.', type: 'error' })
+      }
+    } catch (error) {
+      console.error('Error deleting LifeLine:', error)
+      toast({ title: 'Delete failed', description: 'An unexpected error occurred.', type: 'error' })
+    }
+  }
 
   const fetchDashboardData = async () => {
     try {
@@ -226,8 +247,8 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                         className="text-gray-400 hover:text-red-600"
                         title="Delete"
                         onClick={() => {
-                          if (confirm('Are you sure you want to delete this LifeLine?')) {
-                            // Handle delete
+                          if (confirm(`Are you sure you want to delete "${lifeLine.title}"? This will also remove all related inquiries.`)) {
+                            deleteLifeLine(lifeLine.id, lifeLine.title)
                           }
                         }}
                       >

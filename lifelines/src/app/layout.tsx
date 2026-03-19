@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Libre_Franklin, Libre_Baskerville } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/providers/auth-provider'
+import { ToastProvider } from '@/components/ui/toast'
 
 const libreFranklin = Libre_Franklin({ 
   subsets: ['latin'],
@@ -32,7 +33,9 @@ export default function RootLayout({
     <html lang="en" className={`${libreFranklin.variable} ${libreBaskerville.variable}`}>
       <body className="min-h-screen bg-background">
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

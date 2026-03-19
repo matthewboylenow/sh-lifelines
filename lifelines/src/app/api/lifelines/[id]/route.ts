@@ -154,41 +154,73 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE /api/lifelines/[id] - Delete LifeLine
-export async function DELETE(req: NextRequest) {
+// PATCH /api/lifelines/[id] - Partial update (status, visibility, etc.)
+export async function PATCH(req: NextRequest) {
   try {
-    // Extract ID from URL
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/')
     const idIndex = pathParts.indexOf('lifelines') + 1
     const id = pathParts[idIndex]
-    
+
     if (!id) {
       return createErrorResponse('LifeLine ID not found', 400)
     }
 
-    // Check if LifeLine exists and has no inquiries
     const existingLifeLine = await prisma.lifeLine.findUnique({
       where: { id },
-      include: {
-        _count: {
-          select: {
-            inquiries: true
-          }
-        }
-      }
     })
 
     if (!existingLifeLine) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    if (existingLifeLine._count.inquiries > 0) {
-      return createErrorResponse('Cannot delete LifeLine with existing inquiries. Archive it instead.', 400)
+    const body = await req.json()
+
+    const updateData: any = {}
+    if (body.status !== undefined) {
+      updateData.status = body.status
+      updateData.isVisible = body.status === 'PUBLISHED'
+    }
+    if (body.isVisible !== undefined) {
+      updateData.isVisible = body.isVisible
     }
 
-    await prisma.lifeLine.delete({
-      where: { id }
+    const lifeLine = await prisma.lifeLine.update({
+      where: { id },
+      data: updateData,
+    })
+
+    return createSuccessResponse(lifeLine, 'LifeLine updated successfully')
+  } catch (error) {
+    console.error('Error patching LifeLine:', error)
+    return createErrorResponse('Failed to update LifeLine', 500)
+  }
+}
+
+// DELETE /api/lifelines/[id] - Delete LifeLine (cascades related inquiries)
+export async function DELETE(req: NextRequest) {
+  try {
+    const url = new URL(req.url)
+    const pathParts = url.pathname.split('/')
+    const idIndex = pathParts.indexOf('lifelines') + 1
+    const id = pathParts[idIndex]
+
+    if (!id) {
+      return createErrorResponse('LifeLine ID not found', 400)
+    }
+
+    const existingLifeLine = await prisma.lifeLine.findUnique({
+      where: { id },
+    })
+
+    if (!existingLifeLine) {
+      return createErrorResponse('LifeLine not found', 404)
+    }
+
+    // Delete related inquiries first, then the LifeLine
+    await prisma.$transaction(async (tx) => {
+      await tx.inquiry.deleteMany({ where: { lifeLineId: id } })
+      await tx.lifeLine.delete({ where: { id } })
     })
 
     return createSuccessResponse(null, 'LifeLine deleted successfully')

@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { UserManagement } from './user-management'
 import { ResourceManagement } from '@/components/admin/resource-management'
+import { useToast } from '@/components/ui/toast'
 
 interface AdminDashboardProps {
   userId: string
@@ -48,6 +49,7 @@ interface AdminStats {
 export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { toast } = useToast()
 
   // Read initial tab from URL query param
   const tabParam = searchParams.get('tab')
@@ -123,10 +125,10 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
     }
   }
 
-  const toggleLifeLineVisibility = async (lifeLineId: string, currentStatus: LifeLineStatus) => {
+  const toggleLifeLineVisibility = async (lifeLineId: string, currentStatus: LifeLineStatus, title: string) => {
     try {
       const newStatus = currentStatus === 'ARCHIVED' ? 'PUBLISHED' : 'ARCHIVED'
-      
+
       const response = await fetch(`/api/lifelines/${lifeLineId}`, {
         method: 'PATCH',
         headers: {
@@ -136,16 +138,43 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
       })
 
       if (response.ok) {
-        setLifeLines(prev => 
-          prev.map(lifeline => 
-            lifeline.id === lifeLineId 
+        setLifeLines(prev =>
+          prev.map(lifeline =>
+            lifeline.id === lifeLineId
               ? { ...lifeline, status: newStatus }
               : lifeline
           )
         )
+        toast({
+          title: newStatus === 'PUBLISHED' ? 'LifeLine published' : 'LifeLine hidden',
+          description: `"${title}" is now ${newStatus === 'PUBLISHED' ? 'visible to everyone' : 'hidden from public view'}.`,
+          type: newStatus === 'PUBLISHED' ? 'success' : 'info',
+        })
+      } else {
+        toast({ title: 'Update failed', description: 'Could not update LifeLine visibility.', type: 'error' })
       }
     } catch (error) {
       console.error('Error updating LifeLine visibility:', error)
+      toast({ title: 'Update failed', description: 'An unexpected error occurred.', type: 'error' })
+    }
+  }
+
+  const deleteLifeLine = async (lifeLineId: string, title: string) => {
+    try {
+      const response = await fetch(`/api/lifelines/${lifeLineId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setLifeLines(prev => prev.filter(ll => ll.id !== lifeLineId))
+        toast({ title: 'LifeLine deleted', description: `"${title}" has been removed.`, type: 'success' })
+      } else {
+        const data = await response.json()
+        toast({ title: 'Delete failed', description: data.error || 'Could not delete LifeLine.', type: 'error' })
+      }
+    } catch (error) {
+      console.error('Error deleting LifeLine:', error)
+      toast({ title: 'Delete failed', description: 'An unexpected error occurred.', type: 'error' })
     }
   }
 
@@ -477,7 +506,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
                             <Edit className="h-4 w-4" />
                           </Link>
                           <button
-                            onClick={() => toggleLifeLineVisibility(lifeline.id, lifeline.status)}
+                            onClick={() => toggleLifeLineVisibility(lifeline.id, lifeline.status, lifeline.title)}
                             className="text-gray-400 hover:text-yellow-600"
                             title={lifeline.status === 'ARCHIVED' ? 'Show LifeLine' : 'Hide LifeLine'}
                           >
@@ -491,8 +520,8 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
                             className="text-gray-400 hover:text-red-600"
                             title="Delete"
                             onClick={() => {
-                              if (confirm('Are you sure you want to delete this LifeLine?')) {
-                                // Handle delete
+                              if (confirm(`Are you sure you want to delete "${lifeline.title}"? This will also remove all related inquiries.`)) {
+                                deleteLifeLine(lifeline.id, lifeline.title)
                               }
                             }}
                           >
