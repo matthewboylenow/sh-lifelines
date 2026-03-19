@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -307,22 +309,6 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
       </div>
     </MainLayout>
   )
-}
-
-export async function generateStaticParams() {
-  const lifeLines = await prisma.lifeLine.findMany({
-    where: {
-      status: 'PUBLISHED',
-      isVisible: true,
-    },
-    select: {
-      id: true,
-    },
-  })
-
-  return lifeLines.map((lifeLine) => ({
-    id: lifeLine.id,
-  }))
 }
 
 export async function generateMetadata({ params }: PageProps) {

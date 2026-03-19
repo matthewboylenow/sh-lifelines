@@ -39,9 +39,9 @@ export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
         </div>
 
         {/* Leader Badge */}
-        <div className="absolute bottom-4 left-4">
-          <span className="bg-white/90 text-primary-700 px-3 py-1 rounded-full text-sm font-medium shadow-lg backdrop-blur-sm">
-            Leader: {lifeLine.groupLeader}
+        <div className="absolute bottom-4 left-4 right-4">
+          <span className="inline-block bg-white/90 text-primary-700 px-3 py-1 rounded-full text-sm font-medium shadow-lg backdrop-blur-sm max-w-full truncate">
+            Leader{lifeLine.groupLeader && lifeLine.groupLeader.includes(',') ? 's' : ''}: {lifeLine.groupLeader}
           </span>
         </div>
 

@@ -3,17 +3,18 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { LifeLinesGrid } from '@/components/lifelines/lifelines-grid'
 import { HomeHero } from '@/components/home/hero'
 import { FiltersSection } from '@/components/home/filters-section'
+import { LifeLinesSearchProvider } from '@/components/home/lifelines-search-context'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 function HomeContent() {
   return (
-    <>
+    <LifeLinesSearchProvider>
       <HomeHero />
       <FiltersSection />
       <div className="container-responsive py-12">
         <LifeLinesGrid />
       </div>
-    </>
+    </LifeLinesSearchProvider>
   )
 }
 

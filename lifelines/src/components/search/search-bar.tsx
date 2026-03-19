@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, X, Clock, TrendingUp } from 'lucide-react'
-import { useLifeLinesSearch } from '@/hooks/useLifeLinesSearch'
+import { useSharedSearch } from '@/components/home/lifelines-search-context'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface SearchBarProps {
@@ -28,7 +28,7 @@ export function SearchBar({
     suggestionsLoading,
     updateFilters,
     getSuggestions
-  } = useLifeLinesSearch()
+  } = useSharedSearch()
 
   const [query, setQuery] = useState(filters.search || '')
   const [showSuggestionsDropdown, setShowSuggestionsDropdown] = useState(false)

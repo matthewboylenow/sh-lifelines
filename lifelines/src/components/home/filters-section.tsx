@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { GroupType, MeetingFrequency, DayOfWeek } from '@prisma/client'
-import { useLifeLinesSearch } from '@/hooks/useLifeLinesSearch'
+import { useSharedSearch } from './lifelines-search-context'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
@@ -26,9 +26,8 @@ export function FiltersSection() {
     toggleFilter,
     hasActiveFilters,
     activeFilterCount
-  } = useLifeLinesSearch()
+  } = useSharedSearch()
 
-  // State for expanded sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     agesStages: true,
     groupTypes: true,
@@ -70,7 +69,7 @@ export function FiltersSection() {
               </span>
             )}
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Ages & Stages */}
             {facets.agesStages.length > 0 && (
@@ -203,52 +202,22 @@ export function FiltersSection() {
             )}
           </div>
 
-          {/* Advanced Filters */}
-          {(facets.stats.free > 0 || facets.childcare.length > 1 || facets.stats.withLocation > 0) && (
+          {/* Childcare filter only (cost/free removed) */}
+          {facets.childcare.find(c => c.value === true) && (
             <div className="mt-8 pt-6 border-t">
               <h4 className="text-lg font-semibold text-gray-900 mb-4">Additional Options</h4>
               <div className="flex flex-wrap gap-4">
-                {facets.stats.free > 0 && (
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
-                      checked={filters.isFree || false}
-                      onChange={() => toggleFilter('isFree', true)}
-                    />
-                    <span className="text-sm text-gray-700">
-                      Free Groups ({facets.stats.free})
-                    </span>
-                  </label>
-                )}
-
-                {facets.childcare.find(c => c.value === true) && (
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
-                      checked={filters.hasChildcare || false}
-                      onChange={() => toggleFilter('hasChildcare', true)}
-                    />
-                    <span className="text-sm text-gray-700">
-                      Childcare Available ({facets.childcare.find(c => c.value === true)?.count || 0})
-                    </span>
-                  </label>
-                )}
-
-                {facets.stats.withLocation > 0 && (
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
-                      checked={filters.hasLocation || false}
-                      onChange={() => toggleFilter('hasLocation', true)}
-                    />
-                    <span className="text-sm text-gray-700">
-                      Has Meeting Location ({facets.stats.withLocation})
-                    </span>
-                  </label>
-                )}
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
+                    checked={filters.hasChildcare || false}
+                    onChange={() => toggleFilter('hasChildcare', true)}
+                  />
+                  <span className="text-sm text-gray-700">
+                    Childcare Available ({facets.childcare.find(c => c.value === true)?.count || 0})
+                  </span>
+                </label>
               </div>
             </div>
           )}
@@ -263,7 +232,7 @@ export function FiltersSection() {
             >
               Clear all filters
             </Button>
-            
+
             <div className="text-sm text-gray-600 font-medium">
               {!hasActiveFilters ? (
                 'No filters applied'

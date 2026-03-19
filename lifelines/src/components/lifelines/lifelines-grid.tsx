@@ -1,11 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { LifeLineCard } from './lifeline-card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { useLifeLinesSearch } from '@/hooks/useLifeLinesSearch'
+import { useSharedSearch } from '@/components/home/lifelines-search-context'
 import { Button } from '@/components/ui/Button'
-import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
+
+const INITIAL_VISIBLE = 12
+const LOAD_MORE_COUNT = 12
 
 export function LifeLinesGrid() {
   const {
@@ -13,21 +16,22 @@ export function LifeLinesGrid() {
     loading,
     error,
     search,
-    filters,
     hasActiveFilters,
-    goToPage
-  } = useLifeLinesSearch({
-    limit: 12,
-    sortBy: 'createdAt',
-    sortOrder: 'desc'
-  })
+  } = useSharedSearch()
 
-  // Auto-search when component mounts if no active filters
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
+
+  // Auto-search on mount
   useEffect(() => {
-    if (!hasActiveFilters && !results) {
+    if (!results) {
       search({}, { updateUrl: false })
     }
-  }, [hasActiveFilters, results, search])
+  }, [results, search])
+
+  // Reset visible count when results change (e.g. new filter)
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE)
+  }, [results?.totalItems])
 
   if (loading) {
     return (
@@ -59,23 +63,21 @@ export function LifeLinesGrid() {
     return (
       <div className="text-center py-12">
         <p className="text-gray-600 mb-4">No search results yet. Try adjusting your filters or search terms.</p>
-        <Button
-          onClick={() => search()}
-        >
+        <Button onClick={() => search()}>
           Load LifeLines
         </Button>
       </div>
     )
   }
 
-  const { items: lifeLines, totalItems, currentPage, totalPages, hasNextPage, hasPrevPage } = results
+  const { items: lifeLines, totalItems } = results
 
   if (lifeLines.length === 0) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">No LifeLines Found</h2>
         <p className="text-gray-600 mb-8">
-          {hasActiveFilters 
+          {hasActiveFilters
             ? 'No groups match your current filters. Try adjusting your search criteria.'
             : 'No LifeLines are currently available.'
           }
@@ -83,16 +85,14 @@ export function LifeLinesGrid() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           {hasActiveFilters && (
             <Button
-              onClick={() => search({ 
-                page: 1, 
-                search: undefined, 
-                groupTypes: [], 
-                frequencies: [], 
+              onClick={() => search({
+                page: 1,
+                search: undefined,
+                groupTypes: [],
+                frequencies: [],
                 agesStages: [],
                 dayOfWeek: undefined,
-                hasLocation: undefined,
                 hasChildcare: undefined,
-                isFree: undefined
               })}
               variant="outline"
             >
@@ -112,64 +112,41 @@ export function LifeLinesGrid() {
     )
   }
 
+  const visibleLifeLines = lifeLines.slice(0, visibleCount)
+  const hasMore = visibleCount < lifeLines.length
+
   return (
     <div>
       {/* Results Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Available LifeLines
-          </h2>
-          <p className="text-gray-600">
-            {hasActiveFilters ? (
-              <>Showing {lifeLines.length} of {totalItems} filtered result{totalItems !== 1 ? 's' : ''}</>
-            ) : (
-              <>Found {totalItems} group{totalItems !== 1 ? 's' : ''} for you to explore</>
-            )}
-          </p>
-        </div>
-        
-        {results.metadata && (
-          <div className="text-sm text-gray-500">
-            Page {currentPage} of {totalPages}
-          </div>
-        )}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Available LifeLines
+        </h2>
+        <p className="text-gray-600">
+          {hasActiveFilters ? (
+            <>Showing {lifeLines.length} filtered result{lifeLines.length !== 1 ? 's' : ''}</>
+          ) : (
+            <>Found {totalItems} group{totalItems !== 1 ? 's' : ''} for you to explore</>
+          )}
+        </p>
       </div>
 
-      {/* LifeLines Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {lifeLines.map((lifeLine) => (
+      {/* LifeLines Grid - 2 columns on large screens */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {visibleLifeLines.map((lifeLine) => (
           <LifeLineCard key={lifeLine.id} lifeLine={lifeLine} />
         ))}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center space-x-4">
+      {/* Load More */}
+      {hasMore && (
+        <div className="text-center">
           <Button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={!hasPrevPage}
+            onClick={() => setVisibleCount(prev => prev + LOAD_MORE_COUNT)}
             variant="outline"
-            size="sm"
-            className="flex items-center"
+            size="lg"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Previous
-          </Button>
-          
-          <span className="text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
-          </span>
-          
-          <Button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={!hasNextPage}
-            variant="outline"
-            size="sm"
-            className="flex items-center"
-          >
-            Next
-            <ArrowRight className="h-4 w-4 ml-2" />
+            Load More ({lifeLines.length - visibleCount} remaining)
           </Button>
         </div>
       )}
