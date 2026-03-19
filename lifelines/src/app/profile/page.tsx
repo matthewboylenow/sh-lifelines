@@ -211,7 +211,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Profile Not Found</h1>
-          <Link href="/dashboard">
+          <Link href="/dashboard/leader">
             <Button>Return to Dashboard</Button>
           </Link>
         </div>

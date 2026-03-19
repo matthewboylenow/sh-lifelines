@@ -29,14 +29,36 @@ export default async function LoginPage() {
             <LoginForm />
           </div>
 
-          {/* Development credentials */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Development Access</h3>
-            <div className="text-xs text-blue-700 space-y-1">
-              <div><strong>Admin:</strong> admin@sainthelen.org / admin123</div>
-              <div><strong>Support:</strong> support@sainthelen.org / support123</div>
-              <div><strong>Leader:</strong> maria.fusillo@example.com / leader123</div>
+          {/* Temporary test credentials - REMOVE BEFORE GO-LIVE */}
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-block bg-amber-200 text-amber-800 text-xs font-bold px-2 py-0.5 rounded uppercase">Testing Only</span>
+              <h3 className="text-sm font-semibold text-amber-900">Team Login Credentials</h3>
             </div>
+            <div className="space-y-3">
+              <div className="bg-white rounded-md p-3 border border-amber-200">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Administrator</div>
+                <div className="text-sm text-gray-800">
+                  <span className="font-medium">Email:</span> admin@sainthelen.org<br />
+                  <span className="font-medium">Password:</span> admin123
+                </div>
+              </div>
+              <div className="bg-white rounded-md p-3 border border-amber-200">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Formation &amp; Support Team</div>
+                <div className="text-sm text-gray-800">
+                  <span className="font-medium">Email:</span> formation@sainthelen.org<br />
+                  <span className="font-medium">Password:</span> support123
+                </div>
+              </div>
+              <div className="bg-white rounded-md p-3 border border-amber-200">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">LifeLine Leader (Sample)</div>
+                <div className="text-sm text-gray-800">
+                  <span className="font-medium">Email:</span> leader1@sainthelen.org<br />
+                  <span className="font-medium">Password:</span> leader123
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 mt-3 italic">These credentials will be removed before the site goes live.</p>
           </div>
         </div>
       </div>
