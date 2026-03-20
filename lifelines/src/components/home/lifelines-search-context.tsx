@@ -15,7 +15,7 @@ export function useSharedSearch() {
 
 export function LifeLinesSearchProvider({ children }: { children: ReactNode }) {
   const searchHook = useLifeLinesSearch({
-    limit: 48,
+    limit: 200,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   })

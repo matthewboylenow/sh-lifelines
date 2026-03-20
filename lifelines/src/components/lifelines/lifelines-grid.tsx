@@ -1,15 +1,12 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { LifeLineCard } from './lifeline-card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useSharedSearch } from '@/components/home/lifelines-search-context'
 import { Button } from '@/components/ui/Button'
 import { RotateCcw } from 'lucide-react'
 import { LifeLineWithLeader } from '@/types'
-
-const INITIAL_VISIBLE = 12
-const LOAD_MORE_COUNT = 12
 
 // Weighted random shuffle: newer items get slightly higher priority
 function weightedShuffle(items: LifeLineWithLeader[]): LifeLineWithLeader[] {
@@ -35,19 +32,12 @@ export function LifeLinesGrid() {
     hasActiveFilters,
   } = useSharedSearch()
 
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
-
   // Auto-search on mount
   useEffect(() => {
     if (!results) {
       search({}, { updateUrl: false })
     }
   }, [results, search])
-
-  // Reset visible count when results change (e.g. new filter)
-  useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE)
-  }, [results?.totalItems])
 
   // Shuffle results with recency weighting (stable per page load)
   const shuffledItems = useMemo(() => {
@@ -136,9 +126,6 @@ export function LifeLinesGrid() {
     )
   }
 
-  const visibleLifeLines = lifeLines.slice(0, visibleCount)
-  const hasMore = visibleCount < lifeLines.length
-
   return (
     <div>
       {/* Results Header */}
@@ -157,23 +144,10 @@ export function LifeLinesGrid() {
 
       {/* LifeLines Grid - 2 columns on large screens */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {visibleLifeLines.map((lifeLine) => (
+        {lifeLines.map((lifeLine) => (
           <LifeLineCard key={lifeLine.id} lifeLine={lifeLine} />
         ))}
       </div>
-
-      {/* Load More */}
-      {hasMore && (
-        <div className="text-center">
-          <Button
-            onClick={() => setVisibleCount(prev => prev + LOAD_MORE_COUNT)}
-            variant="outline"
-            size="lg"
-          >
-            Load More ({lifeLines.length - visibleCount} remaining)
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
