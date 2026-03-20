@@ -75,10 +75,8 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
   }
 
   // Check if user can edit this LifeLine
-  const canEdit = session && (
-    hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
-    session.user.id === lifeLine.leaderId
-  )
+  const isAdminOrSupport = session && hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
+  const canEdit = isAdminOrSupport || (session && session.user.id === lifeLine.leaderId)
 
   const defaultImage = '/pictures/nvmfrtbidso-1024x683.jpg'
   const activeInquiries = lifeLine.inquiries?.filter(i => i.status === 'UNDECIDED').length || 0
@@ -283,8 +281,8 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
                 </div>
               )}
 
-              {/* Quick Stats - Only visible to leaders/admins */}
-              {canEdit && (
+              {/* Quick Stats - Only visible to admins and formation support */}
+              {isAdminOrSupport && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <h3 className="text-xl font-bold text-primary-900 mb-4">Quick Stats</h3>
                   <div className="space-y-3">
