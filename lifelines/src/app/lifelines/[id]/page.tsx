@@ -11,6 +11,8 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { InquiryForm } from '@/components/lifelines/inquiry-form'
 import { prisma } from '@/lib/prisma'
 import { LifeLineWithLeader } from '@/types'
+import { hasAnyRole } from '@/lib/auth-utils'
+import { UserRole } from '@prisma/client'
 import { formatGroupType, formatMeetingFrequency, formatDayOfWeek } from '@/utils/formatters'
 
 function decodeEntities(str: string) {
@@ -74,8 +76,7 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
 
   // Check if user can edit this LifeLine
   const canEdit = session && (
-    session.user.role === 'ADMIN' || 
-    session.user.role === 'FORMATION_SUPPORT_TEAM' ||
+    hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
     session.user.id === lifeLine.leaderId
   )
 

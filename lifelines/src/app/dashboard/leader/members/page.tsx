@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { LeaderMembersView } from '@/components/dashboard/leader-members-view'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
@@ -21,7 +22,7 @@ export default async function LeaderMembersPage() {
     UserRole.ADMIN
   ]
 
-  if (!allowedRoles.includes(session.user.role as UserRole)) {
+  if (!hasAnyRole(session.user.role, allowedRoles)) {
     redirect('/dashboard')
   }
 

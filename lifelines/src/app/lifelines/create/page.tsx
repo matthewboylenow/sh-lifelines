@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { LifeLineForm } from '@/components/lifelines/lifeline-form'
+import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
@@ -10,7 +12,7 @@ export default async function CreateLifeLinePage() {
   const session = await getServerSession(authOptions)
 
   // Check if user is authenticated and has permission to create LifeLines
-  if (!session || !['ADMIN', 'FORMATION_SUPPORT_TEAM'].includes(session.user.role)) {
+  if (!session || !hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])) {
     redirect('/login')
   }
 

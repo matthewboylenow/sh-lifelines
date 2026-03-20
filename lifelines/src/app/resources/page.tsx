@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { LifeLineResources } from '@/components/resources/lifeline-resources'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 export default async function ResourcesPage() {
   const session = await getServerSession(authOptions)
@@ -14,7 +15,7 @@ export default async function ResourcesPage() {
 
   // Check if user has access to resources (leaders and above)
   const allowedRoles: UserRole[] = [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!allowedRoles.includes(session.user.role as UserRole)) {
+  if (!hasAnyRole(session.user.role, allowedRoles)) {
     redirect('/')
   }
 

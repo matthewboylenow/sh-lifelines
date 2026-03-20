@@ -97,7 +97,7 @@ export async function approveFormationRequest(requestId: string) {
         email: formationRequest.leaderEmail,
         password: hashedPassword,
         displayName: formationRequest.groupLeader,
-        role: UserRole.LIFELINE_LEADER,
+        roles: [UserRole.LIFELINE_LEADER],
         isActive: true,
       }
     })

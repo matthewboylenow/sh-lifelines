@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { ExportData } from '@/components/dashboard/export-data'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 export default async function ExportDataPage() {
   const session = await getServerSession(authOptions)
@@ -14,7 +15,7 @@ export default async function ExportDataPage() {
 
   // Check if user has formation support access
   const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!allowedRoles.includes(session.user.role as UserRole)) {
+  if (!hasAnyRole(session.user.role, allowedRoles)) {
     redirect('/')
   }
 

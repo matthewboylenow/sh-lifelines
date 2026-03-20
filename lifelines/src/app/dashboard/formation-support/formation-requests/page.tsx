@@ -21,6 +21,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { UserRole, FormationStatus, GroupType } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -91,9 +92,8 @@ export default function FormationRequestsPage() {
     }
     
     if (status === 'authenticated') {
-      if (!session?.user || 
-          (session.user.role !== UserRole.FORMATION_SUPPORT_TEAM && 
-           session.user.role !== UserRole.ADMIN)) {
+      if (!session?.user ||
+          !hasAnyRole(session.user.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])) {
         router.push('/dashboard/leader')
         return
       }

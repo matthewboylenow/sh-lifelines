@@ -42,7 +42,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.displayName || user.username || user.email,
-          role: user.role,
+          roles: user.roles,
         }
       }
     })
@@ -55,18 +55,24 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         return {
           ...token,
-          role: user.role,
+          roles: user.roles,
+          // Backward compat: keep role for any code that reads it during migration
+          role: user.roles?.[0],
           userId: user.id,
         }
       }
       return token
     },
     async session({ session, token }) {
+      // Backward compat: support both old single-role tokens and new multi-role tokens
+      const roles = (token.roles || (token.role ? [token.role] : [])) as UserRole[]
       return {
         ...session,
         user: {
           ...session.user,
-          role: token.role as UserRole,
+          roles,
+          // Keep role as first role for backward compatibility during migration
+          role: roles[0] || UserRole.MEMBER,
           id: token.userId as string,
         }
       }
@@ -87,17 +93,20 @@ declare module "next-auth" {
       name?: string | null
       image?: string | null
       role: UserRole
+      roles: UserRole[]
     }
   }
 
   interface User {
-    role: UserRole
+    role?: UserRole
+    roles: UserRole[]
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    role: UserRole
+    role?: UserRole
+    roles: UserRole[]
     userId: string
   }
 }

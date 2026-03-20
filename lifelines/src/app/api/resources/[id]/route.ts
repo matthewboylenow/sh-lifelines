@@ -6,6 +6,7 @@ import {
   withAuth
 } from '@/lib/api-utils'
 import { UserRole, ResourceType } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 import { z } from 'zod'
 
 // Validation schema for updating resources
@@ -38,7 +39,7 @@ export async function GET(
       }
 
       // Non-admins can only see active resources
-      const isAdmin = session.user.role === UserRole.ADMIN
+      const isAdmin = hasRole(session.user.role, UserRole.ADMIN)
       if (!isAdmin && !resource.isActive) {
         return createErrorResponse('Resource not found', 404)
       }
@@ -58,7 +59,7 @@ export async function PUT(
 ) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can update resources
-    if (session.user.role !== UserRole.ADMIN) {
+    if (!hasRole(session.user.role, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can update resources', 403)
     }
 
@@ -105,7 +106,7 @@ export async function DELETE(
 ) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can delete resources
-    if (session.user.role !== UserRole.ADMIN) {
+    if (!hasRole(session.user.role, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can delete resources', 403)
     }
 

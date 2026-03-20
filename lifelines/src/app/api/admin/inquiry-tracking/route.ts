@@ -9,6 +9,7 @@ import {
   createPaginatedResponse
 } from '@/lib/api-utils'
 import { InquiryStatus, UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 // GET /api/admin/inquiry-tracking - Get inquiry tracking data with stats
 export async function GET(req: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     // Only allow admin and formation support team
     const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]
-    if (!allowedRoles.includes(session.user.role as UserRole)) {
+    if (!hasAnyRole(session.user.role, allowedRoles)) {
       return createErrorResponse('Forbidden', 403)
     }
 
@@ -162,7 +163,7 @@ export async function GET(req: NextRequest) {
         orderBy: { title: 'asc' }
       }),
       prisma.user.findMany({
-        where: { role: 'LIFELINE_LEADER' },
+        where: { roles: { has: 'LIFELINE_LEADER' } },
         select: { id: true, displayName: true, email: true },
         orderBy: { displayName: 'asc' }
       })

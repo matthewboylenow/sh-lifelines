@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { 
-  createErrorResponse, 
-  createSuccessResponse, 
+import {
+  createErrorResponse,
+  createSuccessResponse,
   parsePaginationParams,
-  createPaginatedResponse 
+  createPaginatedResponse
 } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth-utils'
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const { page, limit, skip } = parsePaginationParams(searchParams)
-    
+
     // Parse filters
     const filters = {
       role: searchParams.get('role') as UserRole | undefined,
@@ -27,11 +27,11 @@ export async function GET(req: NextRequest) {
     // Build where clause
     const where: any = {}
 
-    // Support single role or multiple roles
+    // Support single role or multiple roles filter
     if (filters.role) {
-      where.role = filters.role
+      where.roles = { has: filters.role }
     } else if (filters.roles && filters.roles.length > 0) {
-      where.role = { in: filters.roles }
+      where.roles = { hasSome: filters.roles }
     }
 
     if (filters.active !== undefined) {
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
           email: true,
           displayName: true,
           cellPhone: true,
-          role: true,
+          roles: true,
           isActive: true,
           createdAt: true,
           updatedAt: true,
@@ -66,7 +66,6 @@ export async function GET(req: NextRequest) {
           }
         },
         orderBy: [
-          { role: 'asc' },
           { displayName: 'asc' },
           { email: 'asc' }
         ],
@@ -90,7 +89,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const validatedData = registerSchema.parse(body)
-    const { email, password, displayName, role } = validatedData
+    const { email, password, displayName, roles, role } = validatedData
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -104,20 +103,25 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password)
 
+    // Determine roles: prefer roles array, fall back to single role
+    const userRoles = roles && roles.length > 0
+      ? roles
+      : role ? [role] : [UserRole.MEMBER]
+
     // Create user
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         displayName: displayName || null,
-        role: role || UserRole.MEMBER,
+        roles: userRoles,
         isActive: true,
       },
       select: {
         id: true,
         email: true,
         displayName: true,
-        role: true,
+        roles: true,
         isActive: true,
         createdAt: true,
       }

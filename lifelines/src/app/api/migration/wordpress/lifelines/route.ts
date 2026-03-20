@@ -6,6 +6,7 @@ import {
   withAuth
 } from '@/lib/api-utils'
 import { UserRole, GroupType, MeetingFrequency, DayOfWeek, LifeLineStatus } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 import { z } from 'zod'
 
 // WordPress LifeLine import schema
@@ -77,7 +78,7 @@ function mapDayOfWeek(metaValue: string | undefined): DayOfWeek | undefined {
 export async function POST(req: NextRequest) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can import data
-    if (session.user.role !== UserRole.ADMIN) {
+    if (!hasRole(session.user.role, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can import data', 403)
     }
 

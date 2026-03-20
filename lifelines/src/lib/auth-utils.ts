@@ -3,6 +3,21 @@ import { authOptions } from "./auth"
 import { UserRole } from "@prisma/client"
 import bcrypt from "bcryptjs"
 
+// Core role-checking utilities that work with both single role and role arrays
+export type RoleInput = UserRole | UserRole[] | undefined
+
+export function hasRole(roleOrRoles: RoleInput, target: UserRole): boolean {
+  if (!roleOrRoles) return false
+  if (Array.isArray(roleOrRoles)) return roleOrRoles.includes(target)
+  return roleOrRoles === target
+}
+
+export function hasAnyRole(roleOrRoles: RoleInput, targets: UserRole[]): boolean {
+  if (!roleOrRoles) return false
+  if (Array.isArray(roleOrRoles)) return roleOrRoles.some(r => targets.includes(r))
+  return targets.includes(roleOrRoles)
+}
+
 export async function getSession() {
   return await getServerSession(authOptions)
 }
@@ -22,7 +37,7 @@ export async function requireAuth() {
 
 export async function requireRole(allowedRoles: UserRole[]) {
   const user = await requireAuth()
-  if (!allowedRoles.includes(user.role)) {
+  if (!hasAnyRole(user.role, allowedRoles)) {
     throw new Error("Forbidden")
   }
   return user
@@ -37,43 +52,45 @@ export async function verifyPassword(password: string, hashedPassword: string) {
 }
 
 // Role checking utilities
-export function isAdmin(role: UserRole) {
-  return role === UserRole.ADMIN
+export function isAdmin(role: RoleInput) {
+  return hasRole(role, UserRole.ADMIN)
 }
 
-export function isFormationSupport(role: UserRole) {
-  return role === UserRole.FORMATION_SUPPORT_TEAM || isAdmin(role)
+export function isFormationSupport(role: RoleInput) {
+  return hasAnyRole(role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
 }
 
-export function isLifeLineLeader(role: UserRole) {
-  return role === UserRole.LIFELINE_LEADER || isFormationSupport(role)
+export function isLifeLineLeader(role: RoleInput) {
+  return hasAnyRole(role, [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
 }
 
-export function canAccessDashboard(role: UserRole) {
+export function canAccessDashboard(role: RoleInput) {
+  if (!role) return false
+  if (Array.isArray(role)) return role.some(r => r !== UserRole.MEMBER)
   return role !== UserRole.MEMBER
 }
 
-export function canManageUsers(role: UserRole) {
+export function canManageUsers(role: RoleInput) {
   return isAdmin(role)
 }
 
-export function canManageFormationRequests(role: UserRole) {
+export function canManageFormationRequests(role: RoleInput) {
   return isFormationSupport(role)
 }
 
-export function canManageSupportTickets(role: UserRole) {
+export function canManageSupportTickets(role: RoleInput) {
   return isFormationSupport(role)
 }
 
-export function canManageLifeLines(userId: string, lifeLineLeaderId: string, role: UserRole) {
+export function canManageLifeLines(userId: string, lifeLineLeaderId: string, role: RoleInput) {
   return userId === lifeLineLeaderId || isFormationSupport(role)
 }
 
-export function canViewInquiries(userId: string, lifeLineLeaderId: string, role: UserRole) {
+export function canViewInquiries(userId: string, lifeLineLeaderId: string, role: RoleInput) {
   return userId === lifeLineLeaderId || isFormationSupport(role)
 }
 
-export function canViewSupportTickets(userId: string, ticketRequesterId: string, role: UserRole) {
+export function canViewSupportTickets(userId: string, ticketRequesterId: string, role: RoleInput) {
   return userId === ticketRequesterId || isFormationSupport(role)
 }
 

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from './auth'
 import { UserRole } from '@prisma/client'
 import { ZodError } from 'zod'
+import { hasAnyRole } from './auth-utils'
 
 export function createErrorResponse(message: string, status: number = 400) {
   return NextResponse.json(
@@ -36,7 +37,7 @@ export function withAuth(
         return createErrorResponse('Unauthorized', 401)
       }
 
-      if (allowedRoles && !allowedRoles.includes(session.user.role)) {
+      if (allowedRoles && !hasAnyRole(session.user.role, allowedRoles)) {
         return createErrorResponse('Forbidden', 403)
       }
 

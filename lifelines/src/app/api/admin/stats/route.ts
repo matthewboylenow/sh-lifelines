@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has admin role
-    if (session.user.role !== UserRole.ADMIN) {
+    if (!hasRole(session.user.role, UserRole.ADMIN)) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
@@ -36,8 +37,8 @@ export async function GET(request: NextRequest) {
       // Active Leaders (users with LIFELINE_LEADER role or higher)
       prisma.user.count({
         where: {
-          role: {
-            in: [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
+          roles: {
+            hasSome: [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
           }
         }
       }).catch(() => 0),

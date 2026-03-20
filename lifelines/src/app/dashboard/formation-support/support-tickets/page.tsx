@@ -21,6 +21,7 @@ import {
   Hash
 } from 'lucide-react'
 import { UserRole, TicketStatus, TicketPriority } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -73,7 +74,7 @@ export default function SupportTicketsPage() {
     totalPages: 0
   })
 
-  const isSupport = session?.user?.role === UserRole.FORMATION_SUPPORT_TEAM || session?.user?.role === UserRole.ADMIN
+  const isSupport = hasAnyRole(session?.user?.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
 
   useEffect(() => {
     if (status === 'unauthenticated') {

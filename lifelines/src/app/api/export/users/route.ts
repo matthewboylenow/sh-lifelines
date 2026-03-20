@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createErrorResponse } from '@/lib/api-utils'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 
 // GET /api/export/users - Export user accounts as CSV
 export async function GET(req: NextRequest) {
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Only admins can export user data
-    if (session.user.role !== UserRole.ADMIN) {
+    if (!hasRole(session.user.role, UserRole.ADMIN)) {
       return createErrorResponse('Insufficient permissions - Admin required', 403)
     }
 
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
       'ID',
       'Email',
       'Display Name',
-      'Role',
+      'Roles',
       'Active',
       'Led LifeLines',
       'Formation Requests',
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       user.id,
       `"${(user.email || '').replace(/"/g, '""')}"`,
       `"${(user.displayName || '').replace(/"/g, '""')}"`,
-      user.role,
+      `"${user.roles.join(';')}"`,
       user.isActive ? 'Yes' : 'No',
       user._count.ledLifeLines,
       user._count.formationRequests,

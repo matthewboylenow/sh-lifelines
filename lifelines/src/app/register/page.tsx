@@ -8,30 +8,38 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.MEMBER]: 'Member',
+  [UserRole.LIFELINE_LEADER]: 'LifeLine Leader',
+  [UserRole.FORMATION_SUPPORT_TEAM]: 'Formation Support',
+  [UserRole.ADMIN]: 'Admin',
+}
 
 export default function RegisterPage() {
   const { data: session } = useSession()
   const router = useRouter()
-  const [formData, setFormData] = useState<{
-    email: string
-    password: string
-    confirmPassword: string
-    displayName: string
-    role: UserRole
-  }>({
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     displayName: '',
-    role: UserRole.MEMBER
   })
+  const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([UserRole.MEMBER])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
 
   // Only admins can access this page
-  if (session && session.user.role !== UserRole.ADMIN) {
+  if (session && !hasRole(session.user.roles || session.user.role, UserRole.ADMIN)) {
     router.push('/dashboard')
     return null
+  }
+
+  const toggleRole = (role: UserRole) => {
+    setSelectedRoles(prev =>
+      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +59,7 @@ export default function RegisterPage() {
       newErrors.confirmPassword = 'Passwords do not match'
     }
     if (!formData.displayName) newErrors.displayName = 'Display name is required'
+    if (selectedRoles.length === 0) newErrors.roles = 'At least one role is required'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -68,7 +77,7 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           displayName: formData.displayName,
-          role: formData.role
+          roles: selectedRoles,
         }),
       })
 
@@ -151,18 +160,23 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="role">User Role</Label>
-              <select
-                id="role"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-              >
-                <option value={UserRole.MEMBER}>Member</option>
-                <option value={UserRole.LIFELINE_LEADER}>LifeLine Leader</option>
-                <option value={UserRole.FORMATION_SUPPORT_TEAM}>Formation Support</option>
-                <option value={UserRole.ADMIN}>Admin</option>
-              </select>
+              <Label>User Roles</Label>
+              <div className="mt-2 space-y-2">
+                {Object.values(UserRole).map(role => (
+                  <label key={role} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedRoles.includes(role)}
+                      onChange={() => toggleRole(role)}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700">{ROLE_LABELS[role]}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.roles && (
+                <p className="mt-1 text-sm text-red-600">{errors.roles}</p>
+              )}
             </div>
 
             <div>
@@ -210,7 +224,7 @@ export default function RegisterPage() {
 
             <div className="text-center">
               <Link href="/dashboard/admin" className="text-sm text-primary hover:text-primary-dark">
-                ← Back to Admin Dashboard
+                &larr; Back to Admin Dashboard
               </Link>
             </div>
           </form>

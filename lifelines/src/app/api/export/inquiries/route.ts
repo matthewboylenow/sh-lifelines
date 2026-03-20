@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createErrorResponse } from '@/lib/api-utils'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 // GET /api/export/inquiries - Export member inquiries as CSV
 export async function GET(req: NextRequest) {
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     }
 
     const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-    if (!allowedRoles.includes(session.user.role as UserRole)) {
+    if (!hasAnyRole(session.user.role, allowedRoles)) {
       return createErrorResponse('Insufficient permissions', 403)
     }
 

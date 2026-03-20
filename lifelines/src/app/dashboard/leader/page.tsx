@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { LeaderDashboard } from '@/components/dashboard/leader-dashboard'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 export default async function LeaderDashboardPage() {
   const session = await getServerSession(authOptions)
@@ -14,7 +15,7 @@ export default async function LeaderDashboardPage() {
 
   // Check if user has leader access
   const allowedRoles: UserRole[] = [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!allowedRoles.includes(session.user.role as UserRole)) {
+  if (!hasAnyRole(session.user.role, allowedRoles)) {
     redirect('/')
   }
 

@@ -3,12 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { WordPressImportWizard } from '@/components/admin/wordpress-import-wizard'
+import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 
 export default async function AdminImportPage() {
   const session = await getServerSession(authOptions)
 
   // Check if user is authenticated and is an admin
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session || !hasRole(session.user.role, UserRole.ADMIN)) {
     redirect('/login')
   }
 

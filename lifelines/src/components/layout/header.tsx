@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { Menu, X, LogOut, User } from 'lucide-react'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 export function Header() {
   const { data: session } = useSession()
@@ -76,7 +77,7 @@ export function Header() {
             {session && (
               <>
                 {dashboardNavigation
-                  .filter(item => item.roles.includes(session.user.role as UserRole))
+                  .filter(item => hasAnyRole(session.user.roles || session.user.role, item.roles))
                   .map((item) => (
                     <Link
                       key={item.name}
@@ -172,7 +173,7 @@ export function Header() {
                 <>
                   <div className="border-t border-blue-400 my-2"></div>
                   {dashboardNavigation
-                    .filter(item => item.roles.includes(session.user.role as UserRole))
+                    .filter(item => hasAnyRole(session.user.roles || session.user.role, item.roles))
                     .map((item) => (
                       <Link
                         key={item.name}

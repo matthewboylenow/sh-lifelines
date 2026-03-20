@@ -6,7 +6,7 @@ import {
   withAuth
 } from '@/lib/api-utils'
 import { updateSupportTicketSchema } from '@/lib/validations'
-import { canViewSupportTickets } from '@/lib/auth-utils'
+import { canViewSupportTickets, hasAnyRole } from '@/lib/auth-utils'
 import { UserRole, TicketStatus } from '@prisma/client'
 import { sendSupportTicketResolvedEmail } from '@/lib/email'
 
@@ -87,7 +87,7 @@ export async function PUT(req: NextRequest, context: RouteParams) {
       }
 
       // Check permissions
-      const isSupport = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN].includes(session.user.role)
+      const isSupport = hasAnyRole(session.user.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
       const isOwner = existingTicket.requesterId === session.user.id
 
       if (!isSupport && !isOwner) {

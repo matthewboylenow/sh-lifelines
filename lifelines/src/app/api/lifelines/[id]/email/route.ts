@@ -6,6 +6,7 @@ import {
   withAuth
 } from '@/lib/api-utils'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import { sendLeaderMemberEmail } from '@/lib/email'
 import { z } from 'zod'
 
@@ -58,8 +59,7 @@ export async function POST(
 
       // Check if user can send emails (must be leader, admin, or formation support)
       const isAuthorized =
-        session.user.role === UserRole.ADMIN ||
-        session.user.role === UserRole.FORMATION_SUPPORT_TEAM ||
+        hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
         lifeLine.leaderId === session.user.id
 
       if (!isAuthorized) {
@@ -148,8 +148,7 @@ export async function GET(
 
       // Check if user can view members
       const isAuthorized =
-        session.user.role === UserRole.ADMIN ||
-        session.user.role === UserRole.FORMATION_SUPPORT_TEAM ||
+        hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
         lifeLine.leaderId === session.user.id
 
       if (!isAuthorized) {

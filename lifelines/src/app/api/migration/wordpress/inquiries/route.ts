@@ -4,7 +4,8 @@ import {
   createErrorResponse,
   createSuccessResponse
 } from '@/lib/api-utils'
-import { InquiryStatus } from '@prisma/client'
+import { InquiryStatus, UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   try {
     // Auth check: require Admin role
     const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user || !hasRole(session.user.role, UserRole.ADMIN)) {
       return createErrorResponse('Unauthorized: Admin access required', 401)
     }
 

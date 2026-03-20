@@ -128,20 +128,6 @@ export function LifeLinesGrid() {
 
   return (
     <div>
-      {/* Results Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Available LifeLines
-        </h2>
-        <p className="text-gray-600">
-          {hasActiveFilters ? (
-            <>Showing {lifeLines.length} filtered result{lifeLines.length !== 1 ? 's' : ''}</>
-          ) : (
-            <>Found {totalItems} group{totalItems !== 1 ? 's' : ''} for you to explore</>
-          )}
-        </p>
-      </div>
-
       {/* LifeLines Grid - 2 columns on large screens */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {lifeLines.map((lifeLine) => (

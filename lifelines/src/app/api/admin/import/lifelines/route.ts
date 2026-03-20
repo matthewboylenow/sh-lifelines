@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 import { slugify } from '@/lib/utils'
 
 // Validation schema for imported LifeLine data
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !hasRole(session.user.role, UserRole.ADMIN)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
           await tx.user.deleteMany({
             where: {
               AND: [
-                { role: { not: 'ADMIN' } },
+                { NOT: { roles: { has: 'ADMIN' } } },
                 { 
                   email: { 
                     in: [
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
                   email: leaderEmail,
                   displayName: validatedData.groupLeader,
                   password: hashedPassword,
-                  role: UserRole.LIFELINE_LEADER,
+                  roles: [UserRole.LIFELINE_LEADER],
                 }
               })
               

@@ -45,6 +45,11 @@ export function formatUserRole(role: UserRole): string {
   return roleMap[role] || role
 }
 
+export function formatUserRoles(roles: UserRole[]): string {
+  if (!roles || roles.length === 0) return 'Member'
+  return roles.map(formatUserRole).join(', ')
+}
+
 export function formatLifeLineStatus(status: LifeLineStatus): string {
   const statusMap = {
     [LifeLineStatus.DRAFT]: 'Draft',

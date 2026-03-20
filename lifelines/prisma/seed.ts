@@ -15,7 +15,7 @@ async function main() {
       email: 'admin@sainthelen.org',
       password: adminPassword,
       displayName: 'System Administrator',
-      role: UserRole.ADMIN,
+      roles: [UserRole.ADMIN],
       isActive: true,
     },
   })
@@ -30,7 +30,7 @@ async function main() {
       email: 'formation@sainthelen.org',
       password: supportPassword,
       displayName: 'Formation Support Team',
-      role: UserRole.FORMATION_SUPPORT_TEAM,
+      roles: [UserRole.FORMATION_SUPPORT_TEAM],
       isActive: true,
     },
   })
@@ -45,7 +45,7 @@ async function main() {
       email: 'leader1@sainthelen.org',
       password: leaderPassword,
       displayName: 'John Smith',
-      role: UserRole.LIFELINE_LEADER,
+      roles: [UserRole.LIFELINE_LEADER],
       isActive: true,
     },
   })
@@ -57,7 +57,7 @@ async function main() {
       email: 'leader2@sainthelen.org',
       password: leaderPassword,
       displayName: 'Sarah Johnson',
-      role: UserRole.LIFELINE_LEADER,
+      roles: [UserRole.LIFELINE_LEADER],
       isActive: true,
     },
   })

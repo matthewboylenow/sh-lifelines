@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { InquiryTrackingDashboard } from '@/components/dashboard/inquiry-tracking-dashboard'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 export default async function InquiryTrackingPage() {
   const session = await getServerSession(authOptions)
@@ -14,7 +15,7 @@ export default async function InquiryTrackingPage() {
 
   // Only allow admin and formation support team
   const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]
-  if (!allowedRoles.includes(session.user.role as UserRole)) {
+  if (!hasAnyRole(session.user.role, allowedRoles)) {
     redirect('/dashboard/leader')
   }
 

@@ -8,6 +8,7 @@ import {
   withAuth
 } from '@/lib/api-utils'
 import { UserRole, ResourceType } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 import { z } from 'zod'
 
 // Validation schema for creating/updating resources
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
       const where: any = {}
 
       // Non-admins only see active resources
-      const isAdmin = session.user.role === UserRole.ADMIN
+      const isAdmin = hasRole(session.user.role, UserRole.ADMIN)
       if (!isAdmin) {
         where.isActive = true
       } else if (isActive !== null) {
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can create resources
-    if (session.user.role !== UserRole.ADMIN) {
+    if (!hasRole(session.user.role, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can create resources', 403)
     }
 

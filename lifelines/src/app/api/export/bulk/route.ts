@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createErrorResponse } from '@/lib/api-utils'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole, hasRole } from '@/lib/auth-utils'
 
 // For ZIP creation, we'll use JSZip (needs to be installed)
 // This is a simplified implementation that concatenates CSVs
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-    if (!allowedRoles.includes(session.user.role as UserRole)) {
+    if (!hasAnyRole(session.user.role, allowedRoles)) {
       return createErrorResponse('Insufficient permissions', 403)
     }
 
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Export Users if requested (Admin only)
-    if (requestedExports.includes('users') && session.user.role === UserRole.ADMIN) {
+    if (requestedExports.includes('users') && hasRole(session.user.role, UserRole.ADMIN)) {
       const users = await prisma.user.findMany({
         include: {
           _count: { select: { ledLifeLines: true } }
@@ -121,10 +122,10 @@ export async function POST(req: NextRequest) {
       })
 
       combinedContent += '=== USERS DATA ===\n'
-      combinedContent += 'ID,Email,Display Name,Role,Active,Led LifeLines,Created Date\n'
-      
+      combinedContent += 'ID,Email,Display Name,Roles,Active,Led LifeLines,Created Date\n'
+
       users.forEach(user => {
-        combinedContent += `${user.id},"${user.email?.replace(/"/g, '""') || ''}","${user.displayName?.replace(/"/g, '""') || ''}",${user.role},${user.isActive ? 'Yes' : 'No'},${user._count.ledLifeLines},${user.createdAt.toISOString()}\n`
+        combinedContent += `${user.id},"${user.email?.replace(/"/g, '""') || ''}","${user.displayName?.replace(/"/g, '""') || ''}","${user.roles.join(';')}",${user.isActive ? 'Yes' : 'No'},${user._count.ledLifeLines},${user.createdAt.toISOString()}\n`
       })
       combinedContent += '\n'
     }

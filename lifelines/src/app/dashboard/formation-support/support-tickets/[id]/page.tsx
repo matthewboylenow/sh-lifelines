@@ -19,6 +19,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { UserRole, TicketStatus, TicketPriority } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
@@ -68,7 +69,7 @@ export default function SupportTicketDetailPage() {
   const [responseText, setResponseText] = useState('')
   const [newStatus, setNewStatus] = useState<TicketStatus | ''>('')
 
-  const isSupport = session?.user?.role === UserRole.FORMATION_SUPPORT_TEAM || session?.user?.role === UserRole.ADMIN
+  const isSupport = hasAnyRole(session?.user?.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
   const canRespond = ticket && (isSupport || ticket.requester.id === session?.user?.id)
   const canUpdateStatus = isSupport
 

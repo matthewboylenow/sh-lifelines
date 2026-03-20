@@ -5,7 +5,7 @@ import {
   createSuccessResponse,
   withAuth
 } from '@/lib/api-utils'
-import { hashPassword } from '@/lib/auth-utils'
+import { hashPassword, hasRole } from '@/lib/auth-utils'
 import { UserRole } from '@prisma/client'
 import { z } from 'zod'
 
@@ -33,7 +33,7 @@ function mapWordPressRole(wpRoles: string[] = []): UserRole {
 export async function POST(req: NextRequest) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can import users
-    if (session.user.role !== UserRole.ADMIN) {
+    if (!hasRole(session.user.role, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can import users', 403)
     }
 
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
             email: wpUser.user_email,
             password: hashedPassword,
             displayName: wpUser.display_name || wpUser.user_login,
-            role,
+            roles: [role],
             isActive: true,
             // Store original WordPress data for reference
             // Note: We'd need to add these fields to the schema if needed

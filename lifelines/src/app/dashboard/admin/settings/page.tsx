@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { AdminSettings } from '@/components/dashboard/admin-settings'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 
 export default async function AdminSettingsPage() {
   const session = await getServerSession(authOptions)
@@ -13,7 +14,7 @@ export default async function AdminSettingsPage() {
   }
 
   // Check if user has admin access
-  if (session.user.role !== UserRole.ADMIN) {
+  if (!hasRole(session.user.role, UserRole.ADMIN)) {
     redirect('/')
   }
 

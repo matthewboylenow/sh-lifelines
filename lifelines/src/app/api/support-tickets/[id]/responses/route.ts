@@ -6,7 +6,7 @@ import {
   withAuth
 } from '@/lib/api-utils'
 import { createSupportTicketResponseSchema } from '@/lib/validations'
-import { canViewSupportTickets } from '@/lib/auth-utils'
+import { canViewSupportTickets, hasAnyRole } from '@/lib/auth-utils'
 import { UserRole, TicketStatus } from '@prisma/client'
 import { sendSupportTicketResponseEmail } from '@/lib/email'
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest, context: RouteParams) {
       })
 
       // Update ticket status and timestamp
-      const isSupport = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN].includes(session.user.role)
+      const isSupport = hasAnyRole(session.user.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
       await prisma.supportTicket.update({
         where: { id },
         data: { 

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 
 export function LoginForm() {
   const router = useRouter()
@@ -35,16 +36,16 @@ export function LoginForm() {
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
-        // Get session to determine user role and redirect appropriately
+        // Get session to determine user roles and redirect to highest-privilege dashboard
         const session = await getSession()
-        const userRole = session?.user?.role
-        
+        const userRoles = session?.user?.roles || (session?.user?.role ? [session.user.role] : [])
+
         // Redirect based on role hierarchy: ADMIN > FORMATION_SUPPORT_TEAM > LIFELINE_LEADER > MEMBER
-        if (userRole === UserRole.ADMIN) {
+        if (hasRole(userRoles, UserRole.ADMIN)) {
           router.push('/dashboard/admin')
-        } else if (userRole === UserRole.FORMATION_SUPPORT_TEAM) {
+        } else if (hasRole(userRoles, UserRole.FORMATION_SUPPORT_TEAM)) {
           router.push('/dashboard/formation-support')
-        } else if (userRole === UserRole.LIFELINE_LEADER) {
+        } else if (hasRole(userRoles, UserRole.LIFELINE_LEADER)) {
           router.push('/dashboard/leader')
         } else {
           // Default redirect for MEMBER or unknown roles

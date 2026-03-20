@@ -19,7 +19,7 @@ export const GET = withAuth(async (req: NextRequest, session: any) => {
         id: true,
         email: true,
         displayName: true,
-        role: true,
+        roles: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -126,7 +126,7 @@ export const PUT = withAuth(
               id: true,
               email: true,
               displayName: true,
-              role: true,
+              roles: true,
               isActive: true,
               updatedAt: true,
             }

@@ -125,14 +125,14 @@ async function approveFormationRequest(formationRequest: any) {
       where: { email: formationRequest.leaderEmail },
       update: {
         displayName: formationRequest.groupLeader,
-        role: UserRole.LIFELINE_LEADER,
+        roles: [UserRole.LIFELINE_LEADER],
         isActive: true,
       },
       create: {
         email: formationRequest.leaderEmail,
         password: hashedPassword,
         displayName: formationRequest.groupLeader,
-        role: UserRole.LIFELINE_LEADER,
+        roles: [UserRole.LIFELINE_LEADER],
         isActive: true,
       }
     })

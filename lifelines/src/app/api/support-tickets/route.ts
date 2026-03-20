@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-utils'
 import { createSupportTicketSchema, supportTicketFiltersSchema } from '@/lib/validations'
 import { UserRole, TicketStatus, TicketPriority } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import { generateReferenceNumber } from '@/utils/formatters'
 import { sendSupportTicketCreatedEmail } from '@/lib/email'
 
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
     const where: any = {}
 
     // Filter by user role - non-support users can only see their own tickets
-    const isSupport = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN].includes(session.user.role)
+    const isSupport = hasAnyRole(session.user.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
     if (!isSupport) {
       where.requesterId = session.user.id
     } else if (filters.requesterId) {

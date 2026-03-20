@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { MainLayout } from '@/components/layout/main-layout'
 import { AdminDashboard } from '@/components/dashboard/admin-dashboard'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 export default async function AdminDashboardPage() {
   const session = await getServerSession(authOptions)
@@ -15,7 +16,7 @@ export default async function AdminDashboardPage() {
 
   // Check if user has admin role
   const allowedRoles: UserRole[] = [UserRole.ADMIN]
-  if (!allowedRoles.includes(session.user.role as UserRole)) {
+  if (!hasAnyRole(session.user.role, allowedRoles)) {
     redirect('/dashboard/leader')
   }
 
