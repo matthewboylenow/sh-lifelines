@@ -2,10 +2,10 @@ import { SearchBar } from '@/components/search/search-bar'
 
 export function HomeHero() {
   return (
-    <section 
+    <section
       className="relative text-white py-32 bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: 'linear-gradient(rgba(31, 52, 109, 0.7), rgba(1, 158, 124, 0.6)), url(/pictures/nvmfrtbidso-1024x683.jpg)'
+        backgroundImage: 'linear-gradient(rgba(31, 52, 109, 0.75), rgba(31, 52, 109, 0.6)), url(/pictures/small_group_meeting_and_fellowship-1920x1280.jpg)'
       }}
     >
       <div className="container mx-auto px-4 text-center relative z-10">

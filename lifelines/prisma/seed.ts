@@ -69,6 +69,7 @@ async function main() {
     update: {},
     create: {
       id: 'sample-lifeline-1',
+      slug: 'young-adults-scripture-study',
       title: 'Young Adults Scripture Study',
       description: 'A weekly Bible study focused on applying Scripture to daily life for young adults (ages 18-30).',
       status: LifeLineStatus.PUBLISHED,
@@ -88,6 +89,7 @@ async function main() {
     update: {},
     create: {
       id: 'sample-lifeline-2',
+      slug: 'families-with-young-children',
       title: 'Families with Young Children',
       description: 'A supportive community for families with children under 12. We share parenting experiences and grow in faith together.',
       status: LifeLineStatus.PUBLISHED,

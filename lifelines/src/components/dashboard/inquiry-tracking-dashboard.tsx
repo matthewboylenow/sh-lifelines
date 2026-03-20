@@ -45,6 +45,7 @@ interface InquiryWithDetails {
   needsFollowUp: boolean
   lifeLine: {
     id: string
+    slug?: string | null
     title: string
     groupLeader: string
     leaderId: string
@@ -492,7 +493,7 @@ export function InquiryTrackingDashboard() {
                       <td className="px-6 py-4">
                         <div>
                           <Link
-                            href={`/lifelines/${inquiry.lifeLine.id}`}
+                            href={`/lifelines/${inquiry.lifeLine.slug || inquiry.lifeLine.id}`}
                             className="font-medium text-primary-600 hover:text-primary-700 flex items-center"
                           >
                             {inquiry.lifeLine.title}

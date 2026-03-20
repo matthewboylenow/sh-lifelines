@@ -13,10 +13,15 @@ interface PageProps {
   }>
 }
 
-async function getLifeLineForEdit(id: string, userId: string, userRole: string) {
+function whereByIdOrSlug(identifier: string) {
+  if (/^c[a-z0-9]{24}$/.test(identifier)) return { id: identifier }
+  return { slug: identifier }
+}
+
+async function getLifeLineForEdit(identifier: string, userId: string, userRole: string) {
   try {
     const lifeLine = await prisma.lifeLine.findUnique({
-      where: { id },
+      where: whereByIdOrSlug(identifier),
       include: {
         leader: {
           select: {
@@ -32,7 +37,6 @@ async function getLifeLineForEdit(id: string, userId: string, userRole: string) 
       return null
     }
 
-    // Check permissions - only admin, formation support, or the leader can edit
     if (userRole !== 'ADMIN' &&
         userRole !== 'FORMATION_SUPPORT_TEAM' &&
         lifeLine.leaderId !== userId) {
@@ -50,7 +54,6 @@ export default async function EditLifeLinePage({ params }: PageProps) {
   const resolvedParams = await params
   const session = await getServerSession(authOptions)
 
-  // Check authentication
   if (!session) {
     redirect('/login')
   }
@@ -61,29 +64,30 @@ export default async function EditLifeLinePage({ params }: PageProps) {
     notFound()
   }
 
+  const slugOrId = lifeLine.slug || lifeLine.id
+
   return (
     <MainLayout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 py-8">
         <div className="container-responsive">
-          {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <Link 
-                href={`/lifelines/${resolvedParams.id}`}
+              <Link
+                href={`/lifelines/${slugOrId}`}
                 className="inline-flex items-center text-primary-600 hover:text-primary-700 transition-colors"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to LifeLine
               </Link>
-              
+
               <Link
-                href={`/lifelines/${resolvedParams.id}`}
+                href={`/lifelines/${slugOrId}`}
                 className="text-sm text-gray-600 hover:text-primary-600 transition-colors"
               >
                 View Public Page →
               </Link>
             </div>
-            
+
             <h1 className="text-3xl font-bold text-primary-900 mb-2">
               Edit LifeLine
             </h1>
@@ -92,9 +96,8 @@ export default async function EditLifeLinePage({ params }: PageProps) {
             </p>
           </div>
 
-          {/* Form */}
-          <LifeLineForm 
-            mode="edit" 
+          <LifeLineForm
+            mode="edit"
             initialData={lifeLine as any}
           />
         </div>
@@ -107,14 +110,12 @@ export async function generateMetadata({ params }: PageProps) {
   try {
     const resolvedParams = await params
     const lifeLine = await prisma.lifeLine.findUnique({
-      where: { id: resolvedParams.id },
+      where: whereByIdOrSlug(resolvedParams.id),
       select: { title: true }
     })
 
     if (!lifeLine) {
-      return {
-        title: 'LifeLine Not Found',
-      }
+      return { title: 'LifeLine Not Found' }
     }
 
     return {
@@ -122,8 +123,6 @@ export async function generateMetadata({ params }: PageProps) {
       description: `Edit the ${lifeLine.title} LifeLine`,
     }
   } catch (error) {
-    return {
-      title: 'Edit LifeLine | LifeLines',
-    }
+    return { title: 'Edit LifeLine | LifeLines' }
   }
 }

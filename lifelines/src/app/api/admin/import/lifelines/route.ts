@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { UserRole } from '@prisma/client'
+import { slugify } from '@/lib/utils'
 
 // Validation schema for imported LifeLine data
 const ImportLifeLineSchema = z.object({
@@ -227,9 +228,19 @@ export async function POST(request: NextRequest) {
         const meetingFrequency = mapMeetingFrequencyToEnum(validatedData.meetingFrequency)
         const dayOfWeek = mapDayOfWeekToEnum(validatedData.dayOfWeek)
 
+        // Generate slug
+        let baseSlug = slugify(validatedData.title)
+        let slug = baseSlug
+        let slugCounter = 1
+        while (await prisma.lifeLine.findUnique({ where: { slug } })) {
+          slug = `${baseSlug}-${slugCounter}`
+          slugCounter++
+        }
+
         // Create the LifeLine
         await prisma.lifeLine.create({
           data: {
+            slug,
             title: validatedData.title,
             description: validatedData.description || null,
             subtitle: validatedData.subtitle || null,
@@ -320,9 +331,9 @@ function mapGroupTypeToEnum(groupType?: string): 'SOCIAL' | 'ACTIVITY' | 'SCRIPT
   return 'SOCIAL' // Default fallback
 }
 
-function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'MONTHLY' | 'SEASONALLY' | null {
+function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'MONTHLY' | 'SEASONALLY' | 'LENT_2026' | null {
   if (!frequency) return null
-  
+
   const freqUpper = frequency.toUpperCase()
   if (['WEEKLY', 'WEEK', 'EVERY_WEEK', 'BIWEEKLY', 'BI-WEEKLY'].includes(freqUpper)) {
     return 'WEEKLY'
@@ -330,6 +341,8 @@ function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'MONTHLY' | '
     return 'MONTHLY'
   } else if (['QUARTERLY', 'QUARTER', 'SEASONALLY', 'SEASONAL', 'AS_NEEDED', 'FLEXIBLE', 'VARIES'].includes(freqUpper)) {
     return 'SEASONALLY'
+  } else if (freqUpper.includes('LENT')) {
+    return 'LENT_2026'
   }
   return null
 }

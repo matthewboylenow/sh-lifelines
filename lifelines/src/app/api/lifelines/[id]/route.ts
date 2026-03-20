@@ -1,26 +1,37 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { 
-  createErrorResponse, 
-  createSuccessResponse 
+import {
+  createErrorResponse,
+  createSuccessResponse
 } from '@/lib/api-utils'
 import { updateLifeLineSchema } from '@/lib/validations'
+
+// Helper: extract identifier from URL and build a Prisma where clause (supports id or slug)
+function getIdFromUrl(req: NextRequest): string | null {
+  const url = new URL(req.url)
+  const pathParts = url.pathname.split('/')
+  const idIndex = pathParts.indexOf('lifelines') + 1
+  return pathParts[idIndex] || null
+}
+
+function whereByIdOrSlug(identifier: string) {
+  // CUIDs are 25 chars and start with 'c' — use that as a heuristic
+  if (/^c[a-z0-9]{24}$/.test(identifier)) {
+    return { id: identifier }
+  }
+  return { slug: identifier }
+}
 
 // GET /api/lifelines/[id] - Get specific LifeLine
 export async function GET(req: NextRequest) {
   try {
-    // Extract ID from URL
-    const url = new URL(req.url)
-    const pathParts = url.pathname.split('/')
-    const idIndex = pathParts.indexOf('lifelines') + 1
-    const id = pathParts[idIndex]
-    
-    if (!id) {
+    const identifier = getIdFromUrl(req)
+    if (!identifier) {
       return createErrorResponse('LifeLine ID not found', 400)
     }
 
     const lifeLine = await prisma.lifeLine.findUnique({
-      where: { id },
+      where: whereByIdOrSlug(identifier),
       include: {
         leader: {
           select: {
@@ -48,7 +59,7 @@ export async function GET(req: NextRequest) {
           orderBy: {
             createdAt: 'desc'
           },
-          take: 10, // Only recent inquiries for performance
+          take: 10,
         },
         _count: {
           select: {
@@ -72,34 +83,25 @@ export async function GET(req: NextRequest) {
 // PUT /api/lifelines/[id] - Update LifeLine
 export async function PUT(req: NextRequest) {
   try {
-    // Extract ID from URL
-    const url = new URL(req.url)
-    const pathParts = url.pathname.split('/')
-    const idIndex = pathParts.indexOf('lifelines') + 1
-    const id = pathParts[idIndex]
-    
-    if (!id) {
+    const identifier = getIdFromUrl(req)
+    if (!identifier) {
       return createErrorResponse('LifeLine ID not found', 400)
     }
 
     const body = await req.json()
     const validatedData = updateLifeLineSchema.parse(body)
 
-    // Check if LifeLine exists
     const existingLifeLine = await prisma.lifeLine.findUnique({
-      where: { id },
-      include: {
-        leader: true
-      }
+      where: whereByIdOrSlug(identifier),
+      include: { leader: true }
     })
 
     if (!existingLifeLine) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    // Update the LifeLine with validated data
     const lifeLine = await prisma.lifeLine.update({
-      where: { id },
+      where: { id: existingLifeLine.id },
       data: {
         ...(validatedData.title && { title: validatedData.title }),
         ...(body.subtitle !== undefined && { subtitle: body.subtitle || null }),
@@ -157,17 +159,13 @@ export async function PUT(req: NextRequest) {
 // PATCH /api/lifelines/[id] - Partial update (status, visibility, etc.)
 export async function PATCH(req: NextRequest) {
   try {
-    const url = new URL(req.url)
-    const pathParts = url.pathname.split('/')
-    const idIndex = pathParts.indexOf('lifelines') + 1
-    const id = pathParts[idIndex]
-
-    if (!id) {
+    const identifier = getIdFromUrl(req)
+    if (!identifier) {
       return createErrorResponse('LifeLine ID not found', 400)
     }
 
     const existingLifeLine = await prisma.lifeLine.findUnique({
-      where: { id },
+      where: whereByIdOrSlug(identifier),
     })
 
     if (!existingLifeLine) {
@@ -186,7 +184,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const lifeLine = await prisma.lifeLine.update({
-      where: { id },
+      where: { id: existingLifeLine.id },
       data: updateData,
     })
 
@@ -200,27 +198,22 @@ export async function PATCH(req: NextRequest) {
 // DELETE /api/lifelines/[id] - Delete LifeLine (cascades related inquiries)
 export async function DELETE(req: NextRequest) {
   try {
-    const url = new URL(req.url)
-    const pathParts = url.pathname.split('/')
-    const idIndex = pathParts.indexOf('lifelines') + 1
-    const id = pathParts[idIndex]
-
-    if (!id) {
+    const identifier = getIdFromUrl(req)
+    if (!identifier) {
       return createErrorResponse('LifeLine ID not found', 400)
     }
 
     const existingLifeLine = await prisma.lifeLine.findUnique({
-      where: { id },
+      where: whereByIdOrSlug(identifier),
     })
 
     if (!existingLifeLine) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    // Delete related inquiries first, then the LifeLine
     await prisma.$transaction(async (tx) => {
-      await tx.inquiry.deleteMany({ where: { lifeLineId: id } })
-      await tx.lifeLine.delete({ where: { id } })
+      await tx.inquiry.deleteMany({ where: { lifeLineId: existingLifeLine.id } })
+      await tx.lifeLine.delete({ where: { id: existingLifeLine.id } })
     })
 
     return createSuccessResponse(null, 'LifeLine deleted successfully')

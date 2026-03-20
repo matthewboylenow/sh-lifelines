@@ -96,8 +96,8 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
         })
       }
 
-      // Fetch all LifeLines for admin management
-      const response = await fetch('/api/lifelines?includeAll=true')
+      // Fetch all LifeLines for admin management (includeAll bypasses visibility filter)
+      const response = await fetch('/api/lifelines?includeAll=true&limit=200')
       const data = await response.json()
       
       if (response.ok) {
@@ -435,25 +435,30 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
             </div>
           </div>
 
+          {/* Results count */}
+          <div className="text-sm text-gray-600">
+            Showing {filteredLifeLines.length} of {lifeLines.length} LifeLines
+          </div>
+
           {/* LifeLines Table */}
           <div className="dashboard-card overflow-hidden">
-            <div className="overflow-auto max-h-[70vh]">
+            <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       LifeLine
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Leader
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Inquiries
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -496,14 +501,14 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center space-x-2">
                           <Link
-                            href={`/lifelines/${lifeline.id}`}
+                            href={`/lifelines/${lifeline.slug || lifeline.id}`}
                             className="text-gray-400 hover:text-gray-600"
                             title="View"
                           >
                             <Eye className="h-4 w-4" />
                           </Link>
                           <Link
-                            href={`/lifelines/${lifeline.id}/edit`}
+                            href={`/lifelines/${lifeline.slug || lifeline.id}/edit`}
                             className="text-gray-400 hover:text-blue-600"
                             title="Edit"
                           >

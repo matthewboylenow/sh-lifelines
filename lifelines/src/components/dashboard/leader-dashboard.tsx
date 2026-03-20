@@ -229,14 +229,14 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                   
                   <div className="flex items-center space-x-2">
                     <Link
-                      href={`/lifelines/${lifeLine.id}`}
+                      href={`/lifelines/${lifeLine.slug || lifeLine.id}`}
                       className="text-gray-400 hover:text-gray-600"
                       title="View"
                     >
                       <Eye className="h-4 w-4" />
                     </Link>
                     <Link
-                      href={`/lifelines/${lifeLine.id}/edit`}
+                      href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                       className="text-gray-400 hover:text-gray-600"
                       title="Edit"
                     >

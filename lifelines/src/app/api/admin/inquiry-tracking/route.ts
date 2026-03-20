@@ -109,6 +109,7 @@ export async function GET(req: NextRequest) {
           lifeLine: {
             select: {
               id: true,
+              slug: true,
               title: true,
               groupLeader: true,
               leaderId: true,

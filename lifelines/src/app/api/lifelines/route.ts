@@ -49,7 +49,8 @@ export async function GET(req: NextRequest) {
       hasSpace: searchParams.get('hasSpace') === 'true',
       maxParticipants: searchParams.get('maxParticipants') ? parseInt(searchParams.get('maxParticipants')!) : undefined,
       
-      // Visibility
+      // Visibility - includeAll=true skips the visibility filter entirely (for admin)
+      includeAll: searchParams.get('includeAll') === 'true',
       isVisible: searchParams.get('isVisible') !== 'false', // Default to true unless explicitly false
       
       // Sorting
@@ -62,9 +63,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Build where clause with advanced filtering
-    const where: any = {
-      // Always filter by visibility unless explicitly requested
-      isVisible: filters.isVisible
+    const where: any = {}
+
+    // Only filter by visibility if not requesting all (admin mode)
+    if (!filters.includeAll) {
+      where.isVisible = filters.isVisible
     }
 
     // Status filtering
@@ -320,9 +323,20 @@ export async function POST(req: NextRequest) {
     // Validate the incoming data
     const validatedData = createLifeLineSchema.parse(body)
 
+    // Generate a unique slug from the title
+    const { slugify } = await import('@/lib/utils')
+    let baseSlug = slugify(validatedData.title)
+    let slug = baseSlug
+    let counter = 1
+    while (await prisma.lifeLine.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`
+      counter++
+    }
+
     // Create the LifeLine with the validated data
     const lifeLine = await prisma.lifeLine.create({
       data: {
+        slug,
         title: validatedData.title,
         subtitle: validatedData.subtitle || null,
         description: validatedData.description || null,

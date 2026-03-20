@@ -52,15 +52,26 @@ export async function GET(req: NextRequest) {
       // Get unique ages/stages values (this is more complex with array fields)
       (async () => {
         try {
-          return await prisma.$queryRaw<Array<{ agesStage: string, count: number }>>`
-            SELECT unnest("agesStages") as "agesStage", COUNT(*) as count
-            FROM "LifeLine" 
-            WHERE ${includeHidden ? 'TRUE' : '"isVisible" = true AND "status" = \'PUBLISHED\''}
-            AND "agesStages" IS NOT NULL 
-            AND array_length("agesStages", 1) > 0
-            GROUP BY unnest("agesStages")
-            ORDER BY count DESC
-          `
+          if (includeHidden) {
+            return await prisma.$queryRaw<Array<{ agesStage: string, count: number }>>`
+              SELECT unnest("agesStages") as "agesStage", COUNT(*)::int as count
+              FROM "lifelines"
+              WHERE "agesStages" IS NOT NULL
+              AND array_length("agesStages", 1) > 0
+              GROUP BY unnest("agesStages")
+              ORDER BY count DESC
+            `
+          } else {
+            return await prisma.$queryRaw<Array<{ agesStage: string, count: number }>>`
+              SELECT unnest("agesStages") as "agesStage", COUNT(*)::int as count
+              FROM "lifelines"
+              WHERE "isVisible" = true AND "status" = 'PUBLISHED'
+              AND "agesStages" IS NOT NULL
+              AND array_length("agesStages", 1) > 0
+              GROUP BY unnest("agesStages")
+              ORDER BY count DESC
+            `
+          }
         } catch (error) {
           console.error('Error in agesStages query:', error)
           return []

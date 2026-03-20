@@ -13,10 +13,10 @@ function decodeEntities(str: string) {
 }
 
 export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
-  const defaultImage = '/images/default-lifeline.jpg'
+  const defaultImage = '/pictures/nvmfrtbidso-1024x683.jpg'
 
   return (
-    <Link href={`/lifelines/${lifeLine.id}`} className="block group">
+    <Link href={`/lifelines/${lifeLine.slug || lifeLine.id}`} className="block group">
       <div className="relative h-64 bg-cover bg-center bg-no-repeat rounded-2xl overflow-hidden shadow-md group-hover:shadow-xl transform group-hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-200 group-hover:border-gray-300"
            style={{
              backgroundImage: `linear-gradient(rgba(31, 52, 109, 0.4), rgba(31, 52, 109, 0.6)), url(${lifeLine.imageUrl || defaultImage})`

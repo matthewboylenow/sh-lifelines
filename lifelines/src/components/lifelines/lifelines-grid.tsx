@@ -1,14 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { LifeLineCard } from './lifeline-card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useSharedSearch } from '@/components/home/lifelines-search-context'
 import { Button } from '@/components/ui/Button'
 import { RotateCcw } from 'lucide-react'
+import { LifeLineWithLeader } from '@/types'
 
 const INITIAL_VISIBLE = 12
 const LOAD_MORE_COUNT = 12
+
+// Weighted random shuffle: newer items get slightly higher priority
+function weightedShuffle(items: LifeLineWithLeader[]): LifeLineWithLeader[] {
+  if (items.length === 0) return items
+  const now = Date.now()
+  const DAY_MS = 86400000
+  const weighted = items.map(item => {
+    const ageInDays = (now - new Date(item.createdAt).getTime()) / DAY_MS
+    // Recent items (< 30 days) get up to 3x weight; older items approach 1x
+    const recencyWeight = 1 + 2 * Math.max(0, 1 - ageInDays / 30)
+    return { item, sort: Math.random() * recencyWeight }
+  })
+  weighted.sort((a, b) => b.sort - a.sort)
+  return weighted.map(w => w.item)
+}
 
 export function LifeLinesGrid() {
   const {
@@ -32,6 +48,13 @@ export function LifeLinesGrid() {
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE)
   }, [results?.totalItems])
+
+  // Shuffle results with recency weighting (stable per page load)
+  const shuffledItems = useMemo(() => {
+    if (!results?.items) return []
+    return weightedShuffle([...results.items])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results?.items?.length, results?.totalItems])
 
   if (loading) {
     return (
@@ -70,7 +93,8 @@ export function LifeLinesGrid() {
     )
   }
 
-  const { items: lifeLines, totalItems } = results
+  const lifeLines = shuffledItems
+  const totalItems = results.totalItems
 
   if (lifeLines.length === 0) {
     return (

@@ -50,6 +50,7 @@ enum UserRole {
 // LifeLine (Small Groups)
 model LifeLine {
   id                  String    @id @default(cuid())
+  slug                String?   @unique
   title               String
   subtitle            String?
   description         String?   @db.Text
@@ -103,6 +104,7 @@ enum MeetingFrequency {
   WEEKLY
   MONTHLY
   SEASONALLY
+  LENT_2026
 }
 
 enum DayOfWeek {

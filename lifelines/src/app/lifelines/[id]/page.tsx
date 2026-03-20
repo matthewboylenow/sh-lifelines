@@ -23,14 +23,15 @@ interface PageProps {
   }>
 }
 
-async function getLifeLine(id: string): Promise<LifeLineWithLeader | null> {
+async function getLifeLine(identifier: string): Promise<LifeLineWithLeader | null> {
   try {
+    // Support lookup by slug or id
+    const where = /^c[a-z0-9]{24}$/.test(identifier)
+      ? { id: identifier, status: 'PUBLISHED' as const, isVisible: true }
+      : { slug: identifier, status: 'PUBLISHED' as const, isVisible: true }
+
     const lifeLine = await prisma.lifeLine.findUnique({
-      where: {
-        id: id,
-        status: 'PUBLISHED', // Only show published LifeLines to public
-        isVisible: true, // Only show visible LifeLines
-      },
+      where,
       include: {
         leader: {
           select: {
@@ -78,7 +79,7 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
     session.user.id === lifeLine.leaderId
   )
 
-  const defaultImage = '/images/default-lifeline.jpg'
+  const defaultImage = '/pictures/nvmfrtbidso-1024x683.jpg'
   const activeInquiries = lifeLine.inquiries?.filter(i => i.status === 'UNDECIDED').length || 0
   const totalInquiries = lifeLine.inquiries?.length || 0
 

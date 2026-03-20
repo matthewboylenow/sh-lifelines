@@ -100,7 +100,7 @@ export function FormationSupportInquiries() {
     }
     acc[lifeLineId].inquiries.push(inquiry)
     return acc
-  }, {} as Record<string, { lifeLine: { id: string; title: string }; inquiries: InquiryWithLifeLine[] }>)
+  }, {} as Record<string, { lifeLine: { id: string; slug?: string | null; title: string }; inquiries: InquiryWithLifeLine[] }>)
 
   return (
     <div className="space-y-6">
@@ -189,7 +189,7 @@ export function FormationSupportInquiries() {
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-primary-600" />
                     <Link
-                      href={`/lifelines/${lifeLine.id}`}
+                      href={`/lifelines/${lifeLine.slug || lifeLine.id}`}
                       className="font-semibold text-gray-900 hover:text-primary-600"
                     >
                       {lifeLine.title}

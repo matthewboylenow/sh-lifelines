@@ -35,7 +35,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
   const fetchLifeLines = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/lifelines?limit=100')
+      const response = await fetch('/api/lifelines?includeAll=true&limit=200')
       const data = await response.json()
       
       if (!response.ok) {
@@ -294,7 +294,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
                       <Link
-                        href={`/lifelines/${lifeLine.id}`}
+                        href={`/lifelines/${lifeLine.slug || lifeLine.id}`}
                         className="text-gray-400 hover:text-gray-600"
                         title="View"
                       >
@@ -302,7 +302,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                       </Link>
                       {userRole === UserRole.ADMIN && (
                         <Link
-                          href={`/lifelines/${lifeLine.id}/edit`}
+                          href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                           className="text-gray-400 hover:text-gray-600"
                           title="Edit"
                         >
@@ -327,7 +327,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Link
-                    href={`/lifelines/${lifeLine.id}`}
+                    href={`/lifelines/${lifeLine.slug || lifeLine.id}`}
                     className="text-gray-400 hover:text-gray-600"
                     title="View"
                   >
@@ -335,7 +335,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                   </Link>
                   {userRole === UserRole.ADMIN && (
                     <Link
-                      href={`/lifelines/${lifeLine.id}/edit`}
+                      href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                       className="text-gray-400 hover:text-gray-600"
                       title="Edit"
                     >
