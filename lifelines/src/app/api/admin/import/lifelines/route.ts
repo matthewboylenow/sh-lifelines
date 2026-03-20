@@ -331,7 +331,7 @@ function mapGroupTypeToEnum(groupType?: string): 'SOCIAL' | 'ACTIVITY' | 'SCRIPT
   return 'SOCIAL' // Default fallback
 }
 
-function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'MONTHLY' | 'SEASONALLY' | 'LENT_2026' | null {
+function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'MONTHLY' | 'SEASONALLY' | 'LENT_2026' | 'ADVENT_2026' | null {
   if (!frequency) return null
 
   const freqUpper = frequency.toUpperCase()
@@ -343,6 +343,8 @@ function mapMeetingFrequencyToEnum(frequency?: string): 'WEEKLY' | 'MONTHLY' | '
     return 'SEASONALLY'
   } else if (freqUpper.includes('LENT')) {
     return 'LENT_2026'
+  } else if (freqUpper.includes('ADVENT')) {
+    return 'ADVENT_2026'
   }
   return null
 }

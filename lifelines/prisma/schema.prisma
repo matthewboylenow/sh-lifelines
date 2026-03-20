@@ -105,6 +105,7 @@ enum MeetingFrequency {
   MONTHLY
   SEASONALLY
   LENT_2026
+  ADVENT_2026
 }
 
 enum DayOfWeek {

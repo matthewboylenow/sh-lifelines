@@ -3,16 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  Save, 
-  X, 
-  Upload, 
-  Image as ImageIcon, 
+  Save,
+  X,
+  Upload,
+  Image as ImageIcon,
   Calendar,
   Clock,
   MapPin,
   Users,
-  DollarSign,
-  Baby,
   AlertCircle,
   Check
 } from 'lucide-react'
@@ -79,14 +77,13 @@ const INITIAL_FORM_DATA: FormData = {
 }
 
 const AGES_STAGES_OPTIONS = [
-  'Children (0-12)',
-  'Teens (13-17)',
-  'Young Adults (18-25)',
-  'Adults (26-40)',
-  'Middle Age (41-60)',
-  'Seniors (60+)',
-  'All Ages',
-  'Families'
+  'All Ages & Stages',
+  'Women',
+  'Men',
+  'Seniors',
+  'Dads',
+  'Grandparents',
+  'Moms',
 ]
 
 export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLineFormProps) {
@@ -187,9 +184,6 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
     }
     if (!formData.groupLeader.trim()) {
       errors.groupLeader = 'Group leader is required'
-    }
-    if (formData.cost && isNaN(parseFloat(formData.cost))) {
-      errors.cost = 'Cost must be a valid number'
     }
     if (formData.maxParticipants && isNaN(Number(formData.maxParticipants))) {
       errors.maxParticipants = 'Max participants must be a valid number'
@@ -416,10 +410,10 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
               >
                 <option value="">Select frequency...</option>
                 <option value="WEEKLY">Weekly</option>
-                <option value="BIWEEKLY">Biweekly</option>
                 <option value="MONTHLY">Monthly</option>
-                <option value="QUARTERLY">Quarterly</option>
-                <option value="AS_NEEDED">As Needed</option>
+                <option value="SEASONALLY">Seasonally</option>
+                <option value="LENT_2026">Lent</option>
+                <option value="ADVENT_2026">Advent</option>
               </select>
             </div>
 
@@ -459,11 +453,10 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Select type...</option>
-                <option value="MEN_ONLY">Men Only</option>
-                <option value="WOMEN_ONLY">Women Only</option>
-                <option value="MIXED">Mixed (Men & Women)</option>
-                <option value="COUPLES">Couples</option>
-                <option value="FAMILIES">Families</option>
+                <option value="SOCIAL">Social</option>
+                <option value="ACTIVITY">Activity</option>
+                <option value="SCRIPTURE_BASED">Scripture Based</option>
+                <option value="SUNDAY_BASED">Sunday Based</option>
               </select>
             </div>
 
@@ -478,21 +471,6 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
               />
               {validationErrors.maxParticipants && (
                 <p className="mt-1 text-sm text-red-600">{validationErrors.maxParticipants}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="cost">Cost ($)</Label>
-              <Input
-                id="cost"
-                type="number"
-                step="0.01"
-                value={formData.cost}
-                onChange={(e) => handleInputChange('cost', e.target.value)}
-                placeholder="0.00"
-              />
-              {validationErrors.cost && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.cost}</p>
               )}
             </div>
 

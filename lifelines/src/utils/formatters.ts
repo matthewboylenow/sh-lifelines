@@ -16,6 +16,7 @@ export function formatMeetingFrequency(frequency: MeetingFrequency): string {
     [MeetingFrequency.MONTHLY]: 'Monthly',
     [MeetingFrequency.SEASONALLY]: 'Seasonally',
     [MeetingFrequency.LENT_2026]: 'Lent 2026',
+    [MeetingFrequency.ADVENT_2026]: 'Advent 2026',
   }
   return frequencyMap[frequency] || frequency
 }
