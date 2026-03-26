@@ -9,6 +9,7 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
+      id: "credentials",
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -35,6 +36,40 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!isPasswordValid) {
+          return null
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.displayName || user.username || user.email,
+          roles: user.roles,
+        }
+      }
+    }),
+    CredentialsProvider({
+      id: "sms",
+      name: "SMS Login",
+      credentials: {
+        userId: { label: "User ID", type: "text" },
+        email: { label: "Email", type: "text" },
+        name: { label: "Name", type: "text" },
+        roles: { label: "Roles", type: "text" },
+      },
+      async authorize(credentials) {
+        // This provider is called after the client has already verified the SMS code
+        // via /api/auth/sms/verify-code. The verified user data is passed in.
+        if (!credentials?.userId || !credentials?.email) {
+          return null
+        }
+
+        // Double-check the user exists and is active
+        const user = await prisma.user.findUnique({
+          where: { id: credentials.userId },
+          select: { id: true, email: true, displayName: true, username: true, roles: true, isActive: true }
+        })
+
+        if (!user || !user.isActive || user.email !== credentials.email) {
           return null
         }
 

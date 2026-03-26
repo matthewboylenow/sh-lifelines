@@ -294,14 +294,23 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                             </a>
                           )}
                         </div>
-                        {/* Request Meeting Button */}
-                        <button
-                          onClick={() => openMeetingModal(lifeLine)}
-                          className="mt-3 inline-flex items-center text-xs font-medium text-secondary-700 hover:text-secondary-800 bg-secondary-100 hover:bg-secondary-200 px-3 py-1.5 rounded-full transition-colors"
-                        >
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Request a Meeting
-                        </button>
+                        {/* Action Buttons */}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <a
+                            href={`mailto:${lifeLine.supportContact.email}?subject=${encodeURIComponent(`[${lifeLine.title}] Question from ${lifeLine.leader?.displayName || 'Leader'}`)}`}
+                            className="inline-flex items-center text-xs font-medium text-secondary-700 hover:text-secondary-800 bg-secondary-100 hover:bg-secondary-200 px-3 py-1.5 rounded-full transition-colors"
+                          >
+                            <Mail className="h-3 w-3 mr-1" />
+                            Email Liaison
+                          </a>
+                          <button
+                            onClick={() => openMeetingModal(lifeLine)}
+                            className="inline-flex items-center text-xs font-medium text-secondary-700 hover:text-secondary-800 bg-secondary-100 hover:bg-secondary-200 px-3 py-1.5 rounded-full transition-colors"
+                          >
+                            <Calendar className="h-3 w-3 mr-1" />
+                            Request a Meeting
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

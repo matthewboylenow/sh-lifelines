@@ -49,7 +49,7 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
         fetch('/api/formation-requests?status=SUBMITTED'),
         fetch('/api/support-tickets?status=PENDING_REVIEW,IN_PROGRESS'),
         fetch('/api/inquiries'),
-        fetch('/api/lifelines')
+        fetch('/api/lifelines?status=ACTIVE&limit=1')
       ])
       
       const [formations, tickets, inquiries, lifelines] = await Promise.all([
@@ -60,10 +60,10 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
       ])
       
       setStats({
-        pendingFormationRequests: formations.data?.items?.length || 0,
-        openSupportTickets: tickets.data?.items?.length || 0,
-        totalInquiries: inquiries.data?.items?.length || 0,
-        totalLifeLines: lifelines.data?.items?.length || 0,
+        pendingFormationRequests: formations.data?.pagination?.total ?? formations.data?.items?.length ?? 0,
+        openSupportTickets: tickets.data?.pagination?.total ?? tickets.data?.items?.length ?? 0,
+        totalInquiries: inquiries.data?.pagination?.total ?? inquiries.data?.items?.length ?? 0,
+        totalLifeLines: lifelines.data?.pagination?.total ?? lifelines.data?.items?.length ?? 0,
       })
       
     } catch (error) {

@@ -10,13 +10,14 @@ import { registerSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth-utils'
 import { UserRole } from '@prisma/client'
 import { sendUserRegistrationConfirmationEmail } from '@/lib/email'
+import { normalizePhone } from '@/lib/sms'
 
 // POST /api/auth/register - Register new user (Admin only)
 export const POST = withAuth(async (req: NextRequest, session: any) => {
   return withValidation(
     registerSchema,
     async (req: NextRequest, validatedData: any) => {
-      const { email, password, displayName, roles, role } = validatedData
+      const { email, password, displayName, cellPhone, roles, role } = validatedData
 
       try {
         // Check if user already exists
@@ -36,12 +37,20 @@ export const POST = withAuth(async (req: NextRequest, session: any) => {
           ? roles
           : role ? [role] : [UserRole.MEMBER]
 
+        // Require cellPhone for non-member roles
+        const privilegedRoles: UserRole[] = [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM, UserRole.LIFELINE_LEADER]
+        const requiresPhone = userRoles.some((r: UserRole) => privilegedRoles.includes(r))
+        if (requiresPhone && !cellPhone) {
+          return createErrorResponse('Cell phone is required for Leader, Formation Support, and Admin roles', 400)
+        }
+
         // Create user
         const user = await prisma.user.create({
           data: {
             email,
             password: hashedPassword,
             displayName: displayName || null,
+            cellPhone: cellPhone ? normalizePhone(cellPhone) : null,
             roles: userRoles,
             isActive: true,
           },

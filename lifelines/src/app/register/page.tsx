@@ -25,6 +25,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     displayName: '',
+    cellPhone: '',
   })
   const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([UserRole.MEMBER])
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -61,6 +62,16 @@ export default function RegisterPage() {
     if (!formData.displayName) newErrors.displayName = 'Display name is required'
     if (selectedRoles.length === 0) newErrors.roles = 'At least one role is required'
 
+    // cellPhone required for non-member roles
+    const requiresPhone = selectedRoles.some(r =>
+      ([UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN] as UserRole[]).includes(r)
+    )
+    if (requiresPhone && !formData.cellPhone.replace(/\D/g, '')) {
+      newErrors.cellPhone = 'Cell phone is required for this role'
+    } else if (formData.cellPhone && formData.cellPhone.replace(/\D/g, '').length < 10) {
+      newErrors.cellPhone = 'Please enter a valid 10-digit phone number'
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       setIsLoading(false)
@@ -77,6 +88,7 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           displayName: formData.displayName,
+          cellPhone: formData.cellPhone.replace(/\D/g, '') || null,
           roles: selectedRoles,
         }),
       })
@@ -176,6 +188,37 @@ export default function RegisterPage() {
               </div>
               {errors.roles && (
                 <p className="mt-1 text-sm text-red-600">{errors.roles}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="cellPhone">
+                Cell Phone
+                {selectedRoles.some(r => ([UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN] as UserRole[]).includes(r)) && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </Label>
+              <Input
+                id="cellPhone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="(555) 123-4567"
+                value={formData.cellPhone}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 10)
+                  let formatted = digits
+                  if (digits.length > 6) formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+                  else if (digits.length > 3) formatted = `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+                  setFormData({ ...formData, cellPhone: formatted })
+                }}
+              />
+              {selectedRoles.some(r => ([UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN] as UserRole[]).includes(r)) && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Required for Leaders, Formation Support, and Admins. Enables sign-in via mobile.
+                </p>
+              )}
+              {errors.cellPhone && (
+                <p className="mt-1 text-sm text-red-600">{errors.cellPhone}</p>
               )}
             </div>
 

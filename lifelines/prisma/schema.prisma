@@ -17,13 +17,16 @@ model User {
   username          String?   @unique
   password          String
   displayName       String?
-  cellPhone         String?
-  roles             UserRole[] @default([MEMBER])
-  isActive          Boolean   @default(true)
-  emailVerified     Boolean   @default(false)
-  lastLoginAt       DateTime?
-  resetToken        String?
-  resetTokenExpiry  DateTime?
+  cellPhone              String?
+  cellPhoneVerified      Boolean   @default(false)
+  smsVerificationCode    String?
+  smsCodeExpiry          DateTime?
+  roles                  UserRole[] @default([MEMBER])
+  isActive               Boolean   @default(true)
+  emailVerified          Boolean   @default(false)
+  lastLoginAt            DateTime?
+  resetToken             String?
+  resetTokenExpiry       DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
