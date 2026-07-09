@@ -5,6 +5,27 @@ import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 import { UserRole } from "@prisma/client"
 
+// Temporary hardcoded test logins shown on the login page - REMOVE BEFORE GO-LIVE
+// These always work regardless of database state: on first sign-in the user
+// record is created automatically with the correct role.
+const TEST_ACCOUNTS: Record<string, { password: string; displayName: string; roles: UserRole[] }> = {
+  'admin@sainthelen.org': {
+    password: 'admin123',
+    displayName: 'System Administrator',
+    roles: [UserRole.ADMIN],
+  },
+  'formation@sainthelen.org': {
+    password: 'support123',
+    displayName: 'Formation Support Team',
+    roles: [UserRole.FORMATION_SUPPORT_TEAM],
+  },
+  'leader1@sainthelen.org': {
+    password: 'leader123',
+    displayName: 'John Smith',
+    roles: [UserRole.LIFELINE_LEADER],
+  },
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -18,6 +39,33 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
+        }
+
+        // Temporary test logins - REMOVE BEFORE GO-LIVE
+        const testEmail = credentials.email.toLowerCase().trim()
+        const testAccount = TEST_ACCOUNTS[testEmail]
+        if (testAccount && credentials.password === testAccount.password) {
+          const testUser = await prisma.user.upsert({
+            where: { email: testEmail },
+            update: {
+              isActive: true,
+              roles: testAccount.roles,
+            },
+            create: {
+              email: testEmail,
+              password: await bcrypt.hash(testAccount.password, 12),
+              displayName: testAccount.displayName,
+              roles: testAccount.roles,
+              isActive: true,
+            },
+          })
+
+          return {
+            id: testUser.id,
+            email: testUser.email,
+            name: testUser.displayName || testUser.username || testUser.email,
+            roles: testUser.roles,
+          }
         }
 
         const user = await prisma.user.findUnique({
