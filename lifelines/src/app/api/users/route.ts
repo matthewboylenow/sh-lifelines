@@ -22,10 +22,10 @@ export async function GET(req: NextRequest) {
     if (!session?.user) {
       return createErrorResponse('Unauthorized', 401)
     }
-    if (!hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM, UserRole.LIFELINE_LEADER])) {
+    if (!hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM, UserRole.LIFELINE_LEADER])) {
       return createErrorResponse('Forbidden', 403)
     }
-    const isAdmin = hasRole(session.user.role, UserRole.ADMIN)
+    const isAdmin = hasRole(session.user.roles, UserRole.ADMIN)
 
     const { searchParams } = new URL(req.url)
     const { page, limit, skip } = parsePaginationParams(searchParams)
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user) {
       return createErrorResponse('Unauthorized', 401)
     }
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Forbidden', 403)
     }
 

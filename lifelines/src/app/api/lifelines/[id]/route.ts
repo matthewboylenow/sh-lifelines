@@ -16,7 +16,7 @@ async function authorizeMutation(leaderId: string | null) {
   if (!session?.user) {
     return createErrorResponse('Unauthorized', 401)
   }
-  if (!canManageLifeLines(session.user.id, leaderId ?? '', session.user.role)) {
+  if (!canManageLifeLines(session.user.id, leaderId ?? '', session.user.roles)) {
     return createErrorResponse('Forbidden', 403)
   }
   return null

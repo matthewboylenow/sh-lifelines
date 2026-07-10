@@ -24,7 +24,7 @@ async function requireAdmin() {
   if (!session?.user) {
     return { error: createErrorResponse('Unauthorized', 401) }
   }
-  if (!hasRole(session.user.role, UserRole.ADMIN)) {
+  if (!hasRole(session.user.roles, UserRole.ADMIN)) {
     return { error: createErrorResponse('Forbidden', 403) }
   }
   return { session }
