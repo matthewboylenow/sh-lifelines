@@ -130,32 +130,16 @@ export function LoginForm() {
     const digits = cellPhone.replace(/\D/g, '')
 
     try {
-      const res = await fetch('/api/auth/sms/verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cellPhone: digits, code: smsCode }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Invalid code')
-        setLoading(false)
-        return
-      }
-
-      // Code verified — sign in via NextAuth SMS provider
-      const verifiedUser = data.data.user
+      // The SMS provider verifies the code server-side; no client-supplied
+      // identity is trusted. A valid, unexpired code is the only proof needed.
       const result = await signIn('sms', {
-        userId: verifiedUser.id,
-        email: verifiedUser.email,
-        name: verifiedUser.name,
-        roles: JSON.stringify(verifiedUser.roles),
+        cellPhone: digits,
+        code: smsCode,
         redirect: false,
       })
 
       if (result?.error) {
-        setError('Sign in failed. Please try again.')
+        setError('Invalid or expired code. Please request a new one and try again.')
       } else if (result?.ok) {
         await redirectByRole()
       }

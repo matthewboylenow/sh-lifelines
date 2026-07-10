@@ -7,12 +7,26 @@ import {
   createPaginatedResponse
 } from '@/lib/api-utils'
 import { registerSchema } from '@/lib/validations'
-import { hashPassword } from '@/lib/auth-utils'
+import { hashPassword, hasAnyRole, hasRole } from '@/lib/auth-utils'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { UserRole } from '@prisma/client'
 
-// GET /api/users - List all users (Admin only)
+// GET /api/users - List users (any dashboard role; PII limited to admins)
 export async function GET(req: NextRequest) {
   try {
+    // Require an authenticated dashboard user. Leaders and support staff need
+    // this to populate leader/support-contact pickers, so it is not admin-only,
+    // but phone numbers are withheld from non-admins below.
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return createErrorResponse('Unauthorized', 401)
+    }
+    if (!hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM, UserRole.LIFELINE_LEADER])) {
+      return createErrorResponse('Forbidden', 403)
+    }
+    const isAdmin = hasRole(session.user.roles, UserRole.ADMIN)
+
     const { searchParams } = new URL(req.url)
     const { page, limit, skip } = parsePaginationParams(searchParams)
 
@@ -52,7 +66,8 @@ export async function GET(req: NextRequest) {
           id: true,
           email: true,
           displayName: true,
-          cellPhone: true,
+          // Phone numbers are PII — only expose to admins
+          cellPhone: isAdmin,
           roles: true,
           isActive: true,
           createdAt: true,
@@ -87,6 +102,16 @@ export async function GET(req: NextRequest) {
 // POST /api/users - Create new user (Admin only)
 export async function POST(req: NextRequest) {
   try {
+    // Admin-only: this endpoint accepts a `roles` array, so leaving it open
+    // would allow anyone to mint an admin account.
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return createErrorResponse('Unauthorized', 401)
+    }
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
+      return createErrorResponse('Forbidden', 403)
+    }
+
     const body = await req.json()
     const validatedData = registerSchema.parse(body)
     const { email, password, displayName, roles, role } = validatedData

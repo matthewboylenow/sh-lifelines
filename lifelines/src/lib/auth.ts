@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 import { UserRole } from "@prisma/client"
+import { normalizePhone } from "./phone"
 
 // Temporary hardcoded test logins shown on the login page - REMOVE BEFORE GO-LIVE
 // These always work regardless of database state: on first sign-in the user
@@ -99,27 +100,65 @@ export const authOptions: NextAuthOptions = {
       id: "sms",
       name: "SMS Login",
       credentials: {
-        userId: { label: "User ID", type: "text" },
-        email: { label: "Email", type: "text" },
-        name: { label: "Name", type: "text" },
-        roles: { label: "Roles", type: "text" },
+        cellPhone: { label: "Cell Phone", type: "text" },
+        code: { label: "Verification Code", type: "text" },
       },
       async authorize(credentials) {
-        // This provider is called after the client has already verified the SMS code
-        // via /api/auth/sms/verify-code. The verified user data is passed in.
-        if (!credentials?.userId || !credentials?.email) {
+        // The SMS code is verified HERE, server-side, against the hashed code
+        // stored by /api/auth/sms/send-code. Never trust a client-supplied
+        // identity — possession of a valid, unexpired code is the only proof
+        // of ownership that grants a session.
+        if (!credentials?.cellPhone || !credentials?.code) {
           return null
         }
 
-        // Double-check the user exists and is active
-        const user = await prisma.user.findUnique({
-          where: { id: credentials.userId },
-          select: { id: true, email: true, displayName: true, username: true, roles: true, isActive: true }
+        if (!/^\d{6}$/.test(credentials.code)) {
+          return null
+        }
+
+        const normalized = normalizePhone(credentials.cellPhone)
+
+        const user = await prisma.user.findFirst({
+          where: { cellPhone: normalized, isActive: true },
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            username: true,
+            roles: true,
+            smsVerificationCode: true,
+            smsCodeExpiry: true,
+          }
         })
 
-        if (!user || !user.isActive || user.email !== credentials.email) {
+        if (!user || !user.smsVerificationCode || !user.smsCodeExpiry) {
           return null
         }
+
+        // Reject and clear expired codes
+        if (new Date() > user.smsCodeExpiry) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { smsVerificationCode: null, smsCodeExpiry: null },
+          })
+          return null
+        }
+
+        const isValid = await bcrypt.compare(credentials.code, user.smsVerificationCode)
+        if (!isValid) {
+          return null
+        }
+
+        // Consume the code so it cannot be replayed
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            smsVerificationCode: null,
+            smsCodeExpiry: null,
+            cellPhoneVerified: true,
+            lastLoginAt: new Date(),
+          },
+        })
 
         return {
           id: user.id,

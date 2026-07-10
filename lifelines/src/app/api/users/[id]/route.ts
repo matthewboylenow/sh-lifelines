@@ -5,7 +5,9 @@ import {
   createSuccessResponse,
 } from '@/lib/api-utils'
 import { updateProfileSchema } from '@/lib/validations'
-import { hashPassword } from '@/lib/auth-utils'
+import { hashPassword, hasRole } from '@/lib/auth-utils'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { UserRole } from '@prisma/client'
 import { z } from 'zod'
 
@@ -15,9 +17,25 @@ interface RouteParams {
   }>
 }
 
-// GET /api/users/[id] - Get specific user
+// Admin-only guard shared by every method here. Users manage their own account
+// through /api/users/profile; these endpoints are for administration only.
+async function requireAdmin() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) {
+    return { error: createErrorResponse('Unauthorized', 401) }
+  }
+  if (!hasRole(session.user.roles, UserRole.ADMIN)) {
+    return { error: createErrorResponse('Forbidden', 403) }
+  }
+  return { session }
+}
+
+// GET /api/users/[id] - Get specific user (Admin only)
 export async function GET(req: NextRequest, context: RouteParams) {
   try {
+    const { error } = await requireAdmin()
+    if (error) return error
+
     const { params } = context
     const { id } = await params
 
@@ -58,9 +76,12 @@ export async function GET(req: NextRequest, context: RouteParams) {
   }
 }
 
-// PUT /api/users/[id] - Update user
+// PUT /api/users/[id] - Update user (Admin only)
 export async function PUT(req: NextRequest, context: RouteParams) {
   try {
+    const { error } = await requireAdmin()
+    if (error) return error
+
     const { params } = context
     const { id } = await params
     const body = await req.json()
@@ -123,6 +144,9 @@ export async function PUT(req: NextRequest, context: RouteParams) {
 // DELETE /api/users/[id] - Delete user (Admin only)
 export async function DELETE(req: NextRequest, context: RouteParams) {
   try {
+    const { error } = await requireAdmin()
+    if (error) return error
+
     const { params } = context
     const { id } = await params
 
