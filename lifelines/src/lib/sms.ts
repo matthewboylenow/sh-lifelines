@@ -1,4 +1,8 @@
 import twilio from 'twilio'
+import { normalizePhone } from './phone'
+
+// Re-exported for backward compatibility with existing importers.
+export { normalizePhone }
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID
 const authToken = process.env.TWILIO_AUTH_TOKEN
@@ -13,14 +17,6 @@ function getClient() {
 
 export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-export function normalizePhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
-  if (digits.length === 10) return `+1${digits}`
-  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
-  if (digits.startsWith('+')) return phone.replace(/\s/g, '')
-  return `+${digits}`
 }
 
 export async function sendVerificationCode(to: string, code: string): Promise<{ success: boolean; error?: string }> {

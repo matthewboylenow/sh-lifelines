@@ -21,11 +21,27 @@ export async function POST(req: NextRequest) {
         cellPhone: normalized,
         isActive: true,
       },
-      select: { id: true, cellPhone: true, displayName: true }
+      select: { id: true, cellPhone: true, displayName: true, smsCodeExpiry: true }
     })
 
     if (!user) {
       // Don't reveal whether the phone number exists
+      return createSuccessResponse(
+        { sent: true },
+        'If this number is registered, a verification code has been sent.'
+      )
+    }
+
+    // Server-side resend cooldown: codes are issued with a 10-minute expiry, so
+    // an unexpired code with more than 9 minutes remaining was sent < 60s ago.
+    // Silently skip re-sending to prevent SMS-bombing while preserving the
+    // privacy-preserving generic response above.
+    const COOLDOWN_MS = 60 * 1000
+    const CODE_TTL_MS = 10 * 60 * 1000
+    if (
+      user.smsCodeExpiry &&
+      user.smsCodeExpiry.getTime() - Date.now() > CODE_TTL_MS - COOLDOWN_MS
+    ) {
       return createSuccessResponse(
         { sent: true },
         'If this number is registered, a verification code has been sent.'

@@ -5,6 +5,22 @@ import {
   createSuccessResponse
 } from '@/lib/api-utils'
 import { updateLifeLineSchema } from '@/lib/validations'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { canManageLifeLines } from '@/lib/auth-utils'
+
+// Authorize a mutation: only the owning leader, formation support, or an admin
+// may change a LifeLine. Returns an error response to short-circuit, or null.
+async function authorizeMutation(leaderId: string | null) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) {
+    return createErrorResponse('Unauthorized', 401)
+  }
+  if (!canManageLifeLines(session.user.id, leaderId ?? '', session.user.role)) {
+    return createErrorResponse('Forbidden', 403)
+  }
+  return null
+}
 
 // Helper: extract identifier from URL and build a Prisma where clause (supports id or slug)
 function getIdFromUrl(req: NextRequest): string | null {
@@ -100,6 +116,9 @@ export async function PUT(req: NextRequest) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
+    const authError = await authorizeMutation(existingLifeLine.leaderId)
+    if (authError) return authError
+
     const lifeLine = await prisma.lifeLine.update({
       where: { id: existingLifeLine.id },
       data: {
@@ -172,6 +191,9 @@ export async function PATCH(req: NextRequest) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
+    const authError = await authorizeMutation(existingLifeLine.leaderId)
+    if (authError) return authError
+
     const body = await req.json()
 
     const updateData: any = {}
@@ -210,6 +232,9 @@ export async function DELETE(req: NextRequest) {
     if (!existingLifeLine) {
       return createErrorResponse('LifeLine not found', 404)
     }
+
+    const authError = await authorizeMutation(existingLifeLine.leaderId)
+    if (authError) return authError
 
     await prisma.$transaction(async (tx) => {
       await tx.inquiry.deleteMany({ where: { lifeLineId: existingLifeLine.id } })

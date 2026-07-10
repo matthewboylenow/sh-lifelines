@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { createHmac } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { 
   createErrorResponse, 
@@ -102,15 +102,27 @@ const VALUE_MAPPING = {
 
 function verifyTypeformSignature(payload: string, signature: string, secret: string): boolean {
   if (!secret) {
-    console.warn('Typeform webhook secret not configured')
-    return true // Skip verification in development
+    // Never accept unsigned webhooks in production — a missing secret must fail
+    // closed, not open. Only skip verification for local development.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('TYPEFORM_WEBHOOK_SECRET is not configured; rejecting webhook')
+      return false
+    }
+    console.warn('Typeform webhook secret not configured; skipping verification (non-production only)')
+    return true
   }
 
-  const expectedSignature = createHmac('sha256', secret)
+  const expectedSignature = `sha256=${createHmac('sha256', secret)
     .update(payload)
-    .digest('base64')
-  
-  return signature === `sha256=${expectedSignature}`
+    .digest('base64')}`
+
+  // Constant-time comparison to avoid timing side channels
+  const provided = Buffer.from(signature)
+  const expected = Buffer.from(expectedSignature)
+  if (provided.length !== expected.length) {
+    return false
+  }
+  return timingSafeEqual(provided, expected)
 }
 
 function extractAnswerValue(answer: TypeformAnswer): string | null {
