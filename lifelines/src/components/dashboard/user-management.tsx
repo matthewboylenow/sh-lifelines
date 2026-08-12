@@ -68,6 +68,53 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
   const [editRoles, setEditRoles] = useState<UserRole[]>([])
   const [editLoading, setEditLoading] = useState(false)
 
+  // Account-setup invitations
+  const [sendingSetupTo, setSendingSetupTo] = useState<string | null>(null)
+  const [bulkSetupSending, setBulkSetupSending] = useState(false)
+  const [setupNotice, setSetupNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Leaders who have an account but have never signed in — after a bulk import
+  // these accounts have passwords nobody knows.
+  const pendingLeaders = users.filter(
+    u => u.isActive && !u.lastLoginAt && u.roles.includes(UserRole.LIFELINE_LEADER)
+  )
+
+  const sendSetupEmails = async (payload: { userIds?: string[]; scope?: string }) => {
+    setSetupNotice(null)
+    try {
+      const response = await fetch('/api/admin/send-setup-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await response.json()
+
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || 'Failed to send setup emails')
+      }
+
+      setSetupNotice({ type: 'success', text: data.message || 'Setup emails sent' })
+      await fetchUsers()
+    } catch (err) {
+      setSetupNotice({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to send setup emails',
+      })
+    }
+  }
+
+  const handleSendSetupEmail = async (userId: string) => {
+    setSendingSetupTo(userId)
+    await sendSetupEmails({ userIds: [userId] })
+    setSendingSetupTo(null)
+  }
+
+  const handleBulkSetupEmails = async () => {
+    setBulkSetupSending(true)
+    await sendSetupEmails({ scope: 'leaders-never-logged-in' })
+    setBulkSetupSending(false)
+  }
+
   useEffect(() => {
     fetchUsers()
   }, [])
@@ -79,7 +126,8 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/users')
+      // Without an explicit limit the API returns only the first 10 users.
+      const response = await fetch('/api/users?limit=200')
       const data = await response.json()
 
       if (!response.ok) {
@@ -373,6 +421,59 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
       </div>
 
       {/* Filters and Controls */}
+      {/* Result of a setup-email send */}
+      {setupNotice && (
+        <div
+          className={`rounded-lg p-4 flex items-start justify-between gap-3 ${
+            setupNotice.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}
+        >
+          <div className="flex items-center gap-2 text-sm">
+            {setupNotice.type === 'success' ? (
+              <CheckCircle className="h-4 w-4 flex-shrink-0" />
+            ) : (
+              <XCircle className="h-4 w-4 flex-shrink-0" />
+            )}
+            <span>{setupNotice.text}</span>
+          </div>
+          <button onClick={() => setSetupNotice(null)} className="text-current opacity-60 hover:opacity-100">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Onboarding prompt for imported leaders who have never signed in */}
+      {pendingLeaders.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <Mail className="h-5 w-5 text-amber-700 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-900">
+              <p className="font-medium">
+                {pendingLeaders.length} leader{pendingLeaders.length === 1 ? '' : 's'} {pendingLeaders.length === 1 ? 'has' : 'have'} never signed in
+              </p>
+              <p className="text-amber-800">
+                Send them an email invitation to choose their own password.
+              </p>
+            </div>
+          </div>
+          <Button onClick={handleBulkSetupEmails} disabled={bulkSetupSending}>
+            {bulkSetupSending ? (
+              <>
+                <LoadingSpinner className="w-4 h-4 mr-2" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Send {pendingLeaders.length} invitation{pendingLeaders.length === 1 ? '' : 's'}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
       <div className="dashboard-card">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
@@ -515,6 +616,25 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
+
+                      {user.isActive && (
+                        <button
+                          onClick={() => handleSendSetupEmail(user.id)}
+                          disabled={sendingSetupTo === user.id}
+                          className="p-1 text-gray-500 hover:text-secondary-600 rounded hover:bg-secondary-50 disabled:opacity-50"
+                          title={
+                            user.lastLoginAt
+                              ? 'Email a password setup link'
+                              : 'Has never signed in — email a password setup link'
+                          }
+                        >
+                          {sendingSetupTo === user.id ? (
+                            <LoadingSpinner className="w-4 h-4" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
 
                       <button
                         onClick={() => toggleUserStatus(user.id, user.isActive)}

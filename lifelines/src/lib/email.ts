@@ -358,6 +358,78 @@ export async function sendInquiryNotification(
 }
 
 // Password reset email
+/**
+ * Invite an existing account (e.g. a leader created by the WordPress import) to
+ * choose their own password. Uses the same reset-token mechanism as a password
+ * reset, but is framed as an invitation and carries a longer expiry window.
+ */
+export async function sendAccountSetupEmail(
+  email: string,
+  displayName: string,
+  setupToken: string,
+  expiresInDays: number = 7
+) {
+  const setupUrl = `${process.env.APP_URL}/reset-password?token=${setupToken}`
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Set Up Your LifeLines Account</title>
+        <style>
+            body { font-family: 'Libre Franklin', Arial, sans-serif; line-height: 1.6; color: #374151; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1f346d; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background: #f9fafb; }
+            .button { display: inline-block; background: #019e7c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+            .note { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 6px; margin: 15px 0; color: #1e3a8a; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Welcome to LifeLines</h1>
+            </div>
+
+            <div class="content">
+                <h2>Hello ${displayName},</h2>
+
+                <p>Saint Helen&rsquo;s LifeLines has moved to a new website, and an account has been created for you as a LifeLine leader.</p>
+
+                <p>To get started, choose a password for your account:</p>
+
+                <a href="${setupUrl}" class="button">Set Up My Password</a>
+
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; background: #f3f4f6; padding: 10px; border-radius: 4px;">${setupUrl}</p>
+
+                <div class="note">
+                    <p><strong>What you can do once you sign in:</strong></p>
+                    <ul>
+                        <li>View and update your LifeLine details</li>
+                        <li>See who has requested to join, and who is currently a member</li>
+                        <li>Email the members of your LifeLine directly</li>
+                    </ul>
+                </div>
+
+                <p style="color: #6b7280; font-size: 14px;">This link expires in ${expiresInDays} day${expiresInDays === 1 ? '' : 's'}. If it expires, you can request a new one from the sign-in page using &ldquo;Forgot your password?&rdquo;. Please don&rsquo;t share this link with anyone.</p>
+
+                <p>Blessings,<br>
+                The LifeLines Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `
+
+  return await sendEmail({
+    to: email,
+    subject: 'Set up your LifeLines account',
+    html
+  })
+}
+
 export async function sendPasswordResetEmail(
   email: string,
   displayName: string,
