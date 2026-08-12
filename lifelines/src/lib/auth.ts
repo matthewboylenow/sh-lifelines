@@ -51,6 +51,7 @@ export const authOptions: NextAuthOptions = {
             update: {
               isActive: true,
               roles: testAccount.roles,
+              lastLoginAt: new Date(),
             },
             create: {
               email: testEmail,
@@ -87,6 +88,14 @@ export const authOptions: NextAuthOptions = {
         if (!isPasswordValid) {
           return null
         }
+
+        // Record the sign-in. Only the SMS provider did this, so email/password
+        // users appeared never to have logged in — which both blanked the "last
+        // login" column and made onboarding treat them as still pending.
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        })
 
         return {
           id: user.id,

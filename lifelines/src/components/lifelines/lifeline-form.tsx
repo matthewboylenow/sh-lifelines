@@ -132,7 +132,8 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         const response = await fetch('/api/users?role=LIFELINE_LEADER')
         if (response.ok) {
           const data = await response.json()
-          setLeaders(data.data || [])
+          // /api/users returns a paginated { items, pagination } payload.
+          setLeaders(data.data?.items || [])
         }
       } catch (error) {
         console.error('Failed to load leaders:', error)
@@ -145,7 +146,8 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         const response = await fetch('/api/users?roles=FORMATION_SUPPORT_TEAM,ADMIN')
         if (response.ok) {
           const data = await response.json()
-          setSupportContacts(data.data || [])
+          // /api/users returns a paginated { items, pagination } payload.
+          setSupportContacts(data.data?.items || [])
         }
       } catch (error) {
         console.error('Failed to load support contacts:', error)

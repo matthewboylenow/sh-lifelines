@@ -1,8 +1,21 @@
-import sgMail from '@sendgrid/mail'
+import { Resend } from 'resend'
 
-// SendGrid configuration
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+const FROM_NAME = 'LifeLines at Saint Helen'
+
+// Instantiated lazily so that importing this module never throws when the API
+// key is absent (e.g. during build or in local dev without email configured).
+let resendClient: Resend | null = null
+
+function getResend(): Resend {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error(
+      'Email service not configured: RESEND_API_KEY is not set'
+    )
+  }
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
 }
 
 export interface EmailTemplate {
@@ -10,37 +23,44 @@ export interface EmailTemplate {
   subject: string
   html: string
   text?: string
+  /** Address replies should go to (e.g. the leader emailing their members). */
+  replyTo?: string | string[]
 }
 
+/**
+ * Send an email via Resend.
+ *
+ * Throws when the send fails — including when email is not configured. Callers
+ * that treat email as best-effort already wrap this in try/catch; throwing is
+ * what lets them distinguish a real send from a silent no-op (the previous
+ * implementation returned a failure object, so batch senders reported success
+ * even when nothing was delivered).
+ */
 export async function sendEmail({
   to,
   subject,
   html,
-  text
+  text,
+  replyTo
 }: EmailTemplate) {
-  try {
-    if (!process.env.SENDGRID_API_KEY) {
-      console.warn('SendGrid API key not configured')
-      return { success: false, error: 'Email service not configured' }
-    }
+  const resend = getResend()
 
-    const msg = {
-      to: Array.isArray(to) ? to : [to],
-      from: {
-        name: 'LifeLines at Saint Helen',
-        email: process.env.FROM_EMAIL || 'noreply@sainthelen.org'
-      },
-      subject,
-      html,
-      text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-    }
+  const { data, error } = await resend.emails.send({
+    from: `${FROM_NAME} <${process.env.FROM_EMAIL || 'noreply@sainthelen.org'}>`,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+    text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+    ...(replyTo ? { replyTo } : {}),
+  })
 
-    await sgMail.send(msg)
-    return { success: true, messageId: 'sendgrid-success' }
-  } catch (error) {
+  // Resend reports API-level failures on the response rather than throwing.
+  if (error) {
     console.error('Email sending failed:', error)
-    throw error
+    throw new Error(error.message || 'Failed to send email')
   }
+
+  return { success: true, messageId: data?.id }
 }
 
 // Welcome email template for new LifeLine leaders
@@ -338,6 +358,135 @@ export async function sendInquiryNotification(
 }
 
 // Password reset email
+export const DEFAULT_SETUP_EMAIL_SUBJECT = 'Set up your LifeLines account'
+
+export const DEFAULT_SETUP_EMAIL_INTRO =
+  'Saint Helen’s LifeLines has moved to a new website, and an account has been created for you as a LifeLine leader.'
+
+/** Escape admin-authored copy before embedding it in the email HTML. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+/** Render admin-authored plain text as HTML paragraphs, preserving line breaks. */
+function toParagraphs(value: string): string {
+  return value
+    .split(/\n{2,}/)
+    .map(block => `<p>${escapeHtml(block.trim()).replace(/\n/g, '<br />')}</p>`)
+    .join('\n                ')
+}
+
+export interface AccountSetupEmailContent {
+  displayName: string
+  setupUrl: string
+  expiresInDays?: number
+  /** Optional replacement for the opening paragraph. */
+  intro?: string
+  /** Optional replacement subject line. */
+  subject?: string
+}
+
+/**
+ * Single source of truth for the account-setup email. Both the admin preview
+ * and the real send call this, so what is previewed is exactly what is sent.
+ */
+export function renderAccountSetupEmail({
+  displayName,
+  setupUrl,
+  expiresInDays = 7,
+  intro,
+  subject,
+}: AccountSetupEmailContent): { subject: string; html: string } {
+  const introHtml = toParagraphs(
+    intro && intro.trim() ? intro.trim() : DEFAULT_SETUP_EMAIL_INTRO
+  )
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Set Up Your LifeLines Account</title>
+        <style>
+            body { font-family: 'Libre Franklin', Arial, sans-serif; line-height: 1.6; color: #374151; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1f346d; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background: #f9fafb; }
+            .button { display: inline-block; background: #019e7c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+            .note { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 6px; margin: 15px 0; color: #1e3a8a; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Welcome to LifeLines</h1>
+            </div>
+
+            <div class="content">
+                <h2>Hello ${escapeHtml(displayName)},</h2>
+
+                ${introHtml}
+
+                <p>To get started, choose a password for your account:</p>
+
+                <a href="${setupUrl}" class="button">Set Up My Password</a>
+
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; background: #f3f4f6; padding: 10px; border-radius: 4px;">${setupUrl}</p>
+
+                <div class="note">
+                    <p><strong>What you can do once you sign in:</strong></p>
+                    <ul>
+                        <li>View and update your LifeLine details</li>
+                        <li>See who has requested to join, and who is currently a member</li>
+                        <li>Email the members of your LifeLine directly</li>
+                    </ul>
+                </div>
+
+                <p style="color: #6b7280; font-size: 14px;">This link expires in ${expiresInDays} day${expiresInDays === 1 ? '' : 's'}. If it expires, you can request a new one from the sign-in page using &ldquo;Forgot your password?&rdquo;. Please don&rsquo;t share this link with anyone.</p>
+
+                <p>Blessings,<br>
+                The LifeLines Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `
+
+  return {
+    subject: subject && subject.trim() ? subject.trim() : DEFAULT_SETUP_EMAIL_SUBJECT,
+    html,
+  }
+}
+
+/**
+ * Invite an existing account (e.g. a leader created by the WordPress import) to
+ * choose their own password. Uses the same reset-token mechanism as a password
+ * reset, but is framed as an invitation and carries a longer expiry window.
+ */
+export async function sendAccountSetupEmail(
+  email: string,
+  displayName: string,
+  setupToken: string,
+  expiresInDays: number = 7,
+  options: { intro?: string; subject?: string } = {}
+) {
+  const { subject, html } = renderAccountSetupEmail({
+    displayName,
+    setupUrl: `${process.env.APP_URL}/reset-password?token=${setupToken}`,
+    expiresInDays,
+    intro: options.intro,
+    subject: options.subject,
+  })
+
+  return await sendEmail({ to: email, subject, html })
+}
+
 export async function sendPasswordResetEmail(
   email: string,
   displayName: string,
@@ -809,7 +958,9 @@ export async function sendLeaderMemberEmail(
       await sendEmail({
         to: batch,
         subject: `[${lifeLineTitle}] ${subject}`,
-        html
+        html,
+        // The compose UI tells leaders members can reply directly to them.
+        replyTo: leader.email,
       })
       results.push({ batch: i / batchSize + 1, success: true, count: batch.length })
     } catch (error) {
@@ -896,6 +1047,126 @@ export async function sendSupportTicketResolvedEmail(
   return await sendEmail({
     to: ticket.requester.email,
     subject: `✅ Resolved: ${ticket.subject} [${ticket.referenceNumber}]`,
+    html
+  })
+}
+/**
+ * Sign-in link for the self-service member portal. Sent to the address a member
+ * already has on file against their inquiries.
+ */
+export async function sendMemberPortalLinkEmail(
+  email: string,
+  portalUrl: string,
+  expiresInMinutes: number
+) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Manage Your LifeLines</title>
+        <style>
+            body { font-family: 'Libre Franklin', Arial, sans-serif; line-height: 1.6; color: #374151; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1f346d; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background: #f9fafb; }
+            .button { display: inline-block; background: #019e7c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Manage Your LifeLines</h1>
+            </div>
+
+            <div class="content">
+                <p>Hello,</p>
+
+                <p>You asked to see the LifeLines connected to this email address. Use the button below to view them:</p>
+
+                <a href="${portalUrl}" class="button">View My LifeLines</a>
+
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; background: #f3f4f6; padding: 10px; border-radius: 4px;">${portalUrl}</p>
+
+                <p style="color: #6b7280; font-size: 14px;">This link expires in ${expiresInMinutes} minutes and is personal to you &mdash; please don&rsquo;t forward it. If you didn&rsquo;t request it, you can safely ignore this email; nothing will change.</p>
+
+                <p>Blessings,<br>
+                The LifeLines Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `
+
+  return await sendEmail({
+    to: email,
+    subject: 'Manage your LifeLines',
+    html
+  })
+}
+
+/**
+ * Let a leader know that someone has stepped away from their group, including
+ * the reason given. This is internal pastoral information.
+ */
+export async function sendMemberLeftNotification(
+  leaderEmail: string,
+  leaderName: string,
+  details: {
+    personName: string
+    personEmail?: string | null
+    lifeLineTitle: string
+    reason: string
+    notes?: string | null
+  }
+) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>A member has left your LifeLine</title>
+        <style>
+            body { font-family: 'Libre Franklin', Arial, sans-serif; line-height: 1.6; color: #374151; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1f346d; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background: #f9fafb; }
+            .detail { background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin: 15px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>A Member Has Left Your LifeLine</h1>
+            </div>
+
+            <div class="content">
+                <h2>Hello ${leaderName},</h2>
+
+                <p><strong>${details.personName}</strong> has stepped away from <strong>${details.lifeLineTitle}</strong>.</p>
+
+                <div class="detail">
+                    <p style="margin: 0 0 8px 0;"><strong>Reason given:</strong> ${details.reason}</p>
+                    ${details.notes ? `<p style="margin: 0 0 8px 0;"><strong>Additional notes:</strong> ${details.notes}</p>` : ''}
+                    ${details.personEmail ? `<p style="margin: 0;"><strong>Email:</strong> ${details.personEmail}</p>` : ''}
+                </div>
+
+                <p>They have been moved out of your active member list. No action is needed &mdash; this note is just so you know.</p>
+
+                <p style="color: #6b7280; font-size: 14px;">This information is for you and parish staff only. Please treat it as confidential and don&rsquo;t share it with the group.</p>
+
+                <p>Blessings,<br>
+                The LifeLines Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `
+
+  return await sendEmail({
+    to: leaderEmail,
+    subject: `${details.personName} has left ${details.lifeLineTitle}`,
     html
   })
 }
