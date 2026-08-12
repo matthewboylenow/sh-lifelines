@@ -31,12 +31,16 @@ export function InquiryForm({ lifeLineId, lifeLineTitle, isFullStatus = false }:
         headers: {
           'Content-Type': 'application/json',
         },
+        // Field names must match createInquirySchema (personName/personEmail/
+        // personPhone) — sending name/email/phone failed validation on every
+        // submission. Omit optional fields when empty: the schema accepts
+        // undefined but not null.
         body: JSON.stringify({
           lifeLineId,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone || null,
-          message: formData.message || null,
+          personName: formData.name,
+          ...(formData.email ? { personEmail: formData.email } : {}),
+          ...(formData.phone ? { personPhone: formData.phone } : {}),
+          ...(formData.message ? { message: formData.message } : {}),
           source: 'PUBLIC_WEBSITE'
         }),
       })

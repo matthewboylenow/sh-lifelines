@@ -9,6 +9,7 @@ import {
 import { createInquirySchema } from '@/lib/validations'
 import { InquiryStatus } from '@prisma/client'
 import { sendInquiryNotification } from '@/lib/email'
+import { ZodError } from 'zod'
 
 // GET /api/inquiries - List inquiries with filtering
 export async function GET(req: NextRequest) {
@@ -156,6 +157,14 @@ export async function POST(req: NextRequest) {
     return createSuccessResponse(inquiry, 'Inquiry submitted successfully')
   } catch (error) {
     console.error('Error creating inquiry:', error)
+
+    // Surface validation problems as 400s. Returning a blanket 500 previously
+    // masked a client/schema field-name mismatch as a server fault.
+    if (error instanceof ZodError) {
+      const details = error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      return createErrorResponse(`Validation error: ${details}`, 400)
+    }
+
     return createErrorResponse('Failed to create inquiry', 500)
   }
 }

@@ -136,8 +136,9 @@ export function InquiryTrackingDashboard() {
 
       setStats(data.data.stats)
       setInquiries(data.data.items || [])
-      setTotalPages(data.data.totalPages || 1)
-      setTotalItems(data.data.total || 0)
+      // Counts live under data.pagination (see createPaginatedResponse).
+      setTotalPages(data.data.pagination?.totalPages || 1)
+      setTotalItems(data.data.pagination?.total || 0)
       setLifeLineOptions(data.data.filters?.lifeLines || [])
       setLeaderOptions(data.data.filters?.leaders || [])
     } catch (err) {

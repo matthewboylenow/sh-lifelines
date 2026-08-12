@@ -1,8 +1,21 @@
-import sgMail from '@sendgrid/mail'
+import { Resend } from 'resend'
 
-// SendGrid configuration
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+const FROM_NAME = 'LifeLines at Saint Helen'
+
+// Instantiated lazily so that importing this module never throws when the API
+// key is absent (e.g. during build or in local dev without email configured).
+let resendClient: Resend | null = null
+
+function getResend(): Resend {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error(
+      'Email service not configured: RESEND_API_KEY is not set'
+    )
+  }
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
 }
 
 export interface EmailTemplate {
@@ -10,37 +23,44 @@ export interface EmailTemplate {
   subject: string
   html: string
   text?: string
+  /** Address replies should go to (e.g. the leader emailing their members). */
+  replyTo?: string | string[]
 }
 
+/**
+ * Send an email via Resend.
+ *
+ * Throws when the send fails — including when email is not configured. Callers
+ * that treat email as best-effort already wrap this in try/catch; throwing is
+ * what lets them distinguish a real send from a silent no-op (the previous
+ * implementation returned a failure object, so batch senders reported success
+ * even when nothing was delivered).
+ */
 export async function sendEmail({
   to,
   subject,
   html,
-  text
+  text,
+  replyTo
 }: EmailTemplate) {
-  try {
-    if (!process.env.SENDGRID_API_KEY) {
-      console.warn('SendGrid API key not configured')
-      return { success: false, error: 'Email service not configured' }
-    }
+  const resend = getResend()
 
-    const msg = {
-      to: Array.isArray(to) ? to : [to],
-      from: {
-        name: 'LifeLines at Saint Helen',
-        email: process.env.FROM_EMAIL || 'noreply@sainthelen.org'
-      },
-      subject,
-      html,
-      text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-    }
+  const { data, error } = await resend.emails.send({
+    from: `${FROM_NAME} <${process.env.FROM_EMAIL || 'noreply@sainthelen.org'}>`,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+    text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+    ...(replyTo ? { replyTo } : {}),
+  })
 
-    await sgMail.send(msg)
-    return { success: true, messageId: 'sendgrid-success' }
-  } catch (error) {
+  // Resend reports API-level failures on the response rather than throwing.
+  if (error) {
     console.error('Email sending failed:', error)
-    throw error
+    throw new Error(error.message || 'Failed to send email')
   }
+
+  return { success: true, messageId: data?.id }
 }
 
 // Welcome email template for new LifeLine leaders
@@ -809,7 +829,9 @@ export async function sendLeaderMemberEmail(
       await sendEmail({
         to: batch,
         subject: `[${lifeLineTitle}] ${subject}`,
-        html
+        html,
+        // The compose UI tells leaders members can reply directly to them.
+        replyTo: leader.email,
       })
       results.push({ batch: i / batchSize + 1, success: true, count: batch.length })
     } catch (error) {

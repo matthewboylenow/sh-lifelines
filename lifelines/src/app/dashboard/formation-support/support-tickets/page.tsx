@@ -110,10 +110,11 @@ export default function SupportTicketsPage() {
 
       if (data.success) {
         setTickets(data.data.items || [])
+        // Counts live under data.pagination (see createPaginatedResponse).
         setPagination(prev => ({
           ...prev,
-          total: data.data.total || 0,
-          totalPages: data.data.totalPages || 0
+          total: data.data.pagination?.total || 0,
+          totalPages: data.data.pagination?.totalPages || 0
         }))
       } else {
         setError(data.error || 'Failed to load support tickets')

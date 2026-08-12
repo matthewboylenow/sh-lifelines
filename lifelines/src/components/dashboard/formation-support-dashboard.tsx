@@ -49,7 +49,9 @@ export function FormationSupportDashboard({ userId, userRole }: FormationSupport
         fetch('/api/formation-requests?status=SUBMITTED'),
         fetch('/api/support-tickets?status=PENDING_REVIEW,IN_PROGRESS'),
         fetch('/api/inquiries'),
-        fetch('/api/lifelines?status=ACTIVE&limit=1')
+        // LifeLineStatus has no ACTIVE member (DRAFT/PUBLISHED/FULL/ARCHIVED);
+        // the invalid enum made this request fail and the stat always read 0.
+        fetch('/api/lifelines?status=PUBLISHED&limit=1')
       ])
       
       const [formations, tickets, inquiries, lifelines] = await Promise.all([
