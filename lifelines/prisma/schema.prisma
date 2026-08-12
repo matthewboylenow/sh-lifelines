@@ -242,6 +242,23 @@ enum InquiryStatus {
   JOINED
   NOT_JOINED
   REMOVED
+  LEFT
+}
+
+/// Short-lived sign-in link for the self-service member portal. Members have no
+/// user account, so they identify themselves by receiving a link at the email
+/// address already on file against their inquiries.
+model MemberPortalToken {
+  id        String    @id @default(cuid())
+  email     String
+  /// SHA-256 of the token; the raw value only ever exists in the emailed link.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@map("member_portal_tokens")
 }
 
 enum InquirySource {

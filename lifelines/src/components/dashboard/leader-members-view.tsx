@@ -103,10 +103,14 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
       )
 
       // Fetch removed members
-      const removedPromises = lifeLineIds.map((id: string) =>
-        fetch(`/api/inquiries?lifeLineId=${id}&status=REMOVED&limit=1000`)
-          .then(res => res.json())
-          .then(data => data.data?.items || [])
+      // Includes LEFT (member stepped away themselves) as well as REMOVED
+      // (leader removed them) — both belong in this tab, labelled distinctly.
+      const removedPromises = lifeLineIds.flatMap((id: string) =>
+        ['REMOVED', 'LEFT'].map(status =>
+          fetch(`/api/inquiries?lifeLineId=${id}&status=${status}&limit=1000`)
+            .then(res => res.json())
+            .then(data => data.data?.items || [])
+        )
       )
 
       const [membersResults, removedResults] = await Promise.all([
@@ -200,7 +204,7 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
 
     const headers = activeTab === 'active'
       ? ['Name', 'Email', 'Phone', 'LifeLine', 'Joined Date', 'Request Date']
-      : ['Name', 'Email', 'Phone', 'LifeLine', 'Removed Date', 'Removal Reason']
+      : ['Name', 'Email', 'Phone', 'LifeLine', 'How', 'Date', 'Reason']
 
     const rows = dataToExport.map(member =>
       activeTab === 'active'
@@ -217,6 +221,7 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
             member.personEmail || '',
             member.personPhone || '',
             member.lifeLine.title,
+            member.status === 'LEFT' ? 'Left on their own' : 'Removed by leader',
             member.removedAt ? formatDate(member.removedAt) : '',
             member.removedReason || ''
           ]
@@ -249,7 +254,7 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
 
     const headers = activeTab === 'active'
       ? ['Name', 'Email', 'Phone', 'LifeLine', 'Joined Date', 'Request Date']
-      : ['Name', 'Email', 'Phone', 'LifeLine', 'Removed Date', 'Removal Reason']
+      : ['Name', 'Email', 'Phone', 'LifeLine', 'How', 'Date', 'Reason']
 
     const rows = dataToExport.map(member =>
       activeTab === 'active'
@@ -266,6 +271,7 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
             member.personEmail || '',
             member.personPhone || '',
             member.lifeLine.title,
+            member.status === 'LEFT' ? 'Left on their own' : 'Removed by leader',
             member.removedAt ? formatDate(member.removedAt) : '',
             member.removedReason || ''
           ]
@@ -406,7 +412,7 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
           </div>
           <div>
             <div className="stat-card-value">{removedMembers.length}</div>
-            <div className="stat-card-label">Removed</div>
+            <div className="stat-card-label">Departed</div>
           </div>
         </div>
 
@@ -443,7 +449,7 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          Removed ({removedMembers.length})
+          Departed ({removedMembers.length})
         </button>
       </div>
 
@@ -603,11 +609,11 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
           filteredRemoved.length === 0 ? (
             <div className="text-center py-12 px-6">
               <UserX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Removed Members</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Departures</h3>
               <p className="text-gray-600">
                 {searchQuery || selectedLifeLine !== 'all'
                   ? 'Try adjusting your filters.'
-                  : 'No members have been removed from your LifeLines.'}
+                  : 'No one has left or been removed from your LifeLines.'}
               </p>
             </div>
           ) : (
@@ -625,7 +631,10 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
                       LifeLine
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Removed
+                      How
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Date
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Reason
@@ -647,6 +656,17 @@ export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) 
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-gray-700">{member.lifeLine.title}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {member.status === 'LEFT' ? (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full whitespace-nowrap">
+                            Left on their own
+                          </span>
+                        ) : (
+                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                            Removed by leader
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center text-sm text-gray-600">

@@ -1050,3 +1050,123 @@ export async function sendSupportTicketResolvedEmail(
     html
   })
 }
+/**
+ * Sign-in link for the self-service member portal. Sent to the address a member
+ * already has on file against their inquiries.
+ */
+export async function sendMemberPortalLinkEmail(
+  email: string,
+  portalUrl: string,
+  expiresInMinutes: number
+) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Manage Your LifeLines</title>
+        <style>
+            body { font-family: 'Libre Franklin', Arial, sans-serif; line-height: 1.6; color: #374151; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1f346d; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background: #f9fafb; }
+            .button { display: inline-block; background: #019e7c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Manage Your LifeLines</h1>
+            </div>
+
+            <div class="content">
+                <p>Hello,</p>
+
+                <p>You asked to see the LifeLines connected to this email address. Use the button below to view them:</p>
+
+                <a href="${portalUrl}" class="button">View My LifeLines</a>
+
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; background: #f3f4f6; padding: 10px; border-radius: 4px;">${portalUrl}</p>
+
+                <p style="color: #6b7280; font-size: 14px;">This link expires in ${expiresInMinutes} minutes and is personal to you &mdash; please don&rsquo;t forward it. If you didn&rsquo;t request it, you can safely ignore this email; nothing will change.</p>
+
+                <p>Blessings,<br>
+                The LifeLines Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `
+
+  return await sendEmail({
+    to: email,
+    subject: 'Manage your LifeLines',
+    html
+  })
+}
+
+/**
+ * Let a leader know that someone has stepped away from their group, including
+ * the reason given. This is internal pastoral information.
+ */
+export async function sendMemberLeftNotification(
+  leaderEmail: string,
+  leaderName: string,
+  details: {
+    personName: string
+    personEmail?: string | null
+    lifeLineTitle: string
+    reason: string
+    notes?: string | null
+  }
+) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>A member has left your LifeLine</title>
+        <style>
+            body { font-family: 'Libre Franklin', Arial, sans-serif; line-height: 1.6; color: #374151; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1f346d; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background: #f9fafb; }
+            .detail { background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin: 15px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>A Member Has Left Your LifeLine</h1>
+            </div>
+
+            <div class="content">
+                <h2>Hello ${leaderName},</h2>
+
+                <p><strong>${details.personName}</strong> has stepped away from <strong>${details.lifeLineTitle}</strong>.</p>
+
+                <div class="detail">
+                    <p style="margin: 0 0 8px 0;"><strong>Reason given:</strong> ${details.reason}</p>
+                    ${details.notes ? `<p style="margin: 0 0 8px 0;"><strong>Additional notes:</strong> ${details.notes}</p>` : ''}
+                    ${details.personEmail ? `<p style="margin: 0;"><strong>Email:</strong> ${details.personEmail}</p>` : ''}
+                </div>
+
+                <p>They have been moved out of your active member list. No action is needed &mdash; this note is just so you know.</p>
+
+                <p style="color: #6b7280; font-size: 14px;">This information is for you and parish staff only. Please treat it as confidential and don&rsquo;t share it with the group.</p>
+
+                <p>Blessings,<br>
+                The LifeLines Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `
+
+  return await sendEmail({
+    to: leaderEmail,
+    subject: `${details.personName} has left ${details.lifeLineTitle}`,
+    html
+  })
+}

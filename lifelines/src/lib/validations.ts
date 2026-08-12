@@ -148,7 +148,7 @@ export const formationRequestFiltersSchema = z.object({
 })
 
 export const inquiryFiltersSchema = z.object({
-  status: z.enum(['UNDECIDED', 'JOINED', 'NOT_JOINED', 'REMOVED']).optional(),
+  status: z.enum(['UNDECIDED', 'JOINED', 'NOT_JOINED', 'REMOVED', 'LEFT']).optional(),
   lifeLineId: z.string().cuid().optional(),
   search: z.string().optional(),
 })
