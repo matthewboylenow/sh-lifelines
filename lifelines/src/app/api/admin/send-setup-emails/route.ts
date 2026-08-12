@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-utils'
 import { generateResetToken, hasRole } from '@/lib/auth-utils'
-import { sendAccountSetupEmail } from '@/lib/email'
+import { sendAccountSetupEmail, renderAccountSetupEmail, sendEmail } from '@/lib/email'
 import { UserRole } from '@prisma/client'
 import { z } from 'zod'
 
@@ -18,9 +18,14 @@ const requestSchema = z.object({
   // Or invite every leader who has never signed in — the common case after a
   // bulk import, where accounts exist with passwords nobody knows.
   scope: z.enum(['leaders-never-logged-in']).optional(),
+  // Send a single copy to the signed-in admin instead of to real leaders.
+  test: z.boolean().optional(),
+  // Optional admin-authored copy; blank falls back to the defaults.
+  subject: z.string().max(200).optional(),
+  intro: z.string().max(4000).optional(),
 }).refine(
-  (data) => (data.userIds && data.userIds.length > 0) || data.scope,
-  { message: 'Provide userIds or a scope' }
+  (data) => data.test || (data.userIds && data.userIds.length > 0) || data.scope,
+  { message: 'Provide userIds, a scope, or test mode' }
 )
 
 // POST /api/admin/send-setup-emails - Invite users to set their own password
@@ -42,7 +47,36 @@ export async function POST(req: NextRequest) {
         400
       )
     }
-    const { userIds, scope } = parsed.data
+    const { userIds, scope, test, subject, intro } = parsed.data
+
+    // Test mode: send one copy to the admin using a placeholder link, so the
+    // real invitations can be checked in an inbox before going out. No token is
+    // issued and no recipient's account is touched.
+    if (test) {
+      const adminEmail = session.user.email
+      if (!adminEmail) {
+        return createErrorResponse('Your account has no email address to send a test to', 400)
+      }
+
+      const { subject: renderedSubject, html } = renderAccountSetupEmail({
+        displayName: session.user.name || 'Maria Fusillo',
+        setupUrl: `${process.env.APP_URL}/reset-password?token=EXAMPLE-PREVIEW-LINK`,
+        expiresInDays: SETUP_TOKEN_DAYS,
+        intro,
+        subject,
+      })
+
+      await sendEmail({
+        to: adminEmail,
+        subject: `[Test] ${renderedSubject}`,
+        html,
+      })
+
+      return createSuccessResponse(
+        { sent: 1, failed: 0, test: true, results: [{ email: adminEmail, sent: true }] },
+        `Test invitation sent to ${adminEmail}`
+      )
+    }
 
     const users = await prisma.user.findMany({
       where: userIds && userIds.length > 0
@@ -79,7 +113,8 @@ export async function POST(req: NextRequest) {
           user.email,
           user.displayName || user.email,
           token,
-          SETUP_TOKEN_DAYS
+          SETUP_TOKEN_DAYS,
+          { intro, subject }
         )
 
         results.push({ email: user.email, sent: true })

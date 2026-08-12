@@ -358,18 +358,53 @@ export async function sendInquiryNotification(
 }
 
 // Password reset email
+export const DEFAULT_SETUP_EMAIL_SUBJECT = 'Set up your LifeLines account'
+
+export const DEFAULT_SETUP_EMAIL_INTRO =
+  'Saint Helen’s LifeLines has moved to a new website, and an account has been created for you as a LifeLine leader.'
+
+/** Escape admin-authored copy before embedding it in the email HTML. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+/** Render admin-authored plain text as HTML paragraphs, preserving line breaks. */
+function toParagraphs(value: string): string {
+  return value
+    .split(/\n{2,}/)
+    .map(block => `<p>${escapeHtml(block.trim()).replace(/\n/g, '<br />')}</p>`)
+    .join('\n                ')
+}
+
+export interface AccountSetupEmailContent {
+  displayName: string
+  setupUrl: string
+  expiresInDays?: number
+  /** Optional replacement for the opening paragraph. */
+  intro?: string
+  /** Optional replacement subject line. */
+  subject?: string
+}
+
 /**
- * Invite an existing account (e.g. a leader created by the WordPress import) to
- * choose their own password. Uses the same reset-token mechanism as a password
- * reset, but is framed as an invitation and carries a longer expiry window.
+ * Single source of truth for the account-setup email. Both the admin preview
+ * and the real send call this, so what is previewed is exactly what is sent.
  */
-export async function sendAccountSetupEmail(
-  email: string,
-  displayName: string,
-  setupToken: string,
-  expiresInDays: number = 7
-) {
-  const setupUrl = `${process.env.APP_URL}/reset-password?token=${setupToken}`
+export function renderAccountSetupEmail({
+  displayName,
+  setupUrl,
+  expiresInDays = 7,
+  intro,
+  subject,
+}: AccountSetupEmailContent): { subject: string; html: string } {
+  const introHtml = toParagraphs(
+    intro && intro.trim() ? intro.trim() : DEFAULT_SETUP_EMAIL_INTRO
+  )
 
   const html = `
     <!DOCTYPE html>
@@ -393,9 +428,9 @@ export async function sendAccountSetupEmail(
             </div>
 
             <div class="content">
-                <h2>Hello ${displayName},</h2>
+                <h2>Hello ${escapeHtml(displayName)},</h2>
 
-                <p>Saint Helen&rsquo;s LifeLines has moved to a new website, and an account has been created for you as a LifeLine leader.</p>
+                ${introHtml}
 
                 <p>To get started, choose a password for your account:</p>
 
@@ -423,11 +458,33 @@ export async function sendAccountSetupEmail(
     </html>
   `
 
-  return await sendEmail({
-    to: email,
-    subject: 'Set up your LifeLines account',
-    html
+  return {
+    subject: subject && subject.trim() ? subject.trim() : DEFAULT_SETUP_EMAIL_SUBJECT,
+    html,
+  }
+}
+
+/**
+ * Invite an existing account (e.g. a leader created by the WordPress import) to
+ * choose their own password. Uses the same reset-token mechanism as a password
+ * reset, but is framed as an invitation and carries a longer expiry window.
+ */
+export async function sendAccountSetupEmail(
+  email: string,
+  displayName: string,
+  setupToken: string,
+  expiresInDays: number = 7,
+  options: { intro?: string; subject?: string } = {}
+) {
+  const { subject, html } = renderAccountSetupEmail({
+    displayName,
+    setupUrl: `${process.env.APP_URL}/reset-password?token=${setupToken}`,
+    expiresInDays,
+    intro: options.intro,
+    subject: options.subject,
   })
+
+  return await sendEmail({ to: email, subject, html })
 }
 
 export async function sendPasswordResetEmail(
