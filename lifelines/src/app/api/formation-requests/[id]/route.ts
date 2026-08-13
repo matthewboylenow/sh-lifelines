@@ -6,6 +6,7 @@ import {
   withAuth 
 } from '@/lib/api-utils'
 import { UserRole, FormationStatus } from '@prisma/client'
+import { canAutoApprove } from '@/lib/formation-workflow'
 
 interface RouteParams {
   params: Promise<{
@@ -72,7 +73,11 @@ export async function GET(req: NextRequest, context: RouteParams) {
         return createErrorResponse('Formation request not found', 404)
       }
 
-      return createSuccessResponse(request)
+      // Where this stands, straight from the workflow, so the page can never
+      // show a different rule from the one being applied.
+      const assessment = await canAutoApprove(id)
+
+      return createSuccessResponse({ ...request, assessment })
     } catch (error) {
       console.error('Error fetching formation request:', error)
       return createErrorResponse('Failed to fetch formation request', 500)
@@ -99,6 +104,16 @@ export async function PUT(req: NextRequest, context: RouteParams) {
 
       if (!request) {
         return createErrorResponse('Formation request not found', 404)
+      }
+
+      // Approving or declining has real consequences — an account, a group, an
+      // email to the requester. Those go through the workflow, not a raw status
+      // write, so this endpoint is left for the states that carry none.
+      if (status === FormationStatus.APPROVED || status === FormationStatus.REJECTED) {
+        return createErrorResponse(
+          'Use the approve or decline action on the request so the LifeLine and notifications are handled',
+          400
+        )
       }
 
       const updateData: any = { status }

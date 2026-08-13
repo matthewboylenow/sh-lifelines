@@ -2,16 +2,21 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { 
   createErrorResponse, 
-  createSuccessResponse, 
+  createSuccessResponse,
   parsePaginationParams,
-  createPaginatedResponse 
+  createPaginatedResponse,
+  withAuth
 } from '@/lib/api-utils'
 import { createFormationRequestSchema } from '@/lib/validations'
-import { FormationStatus } from '@prisma/client'
+import { FormationStatus, UserRole } from '@prisma/client'
 import { sendFormationRequestNotification } from '@/lib/email'
+import { ZodError } from 'zod'
 
 // GET /api/formation-requests - List formation requests with filtering
+// Requests carry names, emails, phone numbers and how each member voted, so
+// this is limited to the people who review them.
 export async function GET(req: NextRequest) {
+  return withAuth(async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url)
     const { page, limit, skip } = parsePaginationParams(searchParams)
@@ -97,6 +102,7 @@ export async function GET(req: NextRequest) {
     console.error('Error fetching formation requests:', error)
     return createErrorResponse('Failed to fetch formation requests', 500)
   }
+  }, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])(req)
 }
 
 // POST /api/formation-requests - Create new formation request
@@ -139,6 +145,14 @@ export async function POST(req: NextRequest) {
 
     return createSuccessResponse(formationRequest, 'Formation request submitted successfully')
   } catch (error) {
+    // Tell the person which field needs fixing rather than a blank failure.
+    if (error instanceof ZodError) {
+      const first = error.issues[0]
+      return createErrorResponse(
+        first ? `${first.path.join('.') || 'Form'}: ${first.message}` : 'Please check the form and try again',
+        400
+      )
+    }
     console.error('Error creating formation request:', error)
     return createErrorResponse('Failed to create formation request', 500)
   }

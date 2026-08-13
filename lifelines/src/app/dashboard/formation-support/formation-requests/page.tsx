@@ -162,15 +162,14 @@ export default function FormationRequestsPage() {
     const scheduled = new Date(scheduledDate)
     const diff = scheduled.getTime() - now.getTime()
     
-    if (diff <= 0) return 'Overdue'
-    
+    if (diff <= 0) return null
+
     const hours = Math.floor(diff / (1000 * 60 * 60))
-    if (hours < 24) {
-      return `${hours}h remaining`
-    }
-    
+    if (hours < 1) return 'under an hour'
+    if (hours < 24) return `${hours}h`
+
     const days = Math.floor(hours / 24)
-    return `${days}d ${hours % 24}h remaining`
+    return `${days}d ${hours % 24}h`
   }
 
   if (status === 'loading' || loading) {
@@ -283,7 +282,10 @@ export default function FormationRequestsPage() {
             requests.map((request) => {
               const voteSummary = getVoteSummary(request.votes)
               const timeRemaining = formatTimeRemaining(request.autoApprovalScheduled)
-              
+              // An objection or a request to discuss holds the request open
+              // until the team resolves it.
+              const onHold = (voteSummary.OBJECT || 0) > 0 || (voteSummary.DISCUSS || 0) > 0
+
               return (
                 <div key={request.id} className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -345,12 +347,22 @@ export default function FormationRequestsPage() {
                         )}
                       </div>
 
-                      {/* Auto-approval Timer */}
-                      {request.status === 'SUBMITTED' && timeRemaining && (
-                        <div className="flex items-center text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg mb-3">
-                          <Clock className="h-4 w-4 mr-2" />
-                          Auto-approval: {timeRemaining}
-                        </div>
+                      {/* Where this request stands */}
+                      {request.status === 'SUBMITTED' && (
+                        onHold ? (
+                          <div className="flex items-center text-sm text-amber-800 bg-amber-50 px-3 py-2 rounded-lg mb-3">
+                            <Clock className="h-4 w-4 mr-2" />
+                            On hold for the team — {(voteSummary.OBJECT || 0) > 0 ? 'objection raised' : 'discussion requested'}
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-sm text-blue-800 bg-blue-50 px-3 py-2 rounded-lg mb-3">
+                            <Clock className="h-4 w-4 mr-2" />
+                            {(voteSummary.APPROVE || 0)} of 2 approvals
+                            {timeRemaining
+                              ? ` · review window closes in ${timeRemaining}`
+                              : ' · review window has closed'}
+                          </div>
+                        )
                       )}
                     </div>
                   </div>

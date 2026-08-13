@@ -46,6 +46,19 @@ interface FormationRequestDetail {
   autoApprovalScheduled?: string
   lifeLineCreated: boolean
   createdAt: string
+  assessment?: {
+    canApprove: boolean
+    needsAttention: boolean
+    reason: string
+    reviewEndsAt: string | null
+    votingSummary: {
+      approvals: number
+      objections: number
+      discussions: number
+      passes: number
+      total: number
+    }
+  }
   submitter?: {
     id: string
     displayName: string
@@ -97,6 +110,12 @@ export default function FormationRequestDetailPage() {
     vote: '' as VoteType | '',
     comment: ''
   })
+
+  const [deciding, setDeciding] = useState(false)
+  const [declineOpen, setDeclineOpen] = useState(false)
+  const [declineReason, setDeclineReason] = useState('')
+
+  const isAdmin = hasAnyRole(session?.user?.roles, [UserRole.ADMIN])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -171,6 +190,38 @@ export default function FormationRequestDetailPage() {
     }
   }
 
+  const submitDecision = async (decision: 'APPROVE' | 'REJECT') => {
+    setDeciding(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch(`/api/formation-requests/${requestId}/decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision,
+          reason: decision === 'REJECT' ? declineReason : undefined,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setSuccess(result.message || 'Decision recorded')
+        setDeclineOpen(false)
+        setDeclineReason('')
+        await fetchRequest()
+      } else {
+        setError(result.error || 'Failed to record the decision')
+      }
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setDeciding(false)
+    }
+  }
+
   const getStatusBadge = (status: FormationStatus) => {
     const styles = {
       SUBMITTED: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -201,22 +252,19 @@ export default function FormationRequestDetailPage() {
     }
   }
 
-  const formatTimeRemaining = (scheduledDate?: string) => {
+  const formatTimeRemaining = (scheduledDate?: string | null) => {
     if (!scheduledDate) return null
-    
-    const now = new Date()
-    const scheduled = new Date(scheduledDate)
-    const diff = scheduled.getTime() - now.getTime()
-    
-    if (diff <= 0) return 'Overdue'
-    
+
+    const diff = new Date(scheduledDate).getTime() - Date.now()
+    if (diff <= 0) return null
+
     const hours = Math.floor(diff / (1000 * 60 * 60))
-    if (hours < 24) {
-      return `${hours} hours remaining`
-    }
-    
+    if (hours < 1) return 'less than an hour'
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'}`
+
     const days = Math.floor(hours / 24)
-    return `${days} days ${hours % 24} hours remaining`
+    const rest = hours % 24
+    return rest ? `${days} day${days === 1 ? '' : 's'} ${rest} hr` : `${days} day${days === 1 ? '' : 's'}`
   }
 
   const getCurrentUserVote = () => {
@@ -248,7 +296,8 @@ export default function FormationRequestDetailPage() {
 
   if (!request) return null
 
-  const timeRemaining = formatTimeRemaining(request.autoApprovalScheduled)
+  const assessment = request.assessment
+  const timeRemaining = formatTimeRemaining(assessment?.reviewEndsAt)
   const currentUserVote = getCurrentUserVote()
 
   return (
@@ -285,17 +334,44 @@ export default function FormationRequestDetailPage() {
             </div>
           </div>
 
-          {/* Auto-approval Timer */}
-          {request.status === 'SUBMITTED' && timeRemaining && (
-            <div className="mt-4 flex items-center text-orange-600 bg-orange-50 px-4 py-3 rounded-lg border border-orange-200">
-              <Clock className="h-5 w-5 mr-3" />
+          {/* Where this request stands right now */}
+          {request.status === 'SUBMITTED' && assessment && (
+            <div
+              className={`mt-4 flex items-start px-4 py-3 rounded-lg border ${
+                assessment.needsAttention
+                  ? 'text-amber-800 bg-amber-50 border-amber-200'
+                  : assessment.canApprove
+                  ? 'text-green-800 bg-green-50 border-green-200'
+                  : 'text-blue-800 bg-blue-50 border-blue-200'
+              }`}
+            >
+              <Clock className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
               <div>
-                <div className="font-medium">Auto-approval Timer</div>
-                <div className="text-sm">{timeRemaining}</div>
+                <div className="font-medium">{assessment.reason}</div>
+                <div className="text-sm mt-1">
+                  {assessment.votingSummary.approvals} of 2 approvals
+                  {assessment.votingSummary.objections > 0 &&
+                    ` · ${assessment.votingSummary.objections} objection${assessment.votingSummary.objections === 1 ? '' : 's'}`}
+                  {assessment.votingSummary.discussions > 0 &&
+                    ` · ${assessment.votingSummary.discussions} asked to discuss`}
+                  {timeRemaining && ` · review window closes in ${timeRemaining}`}
+                </div>
               </div>
             </div>
           )}
         </div>
+
+        {(error || success) && (
+          <div
+            className={`mb-6 px-4 py-3 rounded-lg border ${
+              error
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : 'bg-green-50 border-green-200 text-green-700'
+            }`}
+          >
+            {error || success}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -460,6 +536,77 @@ export default function FormationRequestDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Admin decision — the final call when the vote cannot settle it */}
+            {isAdmin && request.status === 'SUBMITTED' && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Admin Decision</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Settle this request now, whatever the votes say. Approving creates the
+                  LifeLine as a draft and emails the leader; declining emails them your reason.
+                </p>
+
+                {!declineOpen ? (
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => submitDecision('APPROVE')}
+                      disabled={deciding}
+                      className="w-full flex items-center justify-center"
+                    >
+                      {deciding ? (
+                        <LoadingSpinner className="mr-2" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
+                      Approve and create the LifeLine
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDeclineOpen(true)}
+                      disabled={deciding}
+                      className="w-full flex items-center justify-center"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Decline this request
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <label htmlFor="decline-reason" className="block text-sm font-medium text-gray-700">
+                      Reason (sent to {request.groupLeader})
+                    </label>
+                    <textarea
+                      id="decline-reason"
+                      value={declineReason}
+                      onChange={e => setDeclineReason(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-primary"
+                      placeholder="Let them know why, and what they might do next."
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => submitDecision('REJECT')}
+                        disabled={deciding || declineReason.trim().length === 0}
+                        className="flex-1 flex items-center justify-center"
+                      >
+                        {deciding ? <LoadingSpinner className="mr-2" /> : null}
+                        Send and decline
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setDeclineOpen(false)
+                          setDeclineReason('')
+                        }}
+                        disabled={deciding}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Current Vote Status */}
             {currentUserVote && (
               <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-6">
@@ -486,18 +633,6 @@ export default function FormationRequestDetailPage() {
                   <VoteIcon className="h-5 w-5 mr-2" />
                   Cast Your Vote
                 </h3>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mb-4">
-                    {error}
-                  </div>
-                )}
-
-                {success && (
-                  <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg mb-4">
-                    {success}
-                  </div>
-                )}
 
                 <form onSubmit={handleVoteSubmit} className="space-y-4">
                   <div>
@@ -558,13 +693,14 @@ export default function FormationRequestDetailPage() {
                   <div className="flex items-start">
                     <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 mr-2" />
                     <div className="text-sm text-blue-800">
-                      <div className="font-medium mb-1">Voting Guidelines:</div>
+                      <div className="font-medium mb-1">How this works:</div>
                       <ul className="space-y-1 text-xs">
-                        <li>• <strong>Approve</strong>: Support this LifeLine formation</li>
-                        <li>• <strong>Object</strong>: Have concerns that need addressing</li>
-                        <li>• <strong>Discuss</strong>: Need more information or discussion</li>
-                        <li>• <strong>Pass</strong>: Abstain from this decision</li>
+                        <li>• <strong>Approve</strong>: Support this LifeLine. Two approvals and a 48-hour review window are needed before it goes ahead.</li>
+                        <li>• <strong>Object</strong>: Hold it open — you have concerns. Nothing is declined automatically; an admin makes that call.</li>
+                        <li>• <strong>Discuss</strong>: Hold it open until the team has talked it through.</li>
+                        <li>• <strong>Pass</strong>: Abstain. Neither helps nor holds.</li>
                       </ul>
+                      <p className="mt-2 text-xs">You can change your vote at any time while the request is open.</p>
                     </div>
                   </div>
                 </div>
