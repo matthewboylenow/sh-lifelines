@@ -6,7 +6,7 @@
  * served directly (mp4/webm/ogg/mov). Anything else is treated as a plain link.
  */
 
-export type VideoKind = 'youtube' | 'vimeo' | 'file' | null
+export type VideoKind = 'youtube' | 'vimeo' | 'file' | 'private' | null
 
 export interface VideoEmbed {
   kind: VideoKind
@@ -54,6 +54,12 @@ function vimeoId(u: URL): string | null {
 export function parseVideoUrl(raw: string | null | undefined): VideoEmbed {
   const empty: VideoEmbed = { kind: null, embedUrl: null, fileUrl: null, thumbnailUrl: null }
   if (!raw || !raw.trim()) return empty
+
+  // Privately stored media: the browser cannot fetch an s3:// URL, so the
+  // player asks the API for a signed link instead.
+  if (raw.trim().startsWith('s3://')) {
+    return { kind: 'private', embedUrl: null, fileUrl: null, thumbnailUrl: null }
+  }
 
   let u: URL
   try {

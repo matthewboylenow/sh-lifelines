@@ -79,8 +79,44 @@ export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
     }))
   ]
 
-  const ResourceVideo = ({ url, title }: { url: string; title: string }) => {
+  const ResourceVideo = ({ id, url, title }: { id: string; url: string; title: string }) => {
     const video = parseVideoUrl(url)
+    const [signedUrl, setSignedUrl] = useState<string | null>(null)
+    const [signError, setSignError] = useState(false)
+
+    // Privately stored media needs a short-lived signed link, fetched on demand.
+    useEffect(() => {
+      if (video.kind !== 'private') return
+      let cancelled = false
+      fetch(`/api/resources/${id}/media`)
+        .then(r => r.json())
+        .then(d => { if (!cancelled) d?.data?.url ? setSignedUrl(d.data.url) : setSignError(true) })
+        .catch(() => { if (!cancelled) setSignError(true) })
+      return () => { cancelled = true }
+    }, [id, video.kind])
+
+    if (video.kind === 'private') {
+      if (signError) {
+        return (
+          <p className="mb-4 text-sm text-red-600">
+            This video could not be loaded. Please try again.
+          </p>
+        )
+      }
+      if (!signedUrl) {
+        return (
+          <div className="mb-4 flex items-center justify-center rounded-lg bg-gray-100 aspect-video">
+            <LoadingSpinner className="w-6 h-6" />
+          </div>
+        )
+      }
+      return (
+        <div className="mb-4 overflow-hidden rounded-lg bg-black">
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video src={signedUrl} controls preload="metadata" className="w-full aspect-video" />
+        </div>
+      )
+    }
 
     if (video.kind === 'file' && video.fileUrl) {
       return (
@@ -261,7 +297,7 @@ export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
                 </div>
 
                 {resource.videoUrl && isPlayableVideo(resource.videoUrl) && (
-                  <ResourceVideo url={resource.videoUrl} title={resource.title} />
+                  <ResourceVideo id={resource.id} url={resource.videoUrl} title={resource.title} />
                 )}
 
                 {resource.description && (
