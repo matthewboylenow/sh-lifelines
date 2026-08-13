@@ -13,6 +13,7 @@ import {
   EyeOff,
   Edit,
   Trash2,
+  ExternalLink,
   Plus,
   Search,
   Filter,
@@ -499,42 +500,55 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                         {lifeline._count?.inquiries || 0}
                       </td>
                       <td className="sticky right-0 z-10 bg-white group-hover:bg-gray-50 px-4 py-4 whitespace-nowrap text-right text-sm font-medium shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
-                        <div className="flex items-center justify-end space-x-3">
+                        <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/lifelines/${lifeline.slug || lifeline.id}`}
-                            className="text-gray-400 hover:text-gray-600"
-                            title="View"
+                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            title="Open the public page for this LifeLine"
                           >
-                            <Eye className="h-4 w-4" />
+                            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                            View
                           </Link>
                           <Link
                             href={`/lifelines/${lifeline.slug || lifeline.id}/edit`}
-                            className="text-gray-400 hover:text-blue-600"
-                            title="Edit"
+                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                            title="Edit this LifeLine's details"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3.5 w-3.5" aria-hidden="true" />
+                            Edit
                           </Link>
                           <button
                             onClick={() => toggleLifeLineVisibility(lifeline.id, lifeline.status, lifeline.title)}
-                            className="text-gray-400 hover:text-yellow-600"
-                            title={lifeline.status === 'ARCHIVED' ? 'Show LifeLine' : 'Hide LifeLine'}
+                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+                            title={
+                              lifeline.status === 'ARCHIVED'
+                                ? 'Show this LifeLine on the public site again'
+                                : 'Hide this LifeLine from the public site'
+                            }
                           >
                             {lifeline.status === 'ARCHIVED' ? (
-                              <Eye className="h-4 w-4" />
+                              <>
+                                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                                Show
+                              </>
                             ) : (
-                              <EyeOff className="h-4 w-4" />
+                              <>
+                                <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+                                Hide
+                              </>
                             )}
                           </button>
                           <button
-                            className="text-gray-400 hover:text-red-600"
-                            title="Delete"
+                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700"
+                            title="Permanently delete this LifeLine and its inquiries"
                             onClick={() => {
                               if (confirm(`Are you sure you want to delete "${lifeline.title}"? This will also remove all related inquiries.`)) {
                                 deleteLifeLine(lifeline.id, lifeline.title)
                               }
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            Delete
                           </button>
                         </div>
                       </td>
