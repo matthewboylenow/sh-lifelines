@@ -228,7 +228,7 @@ export function AllLifeLines({ userRoles }: AllLifeLinesProps) {
           </p>
         </div>
       ) : viewMode === 'table' ? (
-        <div className="dashboard-card overflow-x-auto">
+        <div className="dashboard-card p-0 overflow-x-auto rounded-lg">
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
@@ -247,14 +247,14 @@ export function AllLifeLines({ userRoles }: AllLifeLinesProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Inquiries
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="sticky right-0 z-20 bg-gray-50 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredLifeLines.map(lifeLine => (
-                <tr key={lifeLine.id} className="hover:bg-gray-50">
+                <tr key={lifeLine.id} className="group hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
                       <div className="text-sm font-medium text-gray-900">{lifeLine.title}</div>
@@ -292,8 +292,8 @@ export function AllLifeLines({ userRoles }: AllLifeLinesProps) {
                       {lifeLine._count?.inquiries || 0}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="sticky right-0 z-10 bg-white group-hover:bg-gray-50 px-4 py-4 whitespace-nowrap text-right shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
+                    <div className="flex items-center justify-end space-x-3">
                       <Link
                         href={`/lifelines/${lifeLine.slug || lifeLine.id}`}
                         className="text-gray-400 hover:text-gray-600"
