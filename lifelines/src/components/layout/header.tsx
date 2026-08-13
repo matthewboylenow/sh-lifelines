@@ -27,10 +27,15 @@ export function Header() {
       href: '/dashboard/formation-support', 
       roles: [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN] 
     },
-    { 
-      name: 'Admin', 
-      href: '/dashboard/admin', 
-      roles: [UserRole.ADMIN] 
+    {
+      name: 'Admin',
+      href: '/dashboard/admin',
+      roles: [UserRole.ADMIN]
+    },
+    {
+      name: 'Training',
+      href: '/training',
+      roles: [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
     },
   ]
 
