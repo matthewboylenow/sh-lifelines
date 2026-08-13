@@ -33,7 +33,7 @@ function mapWordPressRole(wpRoles: string[] = []): UserRole {
 export async function POST(req: NextRequest) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can import users
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can import users', 403)
     }
 

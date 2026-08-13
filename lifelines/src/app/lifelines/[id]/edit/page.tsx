@@ -6,6 +6,8 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { LifeLineForm } from '@/components/lifelines/lifeline-form'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 interface PageProps {
   params: Promise<{
@@ -18,7 +20,7 @@ function whereByIdOrSlug(identifier: string) {
   return { slug: identifier }
 }
 
-async function getLifeLineForEdit(identifier: string, userId: string, userRole: string) {
+async function getLifeLineForEdit(identifier: string, userId: string, userRoles: UserRole[]) {
   try {
     const lifeLine = await prisma.lifeLine.findUnique({
       where: whereByIdOrSlug(identifier),
@@ -37,8 +39,7 @@ async function getLifeLineForEdit(identifier: string, userId: string, userRole: 
       return null
     }
 
-    if (userRole !== 'ADMIN' &&
-        userRole !== 'FORMATION_SUPPORT_TEAM' &&
+    if (!hasAnyRole(userRoles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) &&
         lifeLine.leaderId !== userId) {
       return null
     }
@@ -58,7 +59,7 @@ export default async function EditLifeLinePage({ params }: PageProps) {
     redirect('/login')
   }
 
-  const lifeLine = await getLifeLineForEdit(resolvedParams.id, session.user.id, session.user.role)
+  const lifeLine = await getLifeLineForEdit(resolvedParams.id, session.user.id, session.user.roles)
 
   if (!lifeLine) {
     notFound()

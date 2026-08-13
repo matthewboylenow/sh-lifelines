@@ -41,7 +41,7 @@ interface User {
 }
 
 interface UserManagementProps {
-  currentUserRole: UserRole
+  currentUserRole: UserRole[]
 }
 
 const getRoleColor = (role: UserRole) => {

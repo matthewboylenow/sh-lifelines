@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       const where: any = {}
 
       // Non-admins only see active resources
-      const isAdmin = hasRole(session.user.role, UserRole.ADMIN)
+      const isAdmin = hasRole(session.user.roles, UserRole.ADMIN)
       if (!isAdmin) {
         where.isActive = true
       } else if (isActive !== null) {
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can create resources
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can create resources', 403)
     }
 

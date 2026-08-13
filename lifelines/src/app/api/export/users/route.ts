@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Only admins can export user data
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Insufficient permissions - Admin required', 403)
     }
 

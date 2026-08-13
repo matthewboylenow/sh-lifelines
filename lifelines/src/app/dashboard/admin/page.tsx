@@ -16,7 +16,7 @@ export default async function AdminDashboardPage() {
 
   // Check if user has admin role
   const allowedRoles: UserRole[] = [UserRole.ADMIN]
-  if (!hasAnyRole(session.user.role, allowedRoles)) {
+  if (!hasAnyRole(session.user.roles, allowedRoles)) {
     redirect('/dashboard/leader')
   }
 
@@ -32,7 +32,7 @@ export default async function AdminDashboardPage() {
 
         <AdminDashboard 
           userId={session.user.id} 
-          userRole={session.user.role as UserRole} 
+          userRoles={session.user.roles} 
         />
       </div>
     </MainLayout>

@@ -59,7 +59,7 @@ export async function POST(
 
       // Check if user can send emails (must be leader, admin, or formation support)
       const isAuthorized =
-        hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
+        hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
         lifeLine.leaderId === session.user.id
 
       if (!isAuthorized) {
@@ -148,7 +148,7 @@ export async function GET(
 
       // Check if user can view members
       const isAuthorized =
-        hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
+        hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
         lifeLine.leaderId === session.user.id
 
       if (!isAuthorized) {

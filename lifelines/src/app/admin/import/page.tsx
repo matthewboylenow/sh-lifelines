@@ -10,7 +10,7 @@ export default async function AdminImportPage() {
   const session = await getServerSession(authOptions)
 
   // Check if user is authenticated and is an admin
-  if (!session || !hasRole(session.user.role, UserRole.ADMIN)) {
+  if (!session || !hasRole(session.user.roles, UserRole.ADMIN)) {
     redirect('/login')
   }
 

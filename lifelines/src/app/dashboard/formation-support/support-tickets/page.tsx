@@ -74,7 +74,7 @@ export default function SupportTicketsPage() {
     totalPages: 0
   })
 
-  const isSupport = hasAnyRole(session?.user?.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
+  const isSupport = hasAnyRole(session?.user?.roles, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
 
   useEffect(() => {
     if (status === 'unauthenticated') {

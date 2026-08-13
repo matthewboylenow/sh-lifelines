@@ -8,6 +8,7 @@ import { updateInquiryStatusSchema } from '@/lib/validations'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 
 // GET /api/inquiries/[id] - Get specific inquiry
 export async function GET(req: NextRequest) {
@@ -85,9 +86,9 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Authorization: must be LifeLine leader, Formation Support, or Admin
-    const userRole = session.user.role as UserRole
+    const userRoles = session.user.roles
     const isLeader = existingInquiry.lifeLine.leaderId === session.user.id
-    const isSupportOrAdmin = userRole === UserRole.ADMIN || userRole === UserRole.FORMATION_SUPPORT_TEAM
+    const isSupportOrAdmin = hasRole(userRoles, UserRole.ADMIN) || hasRole(userRoles, UserRole.FORMATION_SUPPORT_TEAM)
 
     if (!isLeader && !isSupportOrAdmin) {
       return createErrorResponse('Forbidden: You do not have permission to update this inquiry', 403)

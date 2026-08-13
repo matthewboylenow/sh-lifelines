@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     }
 
     const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-    if (!hasAnyRole(session.user.role, allowedRoles)) {
+    if (!hasAnyRole(session.user.roles, allowedRoles)) {
       return createErrorResponse('Insufficient permissions', 403)
     }
 

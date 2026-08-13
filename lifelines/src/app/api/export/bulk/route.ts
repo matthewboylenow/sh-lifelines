@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-    if (!hasAnyRole(session.user.role, allowedRoles)) {
+    if (!hasAnyRole(session.user.roles, allowedRoles)) {
       return createErrorResponse('Insufficient permissions', 403)
     }
 
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Export Users if requested (Admin only)
-    if (requestedExports.includes('users') && hasRole(session.user.role, UserRole.ADMIN)) {
+    if (requestedExports.includes('users') && hasRole(session.user.roles, UserRole.ADMIN)) {
       const users = await prisma.user.findMany({
         include: {
           _count: { select: { ledLifeLines: true } }

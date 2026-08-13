@@ -77,7 +77,7 @@ export function Header() {
             {session && (
               <>
                 {dashboardNavigation
-                  .filter(item => hasAnyRole(session.user.roles || session.user.role, item.roles))
+                  .filter(item => hasAnyRole(session.user.roles || session.user.roles, item.roles))
                   .map((item) => (
                     <Link
                       key={item.name}
@@ -173,7 +173,7 @@ export function Header() {
                 <>
                   <div className="border-t border-blue-400 my-2"></div>
                   {dashboardNavigation
-                    .filter(item => hasAnyRole(session.user.roles || session.user.role, item.roles))
+                    .filter(item => hasAnyRole(session.user.roles || session.user.roles, item.roles))
                     .map((item) => (
                       <Link
                         key={item.name}

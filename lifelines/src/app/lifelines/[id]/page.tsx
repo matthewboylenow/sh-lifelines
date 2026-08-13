@@ -75,7 +75,7 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
   }
 
   // Check if user can edit this LifeLine
-  const isAdminOrSupport = session && hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
+  const isAdminOrSupport = session && hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
   const canEdit = isAdminOrSupport || (session && session.user.id === lifeLine.leaderId)
 
   const defaultImage = '/pictures/nvmfrtbidso-1024x683.jpg'

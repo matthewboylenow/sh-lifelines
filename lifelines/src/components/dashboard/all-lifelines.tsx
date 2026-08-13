@@ -10,12 +10,13 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { formatDate } from '@/utils/formatters'
 import { Search, Eye, Edit, Users, MapPin, Clock, Calendar } from 'lucide-react'
+import { hasRole } from '@/lib/auth-utils'
 
 interface AllLifeLinesProps {
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
-export function AllLifeLines({ userRole }: AllLifeLinesProps) {
+export function AllLifeLines({ userRoles }: AllLifeLinesProps) {
   const [lifeLines, setLifeLines] = useState<LifeLineWithLeader[]>([])
   const [filteredLifeLines, setFilteredLifeLines] = useState<LifeLineWithLeader[]>([])
   const [loading, setLoading] = useState(true)
@@ -300,7 +301,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                       >
                         <Eye className="h-4 w-4" />
                       </Link>
-                      {userRole === UserRole.ADMIN && (
+                      {hasRole(userRoles, UserRole.ADMIN) && (
                         <Link
                           href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                           className="text-gray-400 hover:text-gray-600"
@@ -333,7 +334,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                   >
                     <Eye className="h-4 w-4" />
                   </Link>
-                  {userRole === UserRole.ADMIN && (
+                  {hasRole(userRoles, UserRole.ADMIN) && (
                     <Link
                       href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                       className="text-gray-400 hover:text-gray-600"

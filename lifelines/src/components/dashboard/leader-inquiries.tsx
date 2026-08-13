@@ -10,10 +10,10 @@ import { Mail, Phone, MessageSquare } from 'lucide-react'
 
 interface LeaderInquiriesProps {
   userId: string
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
-export function LeaderInquiries({ userId, userRole }: LeaderInquiriesProps) {
+export function LeaderInquiries({ userId, userRoles }: LeaderInquiriesProps) {
   const [inquiries, setInquiries] = useState<InquiryWithLifeLine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

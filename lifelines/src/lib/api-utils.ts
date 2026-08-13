@@ -37,7 +37,7 @@ export function withAuth(
         return createErrorResponse('Unauthorized', 401)
       }
 
-      if (allowedRoles && !hasAnyRole(session.user.role, allowedRoles)) {
+      if (allowedRoles && !hasAnyRole(session.user.roles, allowedRoles)) {
         return createErrorResponse('Forbidden', 403)
       }
 

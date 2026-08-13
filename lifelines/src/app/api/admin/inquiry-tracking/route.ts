@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     // Only allow admin and formation support team
     const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]
-    if (!hasAnyRole(session.user.role, allowedRoles)) {
+    if (!hasAnyRole(session.user.roles, allowedRoles)) {
       return createErrorResponse('Forbidden', 403)
     }
 

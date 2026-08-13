@@ -32,7 +32,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   // Only admins can access this page
-  if (session && !hasRole(session.user.roles || session.user.role, UserRole.ADMIN)) {
+  if (session && !hasRole(session.user.roles || session.user.roles, UserRole.ADMIN)) {
     router.push('/dashboard')
     return null
   }

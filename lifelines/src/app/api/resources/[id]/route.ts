@@ -39,7 +39,7 @@ export async function GET(
       }
 
       // Non-admins can only see active resources
-      const isAdmin = hasRole(session.user.role, UserRole.ADMIN)
+      const isAdmin = hasRole(session.user.roles, UserRole.ADMIN)
       if (!isAdmin && !resource.isActive) {
         return createErrorResponse('Resource not found', 404)
       }
@@ -59,7 +59,7 @@ export async function PUT(
 ) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can update resources
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can update resources', 403)
     }
 
@@ -106,7 +106,7 @@ export async function DELETE(
 ) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can delete resources
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can delete resources', 403)
     }
 
