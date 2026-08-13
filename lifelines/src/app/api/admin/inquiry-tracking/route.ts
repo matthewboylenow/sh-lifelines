@@ -113,14 +113,13 @@ export async function GET(req: NextRequest) {
               slug: true,
               title: true,
               groupLeader: true,
-              leaderId: true,
-              leader: {
-                select: {
+              leaders: {
+            select: {
                   id: true,
                   displayName: true,
                   email: true,
                 }
-              }
+          }
             }
           }
         },

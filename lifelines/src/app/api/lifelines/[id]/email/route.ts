@@ -31,7 +31,7 @@ export async function POST(
       const lifeLine = await prisma.lifeLine.findUnique({
         where: { id },
         include: {
-          leader: {
+          leaders: {
             select: {
               id: true,
               displayName: true,
@@ -60,7 +60,7 @@ export async function POST(
       // Check if user can send emails (must be leader, admin, or formation support)
       const isAuthorized =
         hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
-        lifeLine.leaderId === session.user.id
+        lifeLine.leaders.some((l: { id: string }) => l.id === session.user.id)
 
       if (!isAuthorized) {
         return createErrorResponse('You do not have permission to send emails for this LifeLine', 403)
@@ -76,8 +76,8 @@ export async function POST(
       }
 
       // Get leader info - use leader account if available, otherwise use stored groupLeader/leaderEmail
-      const leaderDisplayName = lifeLine.leader?.displayName || lifeLine.groupLeader || 'LifeLine Leader'
-      const leaderEmail = lifeLine.leader?.email || lifeLine.leaderEmail
+      const leaderDisplayName = lifeLine.leaders?.[0]?.displayName || lifeLine.groupLeader || 'LifeLine Leader'
+      const leaderEmail = lifeLine.leaders?.[0]?.email || lifeLine.leaderEmail
 
       if (!leaderEmail) {
         return createErrorResponse('No leader email configured for this LifeLine', 400)
@@ -126,6 +126,7 @@ export async function GET(
       const lifeLine = await prisma.lifeLine.findUnique({
         where: { id },
         include: {
+          leaders: { select: { id: true } },
           inquiries: {
             where: filter === 'all'
               ? {}
@@ -149,7 +150,7 @@ export async function GET(
       // Check if user can view members
       const isAuthorized =
         hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) ||
-        lifeLine.leaderId === session.user.id
+        lifeLine.leaders.some((l: { id: string }) => l.id === session.user.id)
 
       if (!isAuthorized) {
         return createErrorResponse('You do not have permission to view members of this LifeLine', 403)

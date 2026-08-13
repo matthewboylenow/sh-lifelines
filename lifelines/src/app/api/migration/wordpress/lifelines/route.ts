@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
             meetingTime: meta.meeting_time || null,
             imageUrl: meta.featured_image || null,
             videoUrl: meta.video_url || null,
-            leaderId: leader?.id || '', // Fallback to empty string if no leader found
+            ...(leader?.id ? { leaders: { connect: [{ id: leader.id }] } } : {}),
             createdAt: new Date(wpLifeLine.post_date),
           }
         })

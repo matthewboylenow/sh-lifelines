@@ -28,13 +28,13 @@ export async function GET(req: NextRequest) {
       include: {
         lifeLine: {
           include: {
-            leader: {
-              select: {
+            leaders: {
+            select: {
                 id: true,
                 displayName: true,
                 email: true,
               }
-            }
+          }
           }
         }
       }
@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest) {
     const existingInquiry = await prisma.inquiry.findUnique({
       where: { id },
       include: {
-        lifeLine: true
+        lifeLine: { include: { leaders: { select: { id: true } } } }
       }
     })
 
@@ -87,7 +87,7 @@ export async function PATCH(req: NextRequest) {
 
     // Authorization: must be LifeLine leader, Formation Support, or Admin
     const userRoles = session.user.roles
-    const isLeader = existingInquiry.lifeLine.leaderId === session.user.id
+    const isLeader = existingInquiry.lifeLine.leaders.some((l: { id: string }) => l.id === session.user.id)
     const isSupportOrAdmin = hasRole(userRoles, UserRole.ADMIN) || hasRole(userRoles, UserRole.FORMATION_SUPPORT_TEAM)
 
     if (!isLeader && !isSupportOrAdmin) {
@@ -109,13 +109,13 @@ export async function PATCH(req: NextRequest) {
       include: {
         lifeLine: {
           include: {
-            leader: {
-              select: {
+            leaders: {
+            select: {
                 id: true,
                 displayName: true,
                 email: true,
               }
-            }
+          }
           }
         }
       }

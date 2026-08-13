@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     // Fetch LifeLines data with related information
     const lifeLines = await prisma.lifeLine.findMany({
       include: {
-        leader: {
+        leaders: {
           select: {
             id: true,
             email: true,
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       `"${(lifeline.subtitle || '').replace(/"/g, '""')}"`,
       `"${(lifeline.description || '').replace(/"/g, '""')}"`,
       `"${(lifeline.groupLeader || '').replace(/"/g, '""')}"`,
-      `"${(lifeline.leader?.email || lifeline.leaderEmail || '').replace(/"/g, '""')}"`,
+      `"${(lifeline.leaders?.[0]?.email || lifeline.leaderEmail || '').replace(/"/g, '""')}"`,
       lifeline.status,
       lifeline.groupType || '',
       `"${(lifeline.agesStages || []).join(', ').replace(/"/g, '""')}"`,

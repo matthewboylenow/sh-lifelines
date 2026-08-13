@@ -25,7 +25,7 @@ async function getLifeLineForEdit(identifier: string, userId: string, userRoles:
     const lifeLine = await prisma.lifeLine.findUnique({
       where: whereByIdOrSlug(identifier),
       include: {
-        leader: {
+        leaders: {
           select: {
             id: true,
             displayName: true,
@@ -40,7 +40,7 @@ async function getLifeLineForEdit(identifier: string, userId: string, userRoles:
     }
 
     if (!hasAnyRole(userRoles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]) &&
-        lifeLine.leaderId !== userId) {
+        !lifeLine.leaders.some(l => l.id === userId)) {
       return null
     }
 

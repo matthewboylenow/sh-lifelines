@@ -53,7 +53,7 @@ export type UserWithRelations = User & {
 }
 
 export type LifeLineWithLeader = LifeLine & {
-  leader: User
+  leaders: User[]
   inquiries?: Inquiry[]
   _count?: {
     inquiries: number

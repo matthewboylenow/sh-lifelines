@@ -39,6 +39,7 @@ export const createLifeLineSchema = z.object({
   groupLeader: z.string().optional(),
   leaderEmail: z.string().email().optional().or(z.literal('')).nullable(),
   leaderId: z.string().optional().nullable(),
+  leaderIds: z.array(z.string()).optional(),
   supportContactId: z.string().optional().nullable(),
   subtitle: z.string().optional(),
   location: z.string().optional(),

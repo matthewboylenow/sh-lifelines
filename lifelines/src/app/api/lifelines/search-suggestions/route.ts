@@ -46,12 +46,12 @@ export async function GET(req: NextRequest) {
           ...baseWhere,
           OR: [
             { groupLeader: { contains: query, mode: 'insensitive' } },
-            { leader: { displayName: { contains: query, mode: 'insensitive' } } }
+            { leaders: { some: { displayName: { contains: query, mode: 'insensitive' } } } }
           ]
         },
         select: { 
           groupLeader: true,
-          leader: { select: { displayName: true } },
+          leaders: { select: { displayName: true } },
           id: true,
           title: true 
         },
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
 
       leaders: leaderSuggestions
         .map(item => {
-          const leaderName = item.leader?.displayName || item.groupLeader
+          const leaderName = item.leaders?.[0]?.displayName || item.groupLeader
           return leaderName ? {
             id: item.id,
             text: leaderName,

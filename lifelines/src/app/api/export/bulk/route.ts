@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (requestedExports.includes('lifelines')) {
       const lifeLines = await prisma.lifeLine.findMany({
         include: {
-          leader: { select: { email: true, displayName: true } },
+          leaders: { select: { email: true, displayName: true } },
           _count: { select: { inquiries: true } }
         }
       })
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       combinedContent += 'ID,Title,Group Leader,Leader Email,Status,Inquiry Count,Created Date\n'
       
       lifeLines.forEach(ll => {
-        combinedContent += `${ll.id},"${ll.title?.replace(/"/g, '""') || ''}","${ll.groupLeader?.replace(/"/g, '""') || ''}","${ll.leader?.email?.replace(/"/g, '""') || ''}",${ll.status},${ll._count.inquiries},${ll.createdAt.toISOString()}\n`
+        combinedContent += `${ll.id},"${ll.title?.replace(/"/g, '""') || ''}","${ll.groupLeader?.replace(/"/g, '""') || ''}","${ll.leaders?.[0]?.email?.replace(/"/g, '""') || ''}",${ll.status},${ll._count.inquiries},${ll.createdAt.toISOString()}\n`
       })
       combinedContent += '\n'
     }

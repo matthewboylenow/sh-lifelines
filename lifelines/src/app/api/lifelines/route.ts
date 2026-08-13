@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
 
     // Leader filtering
     if (filters.leaderId) {
-      where.leaderId = filters.leaderId
+      where.leaders = { some: { id: filters.leaderId } }
     }
 
     // Ages & stages filtering
@@ -242,7 +242,7 @@ export async function GET(req: NextRequest) {
       prisma.lifeLine.findMany({
         where,
         include: {
-          leader: {
+          leaders: {
             select: {
               id: true,
               displayName: true,
@@ -342,7 +342,13 @@ export async function POST(req: NextRequest) {
         description: validatedData.description || null,
         groupLeader: validatedData.groupLeader || null,
         leaderEmail: validatedData.leaderEmail || null,
-        leaderId: validatedData.leaderId || null,
+        // Accept a list of leaders; fall back to the legacy single field.
+        ...(() => {
+          const ids = validatedData.leaderIds?.length
+            ? validatedData.leaderIds
+            : validatedData.leaderId ? [validatedData.leaderId] : []
+          return ids.length ? { leaders: { connect: ids.map(id => ({ id })) } } : {}
+        })(),
         supportContactId: validatedData.supportContactId || null,
         dayOfWeek: validatedData.dayOfWeek || null,
         meetingTime: validatedData.meetingTime || null,
@@ -361,13 +367,13 @@ export async function POST(req: NextRequest) {
         isVisible: validatedData.isVisible ?? true,
       },
       include: {
-        leader: {
-          select: {
+        leaders: {
+            select: {
             id: true,
             displayName: true,
             email: true,
           }
-        },
+          },
         supportContact: {
           select: {
             id: true,

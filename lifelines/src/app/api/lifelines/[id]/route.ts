@@ -9,14 +9,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { canManageLifeLines } from '@/lib/auth-utils'
 
-// Authorize a mutation: only the owning leader, formation support, or an admin
-// may change a LifeLine. Returns an error response to short-circuit, or null.
-async function authorizeMutation(leaderId: string | null) {
+// Authorize a mutation: any of the group's leaders, formation support, or an
+// admin may change it. Returns an error response to short-circuit, or null.
+async function authorizeMutation(leaderIds: string[]) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     return createErrorResponse('Unauthorized', 401)
   }
-  if (!canManageLifeLines(session.user.id, leaderId ?? '', session.user.roles)) {
+  if (!canManageLifeLines(session.user.id, leaderIds, session.user.roles)) {
     return createErrorResponse('Forbidden', 403)
   }
   return null
@@ -49,13 +49,13 @@ export async function GET(req: NextRequest) {
     const lifeLine = await prisma.lifeLine.findUnique({
       where: whereByIdOrSlug(identifier),
       include: {
-        leader: {
-          select: {
+        leaders: {
+            select: {
             id: true,
             displayName: true,
             email: true,
           }
-        },
+          },
         supportContact: {
           select: {
             id: true,
@@ -109,14 +109,14 @@ export async function PUT(req: NextRequest) {
 
     const existingLifeLine = await prisma.lifeLine.findUnique({
       where: whereByIdOrSlug(identifier),
-      include: { leader: true }
+      include: { leaders: { select: { id: true } } }
     })
 
     if (!existingLifeLine) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    const authError = await authorizeMutation(existingLifeLine.leaderId)
+    const authError = await authorizeMutation(existingLifeLine.leaders.map(l => l.id))
     if (authError) return authError
 
     const lifeLine = await prisma.lifeLine.update({
@@ -126,7 +126,9 @@ export async function PUT(req: NextRequest) {
         ...(body.subtitle !== undefined && { subtitle: body.subtitle || null }),
         ...(validatedData.description !== undefined && { description: validatedData.description || null }),
         ...(body.groupLeader && { groupLeader: body.groupLeader }),
-        ...(body.leaderId !== undefined && { leaderId: body.leaderId || null }),
+        ...(body.leaderIds !== undefined && {
+          leaders: { set: (body.leaderIds as string[]).map(id => ({ id })) }
+        }),
         ...(validatedData.dayOfWeek !== undefined && { dayOfWeek: validatedData.dayOfWeek || null }),
         ...(validatedData.meetingTime !== undefined && { meetingTime: validatedData.meetingTime || null }),
         ...(body.location !== undefined && { location: body.location || null }),
@@ -145,13 +147,13 @@ export async function PUT(req: NextRequest) {
         ...(body.supportContactId !== undefined && { supportContactId: body.supportContactId || null }),
       },
       include: {
-        leader: {
-          select: {
+        leaders: {
+            select: {
             id: true,
             displayName: true,
             email: true,
           }
-        },
+          },
         supportContact: {
           select: {
             id: true,
@@ -185,13 +187,14 @@ export async function PATCH(req: NextRequest) {
 
     const existingLifeLine = await prisma.lifeLine.findUnique({
       where: whereByIdOrSlug(identifier),
+      include: { leaders: { select: { id: true } } },
     })
 
     if (!existingLifeLine) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    const authError = await authorizeMutation(existingLifeLine.leaderId)
+    const authError = await authorizeMutation(existingLifeLine.leaders.map(l => l.id))
     if (authError) return authError
 
     const body = await req.json()
@@ -227,13 +230,14 @@ export async function DELETE(req: NextRequest) {
 
     const existingLifeLine = await prisma.lifeLine.findUnique({
       where: whereByIdOrSlug(identifier),
+      include: { leaders: { select: { id: true } } },
     })
 
     if (!existingLifeLine) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    const authError = await authorizeMutation(existingLifeLine.leaderId)
+    const authError = await authorizeMutation(existingLifeLine.leaders.map(l => l.id))
     if (authError) return authError
 
     await prisma.$transaction(async (tx) => {

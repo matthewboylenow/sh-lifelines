@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
           select: {
             title: true,
             groupLeader: true,
-            leader: { select: { displayName: true, email: true } },
+            leaders: { select: { displayName: true, email: true } },
           },
         },
       },
@@ -79,12 +79,12 @@ export async function POST(req: NextRequest) {
     })
 
     // Tell the leader, but never fail the member's request over email trouble.
-    const leaderEmail = inquiry.lifeLine.leader?.email
+    const leaderEmail = inquiry.lifeLine.leaders?.[0]?.email
     if (leaderEmail) {
       try {
         await sendMemberLeftNotification(
           leaderEmail,
-          inquiry.lifeLine.leader?.displayName || inquiry.lifeLine.groupLeader || 'LifeLine Leader',
+          inquiry.lifeLine.leaders?.[0]?.displayName || inquiry.lifeLine.groupLeader || 'LifeLine Leader',
           {
             personName: inquiry.personName,
             personEmail: inquiry.personEmail,

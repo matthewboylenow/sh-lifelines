@@ -48,12 +48,11 @@ interface InquiryWithDetails {
     slug?: string | null
     title: string
     groupLeader: string
-    leaderId: string
-    leader: {
+    leaders: {
       id: string
       displayName: string | null
       email: string
-    }
+    }[]
   }
 }
 
@@ -501,7 +500,7 @@ export function InquiryTrackingDashboard() {
                             <ExternalLink className="h-3 w-3 ml-1" />
                           </Link>
                           <div className="text-sm text-gray-500 mt-1">
-                            Leader: {inquiry.lifeLine.leader?.displayName || inquiry.lifeLine.groupLeader}
+                            Leader: {inquiry.lifeLine.leaders?.[0]?.displayName || inquiry.lifeLine.groupLeader}
                           </div>
                         </div>
                       </td>

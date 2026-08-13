@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
             subtitle: validatedData.subtitle || null,
             groupLeader: validatedData.groupLeader,
             leaderEmail: leaderEmail,
-            leaderId: leaderId,
+            ...(leaderId ? { leaders: { connect: [{ id: leaderId }] } } : {}),
             dayOfWeek: dayOfWeek,
             meetingTime: validatedData.meetingTime || null,
             location: validatedData.location || null,

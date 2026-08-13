@@ -34,7 +34,7 @@ interface Membership {
     meetingFrequency: string | null
     location: string | null
     groupLeader: string | null
-    leader: { displayName: string | null; email: string } | null
+    leaders: { displayName: string | null; email: string }[]
   }
 }
 
@@ -305,9 +305,9 @@ export function MemberPortal() {
                       {m.lifeLine.location}
                     </div>
                   )}
-                  {(m.lifeLine.leader?.displayName || m.lifeLine.groupLeader) && (
+                  {(m.lifeLine.leaders?.[0]?.displayName || m.lifeLine.groupLeader) && (
                     <div className="text-gray-500">
-                      Led by {m.lifeLine.leader?.displayName || m.lifeLine.groupLeader}
+                      Led by {m.lifeLine.leaders?.[0]?.displayName || m.lifeLine.groupLeader}
                     </div>
                   )}
                 </div>
