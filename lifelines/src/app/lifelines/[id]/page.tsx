@@ -82,8 +82,10 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
   const activeInquiries = lifeLine.inquiries?.filter(i => i.status === 'UNDECIDED').length || 0
   const totalInquiries = lifeLine.inquiries?.length || 0
 
+  // noPadding: the hero is full-bleed and must meet the header directly,
+  // otherwise MainLayout's default py-8 leaves a gap above it.
   return (
-    <MainLayout>
+    <MainLayout noPadding>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
         {/* Hero Section — navigation sits over the image rather than in a
             separate strip between the header and the hero. */}
