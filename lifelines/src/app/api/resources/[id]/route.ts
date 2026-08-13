@@ -14,6 +14,7 @@ const updateResourceSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200).optional(),
   description: z.string().optional(),
   websiteUrl: z.string().url().optional().or(z.literal('')),
+  videoUrl: z.string().url().optional().or(z.literal('')),
   resourceType: z.nativeEnum(ResourceType).optional(),
   fileUrl: z.string().optional(),
   fileName: z.string().optional(),
@@ -80,6 +81,7 @@ export async function PUT(
       // Clean up empty strings
       const data: any = { ...validatedData }
       if (data.websiteUrl === '') data.websiteUrl = null
+      if (data.videoUrl === '') data.videoUrl = null
       if (data.fileUrl === '') data.fileUrl = null
       if (data.fileName === '') data.fileName = null
 

@@ -16,6 +16,7 @@ const resourceSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().optional(),
   websiteUrl: z.string().url().optional().or(z.literal('')),
+  videoUrl: z.string().url().optional().or(z.literal('')),
   resourceType: z.nativeEnum(ResourceType),
   fileUrl: z.string().optional(),
   fileName: z.string().optional(),
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
       const data = {
         ...validatedData,
         websiteUrl: validatedData.websiteUrl || null,
+        videoUrl: validatedData.videoUrl || null,
         fileUrl: validatedData.fileUrl || null,
         fileName: validatedData.fileName || null,
         fileSize: validatedData.fileSize || null,
