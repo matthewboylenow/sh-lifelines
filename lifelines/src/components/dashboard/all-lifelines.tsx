@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { formatDate } from '@/utils/formatters'
-import { Search, Eye, Edit, Users, MapPin, Clock, Calendar } from 'lucide-react'
+import { Search, Eye, Edit, Users, MapPin, Clock, Calendar, ExternalLink} from 'lucide-react'
 import { hasRole } from '@/lib/auth-utils'
 
 interface AllLifeLinesProps {
@@ -293,21 +293,23 @@ export function AllLifeLines({ userRoles }: AllLifeLinesProps) {
                     </span>
                   </td>
                   <td className="sticky right-0 z-10 bg-white group-hover:bg-gray-50 px-4 py-4 whitespace-nowrap text-right shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
-                    <div className="flex items-center justify-end space-x-3">
+                    <div className="flex items-center justify-end gap-1">
                       <Link
                         href={`/lifelines/${lifeLine.slug || lifeLine.id}`}
-                        className="text-gray-400 hover:text-gray-600"
-                        title="View"
+                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        title="Open the public page for this LifeLine"
                       >
-                        <Eye className="h-4 w-4" />
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                        View
                       </Link>
                       {hasRole(userRoles, UserRole.ADMIN) && (
                         <Link
                           href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
-                          className="text-gray-400 hover:text-gray-600"
-                          title="Edit"
+                          className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                          title="Edit this LifeLine's details"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" aria-hidden="true" />
+                          Edit
                         </Link>
                       )}
                     </div>
