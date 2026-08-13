@@ -441,8 +441,8 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
           </div>
 
           {/* LifeLines Table */}
-          <div className="dashboard-card overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="dashboard-card p-0">
+            <div className="overflow-x-auto rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -458,15 +458,15 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Inquiries
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="sticky right-0 z-20 bg-gray-50 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredLifeLines.map((lifeline) => (
-                    <tr key={lifeline.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                    <tr key={lifeline.id} className="group hover:bg-gray-50">
+                      <td className="px-6 py-4 min-w-[16rem]">
                         <div className="flex items-center">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
@@ -498,8 +498,8 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {lifeline._count?.inquiries || 0}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center space-x-2">
+                      <td className="sticky right-0 z-10 bg-white group-hover:bg-gray-50 px-4 py-4 whitespace-nowrap text-right text-sm font-medium shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
+                        <div className="flex items-center justify-end space-x-3">
                           <Link
                             href={`/lifelines/${lifeline.slug || lifeline.id}`}
                             className="text-gray-400 hover:text-gray-600"

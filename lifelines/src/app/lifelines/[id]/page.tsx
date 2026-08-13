@@ -85,31 +85,36 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
   return (
     <MainLayout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-        {/* Back Navigation */}
-        <div className="container-responsive pt-8 pb-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="inline-flex items-center text-primary-600 hover:text-primary-700 transition-colors">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to LifeLines
-            </Link>
-            
-            {canEdit && (
-              <Link href={`/lifelines/${resolvedParams.id}/edit`}>
-                <Button variant="outline" size="sm">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit LifeLine
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Hero Section */}
+        {/* Hero Section — navigation sits over the image rather than in a
+            separate strip between the header and the hero. */}
         <div className="relative h-96 bg-cover bg-center bg-no-repeat overflow-hidden"
              style={{
                backgroundImage: `linear-gradient(rgba(31, 52, 109, 0.7), rgba(31, 52, 109, 0.7)), url(${lifeLine.imageUrl || defaultImage})`
              }}>
-          <div className="absolute inset-0 flex items-center justify-center">
+          {/* Top overlay bar: back link and (for those who may edit) the edit action */}
+          <div className="absolute inset-x-0 top-0 z-10 pt-5 pb-4 bg-gradient-to-b from-black/35 to-transparent">
+            <div className="container-responsive flex items-center justify-between gap-4">
+              <Link
+                href="/"
+                className="inline-flex items-center text-sm font-medium text-white/90 hover:text-white transition-colors drop-shadow"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to LifeLines
+              </Link>
+
+              {canEdit && (
+                <Link
+                  href={`/lifelines/${resolvedParams.id}/edit`}
+                  className="inline-flex items-center rounded-md border border-white/40 bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm hover:bg-white/20 transition-colors"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit LifeLine
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="absolute inset-0 flex items-center justify-center px-4">
             <div className="container-responsive text-center text-white">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-lg">
                 {lifeLine.title}
@@ -122,23 +127,23 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Status Badges */}
-          <div className="absolute top-6 right-6 flex gap-2">
-            {lifeLine.agesStages && lifeLine.agesStages.length > 0 && (
-              <span className="bg-secondary-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                {decodeEntities(lifeLine.agesStages[0])}
-              </span>
-            )}
-            {lifeLine.status === 'FULL' && (
-              <span className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                Full
-              </span>
-            )}
+          {/* Status Badges — moved to the foot of the hero so they don't
+              collide with the navigation bar above. */}
+          <div className="absolute bottom-6 left-0 right-0 z-10">
+            <div className="container-responsive flex flex-wrap justify-center gap-2">
+              {lifeLine.agesStages && lifeLine.agesStages.length > 0 && (
+                <span className="bg-secondary-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                  {decodeEntities(lifeLine.agesStages[0])}
+                </span>
+              )}
+              {lifeLine.status === 'FULL' && (
+                <span className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                  Full
+                </span>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Spacer under hero */}
-        <div className="h-8 md:h-12"></div>
 
         {/* Main Content */}
         <div className="container-responsive py-8 md:py-12">
