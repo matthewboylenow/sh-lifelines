@@ -10,12 +10,13 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { formatDate } from '@/utils/formatters'
 import { Search, Eye, Edit, Users, MapPin, Clock, Calendar } from 'lucide-react'
+import { hasRole } from '@/lib/auth-utils'
 
 interface AllLifeLinesProps {
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
-export function AllLifeLines({ userRole }: AllLifeLinesProps) {
+export function AllLifeLines({ userRoles }: AllLifeLinesProps) {
   const [lifeLines, setLifeLines] = useState<LifeLineWithLeader[]>([])
   const [filteredLifeLines, setFilteredLifeLines] = useState<LifeLineWithLeader[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,8 +62,8 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
       filtered = filtered.filter(lifeLine => 
         lifeLine.title.toLowerCase().includes(query) ||
         lifeLine.description?.toLowerCase().includes(query) ||
-        lifeLine.leader?.displayName?.toLowerCase().includes(query) ||
-        lifeLine.leader?.email?.toLowerCase().includes(query) ||
+        lifeLine.leaders?.[0]?.displayName?.toLowerCase().includes(query) ||
+        lifeLine.leaders?.[0]?.email?.toLowerCase().includes(query) ||
         lifeLine.location?.toLowerCase().includes(query)
       )
     }
@@ -266,9 +267,9 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{lifeLine.leader?.displayName || 'Unassigned'}</div>
-                    {lifeLine.leader?.email && (
-                      <div className="text-sm text-gray-500">{lifeLine.leader.email}</div>
+                    <div className="text-sm text-gray-900">{lifeLine.leaders?.[0]?.displayName || 'Unassigned'}</div>
+                    {lifeLine.leaders?.[0]?.email && (
+                      <div className="text-sm text-gray-500">{lifeLine.leaders[0]?.email}</div>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -300,7 +301,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                       >
                         <Eye className="h-4 w-4" />
                       </Link>
-                      {userRole === UserRole.ADMIN && (
+                      {hasRole(userRoles, UserRole.ADMIN) && (
                         <Link
                           href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                           className="text-gray-400 hover:text-gray-600"
@@ -333,7 +334,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
                   >
                     <Eye className="h-4 w-4" />
                   </Link>
-                  {userRole === UserRole.ADMIN && (
+                  {hasRole(userRoles, UserRole.ADMIN) && (
                     <Link
                       href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                       className="text-gray-400 hover:text-gray-600"
@@ -348,7 +349,7 @@ export function AllLifeLines({ userRole }: AllLifeLinesProps) {
               <div className="space-y-2 text-sm text-gray-600 mb-4">
                 <div className="flex items-center">
                   <Users className="h-4 w-4 mr-2" />
-                  <span>{lifeLine.leader?.displayName || 'Unassigned Leader'}</span>
+                  <span>{lifeLine.leaders?.[0]?.displayName || 'Unassigned Leader'}</span>
                 </div>
                 {lifeLine.location && (
                   <div className="flex items-center">

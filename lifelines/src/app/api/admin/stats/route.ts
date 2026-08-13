@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has admin role
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions)
-    if (!session || !hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!session || !hasRole(session.user.roles, UserRole.ADMIN)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
             subtitle: validatedData.subtitle || null,
             groupLeader: validatedData.groupLeader,
             leaderEmail: leaderEmail,
-            leaderId: leaderId,
+            ...(leaderId ? { leaders: { connect: [{ id: leaderId }] } } : {}),
             dayOfWeek: dayOfWeek,
             meetingTime: validatedData.meetingTime || null,
             location: validatedData.location || null,

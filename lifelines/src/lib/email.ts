@@ -45,13 +45,20 @@ export async function sendEmail({
 }: EmailTemplate) {
   const resend = getResend()
 
+  // Mail is sent from the Resend-verified sending domain, which is not
+  // necessarily a monitored mailbox. Default Reply-To to a real parish address
+  // so replies reach someone; callers (e.g. a leader emailing members) can
+  // override it with their own address.
+  const defaultReplyTo = process.env.REPLY_TO_EMAIL || process.env.ADMIN_EMAIL
+  const effectiveReplyTo = replyTo || defaultReplyTo
+
   const { data, error } = await resend.emails.send({
     from: `${FROM_NAME} <${process.env.FROM_EMAIL || 'noreply@sainthelen.org'}>`,
     to: Array.isArray(to) ? to : [to],
     subject,
     html,
     text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-    ...(replyTo ? { replyTo } : {}),
+    ...(effectiveReplyTo ? { replyTo: effectiveReplyTo } : {}),
   })
 
   // Resend reports API-level failures on the response rather than throwing.

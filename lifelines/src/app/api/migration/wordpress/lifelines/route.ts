@@ -78,7 +78,7 @@ function mapDayOfWeek(metaValue: string | undefined): DayOfWeek | undefined {
 export async function POST(req: NextRequest) {
   return withAuth(async (req: NextRequest, session: any) => {
     // Only admins can import data
-    if (!hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Only administrators can import data', 403)
     }
 
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
             meetingTime: meta.meeting_time || null,
             imageUrl: meta.featured_image || null,
             videoUrl: meta.video_url || null,
-            leaderId: leader?.id || '', // Fallback to empty string if no leader found
+            ...(leader?.id ? { leaders: { connect: [{ id: leader.id }] } } : {}),
             createdAt: new Date(wpLifeLine.post_date),
           }
         })

@@ -15,7 +15,7 @@ export default async function ResourcesPage() {
 
   // Check if user has access to resources (leaders and above)
   const allowedRoles: UserRole[] = [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!hasAnyRole(session.user.role, allowedRoles)) {
+  if (!hasAnyRole(session.user.roles, allowedRoles)) {
     redirect('/')
   }
 
@@ -29,7 +29,7 @@ export default async function ResourcesPage() {
           </p>
         </div>
         
-        <LifeLineResources userRole={session.user.role} />
+        <LifeLineResources userRoles={session.user.roles} />
       </div>
     </MainLayout>
   )

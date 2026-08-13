@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 interface LifeLineResourcesProps {
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
 interface Resource {
@@ -34,7 +34,7 @@ const resourceTypeIcons: Record<ResourceType, any> = {
   LEADER_FAITH_FORMATION: FileText
 }
 
-export function LifeLineResources({ userRole }: LifeLineResourcesProps) {
+export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
   const [resources, setResources] = useState<Resource[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

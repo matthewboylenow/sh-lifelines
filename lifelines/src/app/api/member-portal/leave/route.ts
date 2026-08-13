@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
           select: {
             title: true,
             groupLeader: true,
-            leader: { select: { displayName: true, email: true } },
+            leaders: { select: { displayName: true, email: true } },
           },
         },
       },
@@ -78,13 +78,13 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Tell the leader, but never fail the member's request over email trouble.
-    const leaderEmail = inquiry.lifeLine.leader?.email
-    if (leaderEmail) {
+    // Tell every leader of the group, but never fail the member's request over
+    // email trouble.
+    for (const leader of inquiry.lifeLine.leaders) {
       try {
         await sendMemberLeftNotification(
-          leaderEmail,
-          inquiry.lifeLine.leader?.displayName || inquiry.lifeLine.groupLeader || 'LifeLine Leader',
+          leader.email,
+          leader.displayName || inquiry.lifeLine.groupLeader || 'LifeLine Leader',
           {
             personName: inquiry.personName,
             personEmail: inquiry.personEmail,
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
           }
         )
       } catch (emailError) {
-        console.error('Failed to notify leader of member departure:', emailError)
+        console.error(`Failed to notify ${leader.email} of member departure:`, emailError)
       }
     }
 

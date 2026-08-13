@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-    if (!hasAnyRole(session.user.role, allowedRoles)) {
+    if (!hasAnyRole(session.user.roles, allowedRoles)) {
       return createErrorResponse('Insufficient permissions', 403)
     }
 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (requestedExports.includes('lifelines')) {
       const lifeLines = await prisma.lifeLine.findMany({
         include: {
-          leader: { select: { email: true, displayName: true } },
+          leaders: { select: { email: true, displayName: true } },
           _count: { select: { inquiries: true } }
         }
       })
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       combinedContent += 'ID,Title,Group Leader,Leader Email,Status,Inquiry Count,Created Date\n'
       
       lifeLines.forEach(ll => {
-        combinedContent += `${ll.id},"${ll.title?.replace(/"/g, '""') || ''}","${ll.groupLeader?.replace(/"/g, '""') || ''}","${ll.leader?.email?.replace(/"/g, '""') || ''}",${ll.status},${ll._count.inquiries},${ll.createdAt.toISOString()}\n`
+        combinedContent += `${ll.id},"${ll.title?.replace(/"/g, '""') || ''}","${ll.groupLeader?.replace(/"/g, '""') || ''}","${ll.leaders?.[0]?.email?.replace(/"/g, '""') || ''}",${ll.status},${ll._count.inquiries},${ll.createdAt.toISOString()}\n`
       })
       combinedContent += '\n'
     }
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Export Users if requested (Admin only)
-    if (requestedExports.includes('users') && hasRole(session.user.role, UserRole.ADMIN)) {
+    if (requestedExports.includes('users') && hasRole(session.user.roles, UserRole.ADMIN)) {
       const users = await prisma.user.findMany({
         include: {
           _count: { select: { ledLifeLines: true } }

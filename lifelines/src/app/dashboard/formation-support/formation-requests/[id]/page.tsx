@@ -106,7 +106,7 @@ export default function FormationRequestDetailPage() {
     
     if (status === 'authenticated') {
       if (!session?.user ||
-          !hasAnyRole(session.user.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])) {
+          !hasAnyRole(session.user.roles, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])) {
         router.push('/dashboard/leader')
         return
       }

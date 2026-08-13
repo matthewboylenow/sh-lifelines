@@ -15,7 +15,7 @@ export default async function ExportDataPage() {
 
   // Check if user has formation support access
   const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!hasAnyRole(session.user.role, allowedRoles)) {
+  if (!hasAnyRole(session.user.roles, allowedRoles)) {
     redirect('/')
   }
 
@@ -29,7 +29,7 @@ export default async function ExportDataPage() {
           </p>
         </div>
         
-        <ExportData userRole={session.user.role} />
+        <ExportData userRoles={session.user.roles} />
       </div>
     </MainLayout>
   )

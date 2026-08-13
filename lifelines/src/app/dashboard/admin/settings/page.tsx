@@ -14,7 +14,7 @@ export default async function AdminSettingsPage() {
   }
 
   // Check if user has admin access
-  if (!hasRole(session.user.role, UserRole.ADMIN)) {
+  if (!hasRole(session.user.roles, UserRole.ADMIN)) {
     redirect('/')
   }
 

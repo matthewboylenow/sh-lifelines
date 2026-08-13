@@ -15,7 +15,7 @@ export default async function LeaderInquiriesPage() {
 
   // Check if user has leader access
   const allowedRoles: UserRole[] = [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!hasAnyRole(session.user.role, allowedRoles)) {
+  if (!hasAnyRole(session.user.roles, allowedRoles)) {
     redirect('/')
   }
 
@@ -29,7 +29,7 @@ export default async function LeaderInquiriesPage() {
           </p>
         </div>
         
-        <LeaderInquiries userId={session.user.id} userRole={session.user.role} />
+        <LeaderInquiries userId={session.user.id} userRoles={session.user.roles} />
       </div>
     </MainLayout>
   )

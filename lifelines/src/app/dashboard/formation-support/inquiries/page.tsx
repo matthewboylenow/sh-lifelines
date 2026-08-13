@@ -15,7 +15,7 @@ export default async function FormationSupportInquiriesPage() {
 
   // Check if user has formation support access
   const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!hasAnyRole(session.user.role, allowedRoles)) {
+  if (!hasAnyRole(session.user.roles, allowedRoles)) {
     redirect('/')
   }
 

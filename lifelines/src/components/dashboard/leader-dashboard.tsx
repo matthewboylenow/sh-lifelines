@@ -11,6 +11,7 @@ import { formatDate, formatInquiryStatus } from '@/utils/formatters'
 import { EmailMembersModal } from './email-members-modal'
 import { RequestMeetingModal } from './request-meeting-modal'
 import { useToast } from '@/components/ui/toast'
+import { hasRole } from '@/lib/auth-utils'
 
 interface SupportContact {
   id: string
@@ -25,10 +26,10 @@ interface LifeLineWithSupport extends LifeLineWithLeader {
 
 interface LeaderDashboardProps {
   userId: string
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
-export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
+export function LeaderDashboard({ userId, userRoles }: LeaderDashboardProps) {
   const { toast } = useToast()
   const [lifeLines, setLifeLines] = useState<LifeLineWithSupport[]>([])
   const [recentInquiries, setRecentInquiries] = useState<InquiryWithLifeLine[]>([])
@@ -242,7 +243,7 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                     >
                       <Edit className="h-4 w-4" />
                     </Link>
-                    {(userRole === UserRole.ADMIN || userRole === UserRole.FORMATION_SUPPORT_TEAM) && (
+                    {(hasRole(userRoles, UserRole.ADMIN) || hasRole(userRoles, UserRole.FORMATION_SUPPORT_TEAM)) && (
                       <button
                         className="text-gray-400 hover:text-red-600"
                         title="Delete"
@@ -297,7 +298,7 @@ export function LeaderDashboard({ userId, userRole }: LeaderDashboardProps) {
                         {/* Action Buttons */}
                         <div className="mt-3 flex flex-wrap gap-2">
                           <a
-                            href={`mailto:${lifeLine.supportContact.email}?subject=${encodeURIComponent(`[${lifeLine.title}] Question from ${lifeLine.leader?.displayName || 'Leader'}`)}`}
+                            href={`mailto:${lifeLine.supportContact.email}?subject=${encodeURIComponent(`[${lifeLine.title}] Question from ${lifeLine.leaders?.[0]?.displayName || 'Leader'}`)}`}
                             className="inline-flex items-center text-xs font-medium text-secondary-700 hover:text-secondary-800 bg-secondary-100 hover:bg-secondary-200 px-3 py-1.5 rounded-full transition-colors"
                           >
                             <Mail className="h-3 w-3 mr-1" />

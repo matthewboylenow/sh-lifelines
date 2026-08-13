@@ -46,10 +46,10 @@ interface LifeLineOption {
 
 interface LeaderMembersViewProps {
   userId: string
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
-export function LeaderMembersView({ userId, userRole }: LeaderMembersViewProps) {
+export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps) {
   const [members, setMembers] = useState<Member[]>([])
   const [removedMembers, setRemovedMembers] = useState<Member[]>([])
   const [lifeLines, setLifeLines] = useState<LifeLineOption[]>([])

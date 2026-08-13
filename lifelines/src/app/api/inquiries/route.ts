@@ -38,9 +38,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (filters.leaderId) {
-      where.lifeLine = {
-        leaderId: filters.leaderId
-      }
+      where.lifeLine = { leaders: { some: { id: filters.leaderId } } }
     }
 
     if (filters.search) {
@@ -58,13 +56,13 @@ export async function GET(req: NextRequest) {
         include: {
           lifeLine: {
             include: {
-              leader: {
-                select: {
+              leaders: {
+            select: {
                   id: true,
                   displayName: true,
                   email: true,
                 }
-              }
+          }
             }
           }
         },
@@ -98,7 +96,7 @@ export async function POST(req: NextRequest) {
     const lifeLine = await prisma.lifeLine.findUnique({
       where: { id: validatedData.lifeLineId },
       include: {
-        leader: true
+        leaders: true
       }
     })
 
@@ -123,24 +121,24 @@ export async function POST(req: NextRequest) {
       include: {
         lifeLine: {
           include: {
-            leader: {
-              select: {
+            leaders: {
+            select: {
                 id: true,
                 displayName: true,
                 email: true,
               }
-            }
+          }
           }
         }
       }
     })
 
-    // Send notification to the LifeLine leader
-    if (lifeLine.leader) {
+    // Notify every leader of the group, not just one
+    for (const leader of lifeLine.leaders) {
       try {
         await sendInquiryNotification(
-          lifeLine.leader.email,
-          lifeLine.leader.displayName || lifeLine.groupLeader || 'LifeLine Leader',
+          leader.email,
+          leader.displayName || lifeLine.groupLeader || 'LifeLine Leader',
           lifeLine.title,
           {
             personName: inquiry.personName,

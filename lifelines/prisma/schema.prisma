@@ -31,7 +31,7 @@ model User {
   updatedAt         DateTime  @updatedAt
 
   // Relationships
-  ledLifeLines         LifeLine[]        @relation("LifeLineLeader")
+  ledLifeLines         LifeLine[]        @relation("LifeLineLeaders")
   supportedLifeLines   LifeLine[]        @relation("LifeLineSupportContact")
   formationRequests    FormationRequest[]
   supportTickets       SupportTicket[]
@@ -85,8 +85,9 @@ model LifeLine {
   updatedAt           DateTime  @updatedAt
   
   // Relationships
-  leaderId            String?
-  leader              User?     @relation("LifeLineLeader", fields: [leaderId], references: [id])
+  /// Every leader of this group. All leaders are equal — each sees the group on
+  /// their dashboard and can manage its members.
+  leaders             User[]    @relation("LifeLineLeaders")
   supportContactId    String?
   supportContact      User?     @relation("LifeLineSupportContact", fields: [supportContactId], references: [id])
   inquiries           Inquiry[]

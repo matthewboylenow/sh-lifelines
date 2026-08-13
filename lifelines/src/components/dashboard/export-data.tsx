@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Download, FileText, Users, MessageSquare, Ticket, UserPlus, Calendar } from 'lucide-react'
+import { hasRole } from '@/lib/auth-utils'
 
 interface ExportDataProps {
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
 interface ExportOption {
@@ -63,7 +64,7 @@ const exportOptions: ExportOption[] = [
   }
 ]
 
-export function ExportData({ userRole }: ExportDataProps) {
+export function ExportData({ userRoles }: ExportDataProps) {
   const [selectedExports, setSelectedExports] = useState<string[]>([])
   const [exporting, setExporting] = useState<string[]>([])
   const [exportHistory, setExportHistory] = useState<Array<{ id: string; filename: string; timestamp: Date }>>([])
@@ -288,7 +289,7 @@ export function ExportData({ userRole }: ExportDataProps) {
       </div>
 
       {/* Admin Note */}
-      {userRole === UserRole.ADMIN && (
+      {hasRole(userRoles, UserRole.ADMIN) && (
         <div className="dashboard-card bg-yellow-50 border-yellow-200">
           <div className="flex items-start gap-4">
             <div className="bg-yellow-100 p-3 rounded-lg">

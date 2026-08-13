@@ -35,7 +35,7 @@ async function getLifeLine(identifier: string): Promise<LifeLineWithLeader | nul
     const lifeLine = await prisma.lifeLine.findUnique({
       where,
       include: {
-        leader: {
+        leaders: {
           select: {
             id: true,
             displayName: true,
@@ -57,7 +57,7 @@ async function getLifeLine(identifier: string): Promise<LifeLineWithLeader | nul
 
     return {
       ...lifeLine,
-      groupLeader: lifeLine.leader?.displayName || lifeLine.groupLeader || 'TBD'
+      groupLeader: lifeLine.leaders?.[0]?.displayName || lifeLine.groupLeader || 'TBD'
     } as any
   } catch (error) {
     console.error('Error fetching LifeLine:', error)
@@ -75,8 +75,8 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
   }
 
   // Check if user can edit this LifeLine
-  const isAdminOrSupport = session && hasAnyRole(session.user.role, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
-  const canEdit = isAdminOrSupport || (session && session.user.id === lifeLine.leaderId)
+  const isAdminOrSupport = session && hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
+  const canEdit = isAdminOrSupport || (session && lifeLine.leaders?.some(l => l.id === session.user.id))
 
   const defaultImage = '/pictures/nvmfrtbidso-1024x683.jpg'
   const activeInquiries = lifeLine.inquiries?.filter(i => i.status === 'UNDECIDED').length || 0

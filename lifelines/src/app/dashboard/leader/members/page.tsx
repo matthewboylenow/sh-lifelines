@@ -22,7 +22,7 @@ export default async function LeaderMembersPage() {
     UserRole.ADMIN
   ]
 
-  if (!hasAnyRole(session.user.role, allowedRoles)) {
+  if (!hasAnyRole(session.user.roles, allowedRoles)) {
     redirect('/dashboard')
   }
 
@@ -44,7 +44,7 @@ export default async function LeaderMembersPage() {
           </p>
         </div>
 
-        <LeaderMembersView userId={session.user.id} userRole={session.user.role as UserRole} />
+        <LeaderMembersView userId={session.user.id} userRoles={session.user.roles} />
       </div>
     </MainLayout>
   )

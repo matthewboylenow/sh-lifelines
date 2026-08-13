@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     const where: any = {}
 
     // Filter by user role - non-support users can only see their own tickets
-    const isSupport = hasAnyRole(session.user.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
+    const isSupport = hasAnyRole(session.user.roles, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
     if (!isSupport) {
       where.requesterId = session.user.id
     } else if (filters.requesterId) {

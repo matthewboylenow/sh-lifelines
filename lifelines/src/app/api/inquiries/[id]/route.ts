@@ -8,6 +8,7 @@ import { updateInquiryStatusSchema } from '@/lib/validations'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { UserRole } from '@prisma/client'
+import { hasRole } from '@/lib/auth-utils'
 
 // GET /api/inquiries/[id] - Get specific inquiry
 export async function GET(req: NextRequest) {
@@ -27,13 +28,13 @@ export async function GET(req: NextRequest) {
       include: {
         lifeLine: {
           include: {
-            leader: {
-              select: {
+            leaders: {
+            select: {
                 id: true,
                 displayName: true,
                 email: true,
               }
-            }
+          }
           }
         }
       }
@@ -76,7 +77,7 @@ export async function PATCH(req: NextRequest) {
     const existingInquiry = await prisma.inquiry.findUnique({
       where: { id },
       include: {
-        lifeLine: true
+        lifeLine: { include: { leaders: { select: { id: true } } } }
       }
     })
 
@@ -85,9 +86,9 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Authorization: must be LifeLine leader, Formation Support, or Admin
-    const userRole = session.user.role as UserRole
-    const isLeader = existingInquiry.lifeLine.leaderId === session.user.id
-    const isSupportOrAdmin = userRole === UserRole.ADMIN || userRole === UserRole.FORMATION_SUPPORT_TEAM
+    const userRoles = session.user.roles
+    const isLeader = existingInquiry.lifeLine.leaders.some((l: { id: string }) => l.id === session.user.id)
+    const isSupportOrAdmin = hasRole(userRoles, UserRole.ADMIN) || hasRole(userRoles, UserRole.FORMATION_SUPPORT_TEAM)
 
     if (!isLeader && !isSupportOrAdmin) {
       return createErrorResponse('Forbidden: You do not have permission to update this inquiry', 403)
@@ -108,13 +109,13 @@ export async function PATCH(req: NextRequest) {
       include: {
         lifeLine: {
           include: {
-            leader: {
-              select: {
+            leaders: {
+            select: {
                 id: true,
                 displayName: true,
                 email: true,
               }
-            }
+          }
           }
         }
       }

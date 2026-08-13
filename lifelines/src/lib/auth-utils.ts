@@ -82,12 +82,15 @@ export function canManageSupportTickets(role: RoleInput) {
   return isFormationSupport(role)
 }
 
-export function canManageLifeLines(userId: string, lifeLineLeaderId: string, role: RoleInput) {
-  return userId === lifeLineLeaderId || isFormationSupport(role)
+/** A LifeLine's leaders are equal — any of them may manage it, as may support/admin. */
+export function canManageLifeLines(userId: string, leaderIds: string | string[] | undefined, role: RoleInput) {
+  const ids = Array.isArray(leaderIds) ? leaderIds : leaderIds ? [leaderIds] : []
+  return ids.includes(userId) || isFormationSupport(role)
 }
 
-export function canViewInquiries(userId: string, lifeLineLeaderId: string, role: RoleInput) {
-  return userId === lifeLineLeaderId || isFormationSupport(role)
+export function canViewInquiries(userId: string, leaderIds: string | string[] | undefined, role: RoleInput) {
+  const ids = Array.isArray(leaderIds) ? leaderIds : leaderIds ? [leaderIds] : []
+  return ids.includes(userId) || isFormationSupport(role)
 }
 
 export function canViewSupportTickets(userId: string, ticketRequesterId: string, role: RoleInput) {

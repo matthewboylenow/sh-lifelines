@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, context: RouteParams) {
       }
 
       // Check permissions
-      if (!canViewSupportTickets(session.user.id, ticket.requesterId, session.user.role)) {
+      if (!canViewSupportTickets(session.user.id, ticket.requesterId, session.user.roles)) {
         return createErrorResponse('You can only view your own support tickets', 403)
       }
 
@@ -87,7 +87,7 @@ export async function PUT(req: NextRequest, context: RouteParams) {
       }
 
       // Check permissions
-      const isSupport = hasAnyRole(session.user.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
+      const isSupport = hasAnyRole(session.user.roles, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
       const isOwner = existingTicket.requesterId === session.user.id
 
       if (!isSupport && !isOwner) {

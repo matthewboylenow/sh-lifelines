@@ -15,7 +15,7 @@ export default async function AllLifeLinesPage() {
 
   // Check if user has formation support access
   const allowedRoles: UserRole[] = [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
-  if (!hasAnyRole(session.user.role, allowedRoles)) {
+  if (!hasAnyRole(session.user.roles, allowedRoles)) {
     redirect('/')
   }
 
@@ -29,7 +29,7 @@ export default async function AllLifeLinesPage() {
           </p>
         </div>
         
-        <AllLifeLines userRole={session.user.role} />
+        <AllLifeLines userRoles={session.user.roles} />
       </div>
     </MainLayout>
   )

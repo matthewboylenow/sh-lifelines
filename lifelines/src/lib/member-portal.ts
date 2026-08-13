@@ -124,7 +124,9 @@ export async function getMemberships(email: string) {
           meetingFrequency: true,
           location: true,
           groupLeader: true,
-          leader: { select: { displayName: true, email: true } },
+          leaders: {
+            select: { displayName: true, email: true }
+          },
         },
       },
     },

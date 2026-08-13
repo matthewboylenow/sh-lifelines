@@ -33,7 +33,7 @@ interface FormData {
   subtitle: string
   description: string
   groupLeader: string
-  leaderId: string
+  leaderIds: string[]
   supportContactId: string
   dayOfWeek: DayOfWeek | ''
   meetingTime: string
@@ -57,7 +57,7 @@ const INITIAL_FORM_DATA: FormData = {
   subtitle: '',
   description: '',
   groupLeader: '',
-  leaderId: '',
+  leaderIds: [],
   supportContactId: '',
   dayOfWeek: '',
   meetingTime: '',
@@ -104,7 +104,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         subtitle: initialData.subtitle || '',
         description: initialData.description || '',
         groupLeader: initialData.groupLeader || '',
-        leaderId: initialData.leaderId || '',
+        leaderIds: (initialData as any).leaders?.map((l: { id: string }) => l.id) || [],
         supportContactId: (initialData as any).supportContactId || '',
         dayOfWeek: initialData.dayOfWeek || '',
         meetingTime: initialData.meetingTime || '',
@@ -215,7 +215,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         dayOfWeek: formData.dayOfWeek || null,
         meetingFrequency: formData.meetingFrequency || null,
         groupType: formData.groupType || null,
-        leaderId: formData.leaderId || null,
+        leaderIds: formData.leaderIds,
         supportContactId: formData.supportContactId || null
       }
 
@@ -329,21 +329,50 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
               )}
             </div>
 
-            <div>
-              <Label htmlFor="leaderId">Leader Account (Optional)</Label>
-              <select
-                id="leaderId"
-                value={formData.leaderId}
-                onChange={(e) => handleInputChange('leaderId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="">Select existing leader account...</option>
-                {Array.isArray(leaders) && leaders.map(leader => (
-                  <option key={leader.id} value={leader.id}>
-                    {leader.displayName || leader.email} ({leader.email})
-                  </option>
-                ))}
-              </select>
+            <div className="md:col-span-2">
+              <Label>Leader Accounts</Label>
+              <p className="text-xs text-gray-500 mb-2">
+                Select everyone who leads this group. All leaders are equal — each can see it on
+                their dashboard, manage members and email the group.
+              </p>
+              <div className="border border-gray-300 rounded-lg max-h-56 overflow-y-auto divide-y">
+                {Array.isArray(leaders) && leaders.length > 0 ? (
+                  leaders.map(leader => {
+                    const checked = formData.leaderIds.includes(leader.id)
+                    return (
+                      <label
+                        key={leader.id}
+                        className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) =>
+                            handleInputChange(
+                              'leaderIds',
+                              e.target.checked
+                                ? [...formData.leaderIds, leader.id]
+                                : formData.leaderIds.filter(id => id !== leader.id)
+                            )
+                          }
+                          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-gray-800">
+                          {leader.displayName || leader.email}
+                          <span className="text-gray-500"> ({leader.email})</span>
+                        </span>
+                      </label>
+                    )
+                  })
+                ) : (
+                  <p className="px-3 py-2 text-sm text-gray-500">No leader accounts available.</p>
+                )}
+              </div>
+              {formData.leaderIds.length > 0 && (
+                <p className="mt-1 text-xs text-gray-600">
+                  {formData.leaderIds.length} leader{formData.leaderIds.length === 1 ? '' : 's'} selected
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">

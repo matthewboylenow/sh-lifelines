@@ -116,7 +116,7 @@ export async function approveFormationRequest(requestId: string) {
       dayOfWeek: formationRequest.dayOfWeek,
       groupType: formationRequest.groupType,
       meetingTime: formationRequest.meetingTime,
-      leaderId: leader.id,
+      leaders: { connect: [{ id: leader.id }] },
       formationRequestId: requestId,
     }
   })

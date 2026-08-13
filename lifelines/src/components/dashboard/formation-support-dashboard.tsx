@@ -28,10 +28,10 @@ interface DashboardStats {
 
 interface FormationSupportDashboardProps {
   userId: string
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
-export function FormationSupportDashboard({ userId, userRole }: FormationSupportDashboardProps) {
+export function FormationSupportDashboard({ userId, userRoles }: FormationSupportDashboardProps) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

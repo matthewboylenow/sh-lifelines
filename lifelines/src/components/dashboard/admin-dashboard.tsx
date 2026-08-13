@@ -34,7 +34,7 @@ import { useToast } from '@/components/ui/toast'
 
 interface AdminDashboardProps {
   userId: string
-  userRole: UserRole
+  userRoles: UserRole[]
 }
 
 interface AdminStats {
@@ -46,7 +46,7 @@ interface AdminStats {
   hiddenLifeLines: number
 }
 
-export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
+export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { toast } = useToast()
@@ -549,7 +549,7 @@ export function AdminDashboard({ userId, userRole }: AdminDashboardProps) {
 
       {/* Users Management Tab */}
       {activeTab === 'users' && (
-        <UserManagement currentUserRole={userRole} />
+        <UserManagement currentUserRole={userRoles} />
       )}
 
       {/* Resources Management Tab */}

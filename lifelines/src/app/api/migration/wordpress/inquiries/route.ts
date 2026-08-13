@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   try {
     // Auth check: require Admin role
     const session = await getServerSession(authOptions)
-    if (!session?.user || !hasRole(session.user.role, UserRole.ADMIN)) {
+    if (!session?.user || !hasRole(session.user.roles, UserRole.ADMIN)) {
       return createErrorResponse('Unauthorized: Admin access required', 401)
     }
 

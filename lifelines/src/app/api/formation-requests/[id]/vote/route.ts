@@ -150,7 +150,7 @@ async function approveFormationRequest(formationRequest: any) {
         groupType: formationRequest.groupType,
         meetingTime: formationRequest.meetingTime,
         status: 'DRAFT', // Start as draft so leader can customize
-        leaderId: leader.id,
+        leaders: { connect: [{ id: leader.id }] },
         formationRequestId: formationRequest.id,
       }
     })

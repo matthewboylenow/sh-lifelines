@@ -69,7 +69,7 @@ export default function SupportTicketDetailPage() {
   const [responseText, setResponseText] = useState('')
   const [newStatus, setNewStatus] = useState<TicketStatus | ''>('')
 
-  const isSupport = hasAnyRole(session?.user?.role, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
+  const isSupport = hasAnyRole(session?.user?.roles, [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN])
   const canRespond = ticket && (isSupport || ticket.requester.id === session?.user?.id)
   const canUpdateStatus = isSupport
 

@@ -80,7 +80,7 @@ async function main() {
       dayOfWeek: DayOfWeek.WEDNESDAY,
       groupType: GroupType.SCRIPTURE_BASED,
       meetingTime: '7:00 PM',
-      leaderId: leader1.id,
+      leaders: { connect: [{ id: leader1.id }] },
     },
   })
 
@@ -100,7 +100,7 @@ async function main() {
       dayOfWeek: DayOfWeek.SUNDAY,
       groupType: GroupType.SOCIAL,
       meetingTime: '11:30 AM (after Mass)',
-      leaderId: leader2.id,
+      leaders: { connect: [{ id: leader2.id }] },
     },
   })
   console.log('✅ Created sample LifeLines')
