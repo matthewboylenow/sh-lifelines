@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { UserRole, ResourceType } from '@prisma/client'
-import { BookOpen, Video, FileText, Download, ExternalLink, MessageCircle } from 'lucide-react'
+import { BookOpen, Video, FileText, Download, ExternalLink, MessageCircle,
+  PlayCircle
+} from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { parseVideoUrl, isPlayableVideo } from '@/lib/video'
 
 interface LifeLineResourcesProps {
   userRoles: UserRole[]
@@ -15,6 +18,7 @@ interface Resource {
   title: string
   description: string | null
   websiteUrl: string | null
+  videoUrl: string | null
   resourceType: ResourceType
   fileUrl: string | null
   fileName: string | null
@@ -75,7 +79,89 @@ export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
     }))
   ]
 
+  const ResourceVideo = ({ id, url, title }: { id: string; url: string; title: string }) => {
+    const video = parseVideoUrl(url)
+    const [signedUrl, setSignedUrl] = useState<string | null>(null)
+    const [signError, setSignError] = useState(false)
+
+    // Privately stored media needs a short-lived signed link, fetched on demand.
+    useEffect(() => {
+      if (video.kind !== 'private') return
+      let cancelled = false
+      fetch(`/api/resources/${id}/media`)
+        .then(r => r.json())
+        .then(d => { if (!cancelled) d?.data?.url ? setSignedUrl(d.data.url) : setSignError(true) })
+        .catch(() => { if (!cancelled) setSignError(true) })
+      return () => { cancelled = true }
+    }, [id, video.kind])
+
+    if (video.kind === 'private') {
+      if (signError) {
+        return (
+          <p className="mb-4 text-sm text-red-600">
+            This video could not be loaded. Please try again.
+          </p>
+        )
+      }
+      if (!signedUrl) {
+        return (
+          <div className="mb-4 flex items-center justify-center rounded-lg bg-gray-100 aspect-video">
+            <LoadingSpinner className="w-6 h-6" />
+          </div>
+        )
+      }
+      return (
+        <div className="mb-4 overflow-hidden rounded-lg bg-black">
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video src={signedUrl} controls preload="metadata" className="w-full aspect-video" />
+        </div>
+      )
+    }
+
+    if (video.kind === 'file' && video.fileUrl) {
+      return (
+        <div className="mb-4 overflow-hidden rounded-lg bg-black">
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video src={video.fileUrl} controls preload="metadata" className="w-full aspect-video" />
+        </div>
+      )
+    }
+
+    if (video.embedUrl) {
+      return (
+        <div className="mb-4 overflow-hidden rounded-lg bg-black">
+          <iframe
+            src={video.embedUrl}
+            title={title}
+            className="w-full aspect-video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+          />
+        </div>
+      )
+    }
+
+    return null
+  }
+
   const getResourceAction = (resource: Resource) => {
+    // A playable video renders inline below, so it needs no button here.
+    if (resource.videoUrl && isPlayableVideo(resource.videoUrl)) {
+      return null
+    }
+
+    if (resource.videoUrl) {
+      return (
+        <a href={resource.videoUrl} target="_blank" rel="noopener noreferrer">
+          <Button size="sm" variant="outline">
+            <PlayCircle className="h-4 w-4 mr-2" aria-hidden="true" />
+            Watch
+          </Button>
+        </a>
+      )
+    }
+
     if (resource.fileUrl) {
       return (
         <a href={resource.fileUrl} download={resource.fileName} target="_blank" rel="noopener noreferrer">
@@ -188,7 +274,16 @@ export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
                           </span>
                         </>
                       )}
-                      {resource.websiteUrl && !resource.fileUrl && (
+                      {resource.videoUrl && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center">
+                            <PlayCircle className="h-3 w-3 mr-1" aria-hidden="true" />
+                            Video
+                          </span>
+                        </>
+                      )}
+                      {resource.websiteUrl && !resource.fileUrl && !resource.videoUrl && (
                         <>
                           <span>•</span>
                           <span className="flex items-center">
@@ -200,6 +295,10 @@ export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
                     </div>
                   </div>
                 </div>
+
+                {resource.videoUrl && isPlayableVideo(resource.videoUrl) && (
+                  <ResourceVideo id={resource.id} url={resource.videoUrl} title={resource.title} />
+                )}
 
                 {resource.description && (
                   <p className="text-sm text-gray-600 mb-4">{resource.description}</p>

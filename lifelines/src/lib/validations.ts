@@ -123,6 +123,7 @@ export const createResourceSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
   websiteUrl: z.string().url().optional().or(z.literal('')),
+  videoUrl: z.string().url().optional().or(z.literal('')),
   resourceType: z.nativeEnum(ResourceType),
   fileUrl: z.string().url().optional().or(z.literal('')),
   fileName: z.string().optional(),

@@ -17,12 +17,14 @@ import {
   Check,
   AlertCircle
 } from 'lucide-react'
+import { isPlayableVideo } from '@/lib/video'
 
 interface Resource {
   id: string
   title: string
   description: string | null
   websiteUrl: string | null
+  videoUrl: string | null
   resourceType: ResourceType
   fileUrl: string | null
   fileName: string | null
@@ -36,6 +38,7 @@ interface ResourceFormData {
   title: string
   description: string
   websiteUrl: string
+  videoUrl: string
   resourceType: ResourceType
   fileUrl: string
   fileName: string
@@ -46,6 +49,7 @@ const emptyFormData: ResourceFormData = {
   title: '',
   description: '',
   websiteUrl: '',
+  videoUrl: '',
   resourceType: ResourceType.LEADER_FAITH_FORMATION,
   fileUrl: '',
   fileName: '',
@@ -137,6 +141,7 @@ export function ResourceManagement() {
       title: resource.title,
       description: resource.description || '',
       websiteUrl: resource.websiteUrl || '',
+      videoUrl: resource.videoUrl || '',
       resourceType: resource.resourceType,
       fileUrl: resource.fileUrl || '',
       fileName: resource.fileName || '',
@@ -320,8 +325,32 @@ export function ResourceManagement() {
                   placeholder="https://example.com/resource"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Link to an external resource or video
+                  Link to an external page or document
                 </p>
+              </div>
+
+              {/* Video URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Video URL
+                </label>
+                <input
+                  type="url"
+                  value={formData.videoUrl}
+                  onChange={e => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  YouTube, Vimeo, or a direct video file. Plays on the page rather than
+                  sending people off-site.
+                </p>
+                {formData.videoUrl.trim() !== '' && !isPlayableVideo(formData.videoUrl) && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    This link isn&rsquo;t a recognised video — it will still be saved, but
+                    shown as a link rather than a player.
+                  </p>
+                )}
               </div>
 
               {/* File Upload */}
@@ -469,7 +498,13 @@ export function ResourceManagement() {
                             Link
                           </span>
                         )}
-                        {!resource.fileUrl && !resource.websiteUrl && (
+                        {resource.videoUrl && (
+                          <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                            <Video className="h-3 w-3 mr-1" />
+                            Video
+                          </span>
+                        )}
+                        {!resource.fileUrl && !resource.websiteUrl && !resource.videoUrl && (
                           <span className="text-gray-400">No content</span>
                         )}
                       </div>
