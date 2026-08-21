@@ -84,12 +84,13 @@ function sourceUrlFor(imageUrl) {
 }
 
 /**
- * Keep the WordPress folders in the key. Two uploads in different months can
- * share a filename, and flattening them would let one overwrite the other.
+ * Name the object after the group rather than after whatever WordPress called
+ * it, so the bucket can be read at a glance. The id stands in when a group has
+ * no slug, so the key stays unique rather than collapsing to a blank name.
  */
-function keyFor(imageUrl) {
-  const path = new URL(imageUrl).pathname.replace(/^\/wp-content\/uploads\//, '')
-  return KEY_PREFIX + path.replace(/^\/+/, '')
+function keyFor(imageUrl, row) {
+  const extension = new URL(imageUrl).pathname.split('.').pop()?.toLowerCase() || 'jpg'
+  return `${KEY_PREFIX}${row.slug || row.id}.${extension}`
 }
 
 async function alreadyInS3(key) {
@@ -102,7 +103,7 @@ async function alreadyInS3(key) {
 }
 
 const rows = await sql`
-  SELECT id, title, "imageUrl"
+  SELECT id, title, slug, "imageUrl"
   FROM lifelines
   WHERE "imageUrl" IS NOT NULL
   ORDER BY title
@@ -126,7 +127,7 @@ for (const row of pending) {
     continue
   }
 
-  const key = keyFor(row.imageUrl)
+  const key = keyFor(row.imageUrl, row)
   const extension = key.split('.').pop()?.toLowerCase() ?? ''
   const contentType = CONTENT_TYPES[extension]
 
