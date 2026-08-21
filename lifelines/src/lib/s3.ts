@@ -9,7 +9,11 @@ const s3Client = new S3Client({
   },
 })
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'lifelines-uploads'
+// AWS_S3_BUCKET_NAME is what the deployment actually sets, and what the
+// resource and lesson routes read. This file used to look for AWS_S3_BUCKET and
+// silently fall back to a bucket that does not exist, so every upload failed.
+const BUCKET_NAME =
+  process.env.AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET || ''
 
 export interface UploadResult {
   success: boolean
@@ -28,6 +32,10 @@ export async function uploadFileToS3(
   try {
     if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
       return { success: false, error: 'AWS credentials not configured' }
+    }
+
+    if (!BUCKET_NAME) {
+      return { success: false, error: 'File storage is not configured' }
     }
 
     const command = new PutObjectCommand({
@@ -65,6 +73,10 @@ export async function generatePresignedUploadUrl(
   try {
     if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
       return { success: false, error: 'AWS credentials not configured' }
+    }
+
+    if (!BUCKET_NAME) {
+      return { success: false, error: 'File storage is not configured' }
     }
 
     const command = new PutObjectCommand({
