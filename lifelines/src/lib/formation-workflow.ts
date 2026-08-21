@@ -2,77 +2,165 @@ import { prisma } from './prisma'
 import { sendWelcomeEmail, sendFormationRequestRejectionEmail } from './email'
 import { FormationStatus, VoteType, UserRole, LifeLineStatus } from '@prisma/client'
 import { hashPassword } from './auth-utils'
+import { slugify } from './utils'
+import crypto from 'crypto'
 
-// Formation request auto-approval logic
-export async function processFormationApproval(requestId: string) {
-  try {
-    const formationRequest = await prisma.formationRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        votes: {
-          include: {
-            user: true
-          }
-        },
-        comments: {
-          include: {
-            author: true
-          }
-        }
-      }
-    })
+/**
+ * How the formation workflow decides.
+ *
+ * A request needs two approvals and a quiet review window before it becomes a
+ * LifeLine. An objection or a request to discuss does NOT reject anything on
+ * its own — it holds the request open so the team can talk it through, and an
+ * admin makes the final call from the dashboard.
+ *
+ * Every path that creates a LifeLine or rejects a request goes through this
+ * file, so the rules only exist in one place.
+ */
 
-    if (!formationRequest) {
-      throw new Error('Formation request not found')
-    }
+/** Approvals needed before a request can go through. */
+export const REQUIRED_APPROVALS = 2
 
-    if (formationRequest.status !== FormationStatus.SUBMITTED) {
-      return { approved: false, reason: 'Request is not in submitted status' }
-    }
+/** How long a request rests before approval can take effect. */
+export const REVIEW_PERIOD_HOURS = 48
 
-    // Check voting status
-    const votes = formationRequest.votes
-    const approveVotes = votes.filter(v => v.vote === VoteType.APPROVE).length
-    const objectVotes = votes.filter(v => v.vote === VoteType.OBJECT).length
-    const discussVotes = votes.filter(v => v.vote === VoteType.DISCUSS).length
-    
-    // Auto-approval criteria:
-    // 1. At least 2 approval votes
-    // 2. No objection votes
-    // 3. No discussion votes (or discussion votes are resolved)
-    // 4. Request has been submitted for at least 24 hours (for review period)
-    
-    const isOldEnough = new Date(Date.now() - 24 * 60 * 60 * 1000) > formationRequest.createdAt
-    const meetsVotingCriteria = approveVotes >= 2 && objectVotes === 0 && discussVotes === 0
-    
-    if (!isOldEnough) {
-      return { approved: false, reason: 'Request needs more review time' }
-    }
-    
-    if (!meetsVotingCriteria) {
-      return { 
-        approved: false, 
-        reason: `Voting criteria not met: ${approveVotes} approvals, ${objectVotes} objections, ${discussVotes} discussions` 
-      }
-    }
+/**
+ * When the review window closes. Requests carry their own deadline; older ones
+ * that predate that field fall back to the standard window after submission.
+ */
+function reviewEndsAt(request: { createdAt: Date; autoApprovalScheduled: Date | null }) {
+  return (
+    request.autoApprovalScheduled ??
+    new Date(request.createdAt.getTime() + REVIEW_PERIOD_HOURS * 60 * 60 * 1000)
+  )
+}
 
-    // Auto-approve the request
-    await approveFormationRequest(requestId)
-    
-    return { approved: true, reason: 'Auto-approved based on voting criteria' }
-    
-  } catch (error) {
-    console.error('Error processing formation approval:', error)
-    throw error
+export interface VotingSummary {
+  approvals: number
+  objections: number
+  discussions: number
+  passes: number
+  total: number
+}
+
+export interface ApprovalAssessment {
+  canApprove: boolean
+  /** Set when something needs a person rather than more time. */
+  needsAttention: boolean
+  reason: string
+  reviewEndsAt: Date | null
+  votingSummary: VotingSummary
+}
+
+const emptySummary: VotingSummary = {
+  approvals: 0,
+  objections: 0,
+  discussions: 0,
+  passes: 0,
+  total: 0,
+}
+
+function summarise(votes: { vote: VoteType }[]): VotingSummary {
+  return {
+    approvals: votes.filter(v => v.vote === VoteType.APPROVE).length,
+    objections: votes.filter(v => v.vote === VoteType.OBJECT).length,
+    discussions: votes.filter(v => v.vote === VoteType.DISCUSS).length,
+    passes: votes.filter(v => v.vote === VoteType.PASS).length,
+    total: votes.length,
   }
 }
 
-// Approve formation request and create LifeLine + User account
+/**
+ * Read-only view of where a request stands. Used by the dashboard, the cron
+ * monitor, and the auto-approval path itself so they can never disagree.
+ */
+export async function canAutoApprove(requestId: string): Promise<ApprovalAssessment> {
+  const formationRequest = await prisma.formationRequest.findUnique({
+    where: { id: requestId },
+    include: { votes: { select: { vote: true } } },
+  })
+
+  if (!formationRequest) {
+    return {
+      canApprove: false,
+      needsAttention: false,
+      reason: 'Formation request not found',
+      reviewEndsAt: null,
+      votingSummary: emptySummary,
+    }
+  }
+
+  const votingSummary = summarise(formationRequest.votes)
+  const endsAt = reviewEndsAt(formationRequest)
+
+  const assess = (canApprove: boolean, needsAttention: boolean, reason: string) => ({
+    canApprove,
+    needsAttention,
+    reason,
+    reviewEndsAt: endsAt,
+    votingSummary,
+  })
+
+  if (formationRequest.status !== FormationStatus.SUBMITTED) {
+    return assess(false, false, `Request is ${formationRequest.status.toLowerCase()}`)
+  }
+
+  if (formationRequest.lifeLineCreated) {
+    return assess(false, false, 'A LifeLine has already been created for this request')
+  }
+
+  // Concerns hold the request open for the team; they never reject it outright.
+  if (votingSummary.objections > 0) {
+    return assess(
+      false,
+      true,
+      `On hold: ${votingSummary.objections} objection${votingSummary.objections === 1 ? '' : 's'} to work through`
+    )
+  }
+
+  if (votingSummary.discussions > 0) {
+    return assess(
+      false,
+      true,
+      `On hold: ${votingSummary.discussions} member${votingSummary.discussions === 1 ? '' : 's'} asked to discuss this`
+    )
+  }
+
+  if (votingSummary.approvals < REQUIRED_APPROVALS) {
+    const needed = REQUIRED_APPROVALS - votingSummary.approvals
+    return assess(false, false, `Waiting on ${needed} more approval${needed === 1 ? '' : 's'}`)
+  }
+
+  if (new Date() < endsAt) {
+    return assess(false, false, `Approved, pending the ${REVIEW_PERIOD_HOURS}-hour review window`)
+  }
+
+  return assess(true, false, 'Ready to approve')
+}
+
+/**
+ * Approve the request if it has met every condition. Safe to call repeatedly —
+ * it only acts when the criteria are genuinely satisfied.
+ */
+export async function processFormationApproval(requestId: string) {
+  const assessment = await canAutoApprove(requestId)
+
+  if (!assessment.canApprove) {
+    return { approved: false, reason: assessment.reason }
+  }
+
+  await approveFormationRequest(requestId)
+  return { approved: true, reason: 'Approved: two approvals and the review window has passed' }
+}
+
+/**
+ * Create the leader's account and their LifeLine. This is the only place a
+ * formation request turns into a real group.
+ */
 export async function approveFormationRequest(requestId: string) {
   const formationRequest = await prisma.formationRequest.findUnique({
-    where: { id: requestId }
+    where: { id: requestId },
   })
-  
+
   if (!formationRequest) {
     throw new Error('Formation request not found')
   }
@@ -81,36 +169,43 @@ export async function approveFormationRequest(requestId: string) {
     throw new Error('LifeLine already created for this request')
   }
 
-  // Generate temporary password for new leader
-  const tempPassword = generateTempPassword()
-  const hashedPassword = await hashPassword(tempPassword)
+  const email = formationRequest.leaderEmail.trim().toLowerCase()
+  const existing = await prisma.user.findUnique({ where: { email } })
 
-  // Check if user already exists
-  let leader = await prisma.user.findUnique({
-    where: { email: formationRequest.leaderEmail }
-  })
+  // Only new accounts get a temporary password; an existing leader keeps theirs.
+  let tempPassword: string | null = null
+  let leader = existing
 
-  if (!leader) {
-    // Create new user account
+  if (leader) {
+    // Leading a group is an added role, never a replacement — an admin or
+    // formation team member who starts a LifeLine keeps everything they had.
+    if (!leader.roles.includes(UserRole.LIFELINE_LEADER)) {
+      leader = await prisma.user.update({
+        where: { id: leader.id },
+        data: { roles: [...leader.roles, UserRole.LIFELINE_LEADER] },
+      })
+    }
+  } else {
+    tempPassword = generateTempPassword()
     leader = await prisma.user.create({
       data: {
-        email: formationRequest.leaderEmail,
-        password: hashedPassword,
+        email,
+        password: await hashPassword(tempPassword),
         displayName: formationRequest.groupLeader,
         roles: [UserRole.LIFELINE_LEADER],
         isActive: true,
-      }
+      },
     })
   }
 
-  // Create LifeLine
   const lifeLine = await prisma.lifeLine.create({
     data: {
       title: formationRequest.title,
+      slug: await uniqueSlug(formationRequest.title),
       description: formationRequest.description,
       status: LifeLineStatus.DRAFT,
       groupLeader: formationRequest.groupLeader,
-      leaderEmail: formationRequest.leaderEmail,
+      leaderEmail: email,
       agesStages: formationRequest.agesStages ? [formationRequest.agesStages] : [],
       meetingFrequency: formationRequest.meetingFrequency,
       dayOfWeek: formationRequest.dayOfWeek,
@@ -118,96 +213,90 @@ export async function approveFormationRequest(requestId: string) {
       meetingTime: formationRequest.meetingTime,
       leaders: { connect: [{ id: leader.id }] },
       formationRequestId: requestId,
-    }
+    },
   })
 
-  // Update formation request
   await prisma.formationRequest.update({
     where: { id: requestId },
     data: {
       status: FormationStatus.APPROVED,
       lifeLineCreated: true,
-    }
+    },
   })
 
-  // Send welcome email to new leader
+  // A failed email should not undo an approval that already happened.
   try {
     await sendWelcomeEmail(
-      formationRequest.leaderEmail,
+      email,
       formationRequest.groupLeader,
       tempPassword,
       formationRequest.title
     )
   } catch (error) {
     console.error('Failed to send welcome email:', error)
-    // Don't fail the whole process if email fails
   }
 
-  return {
-    lifeLine,
-    leader,
-  }
+  return { lifeLine, leader, tempPassword }
 }
 
-// Reject formation request
+/** Reject a request and tell the person who asked. */
 export async function rejectFormationRequest(requestId: string, reason?: string) {
   const formationRequest = await prisma.formationRequest.findUnique({
-    where: { id: requestId }
+    where: { id: requestId },
   })
-  
+
   if (!formationRequest) {
     throw new Error('Formation request not found')
   }
 
+  if (formationRequest.lifeLineCreated) {
+    throw new Error('This request has already become a LifeLine and cannot be rejected')
+  }
+
   await prisma.formationRequest.update({
     where: { id: requestId },
-    data: {
-      status: FormationStatus.REJECTED,
-    }
+    data: { status: FormationStatus.REJECTED },
   })
 
-  // Send rejection email to requester
   try {
     await sendFormationRequestRejectionEmail(
       {
         groupLeader: formationRequest.groupLeader,
         leaderEmail: formationRequest.leaderEmail,
-        title: formationRequest.title
+        title: formationRequest.title,
       },
       reason
     )
   } catch (error) {
     console.error('Failed to send rejection email:', error)
-    // Don't fail the whole process if email fails
   }
+
+  return { rejected: true }
 }
 
-// Check all submitted formation requests for auto-approval
+/** Sweep every open request — run on a schedule so review windows close on time. */
 export async function processAllPendingFormationRequests() {
   const pendingRequests = await prisma.formationRequest.findMany({
     where: {
       status: FormationStatus.SUBMITTED,
       lifeLineCreated: false,
-    }
+    },
+    select: { id: true, title: true },
   })
 
   const results = []
-  
+
   for (const request of pendingRequests) {
     try {
       const result = await processFormationApproval(request.id)
-      results.push({
-        requestId: request.id,
-        title: request.title,
-        ...result
-      })
+      results.push({ requestId: request.id, title: request.title, ...result })
     } catch (error) {
       console.error(`Error processing request ${request.id}:`, error)
       results.push({
         requestId: request.id,
         title: request.title,
         approved: false,
-        reason: 'Processing error'
+        reason: 'Processing error',
       })
     }
   }
@@ -215,86 +304,28 @@ export async function processAllPendingFormationRequests() {
   return results
 }
 
-// Generate temporary password
-function generateTempPassword(): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
-  let password = ''
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length))
+/** A readable, unique URL for the new group, matching the manual create path. */
+async function uniqueSlug(title: string): Promise<string> {
+  const base = slugify(title) || 'lifeline'
+  let slug = base
+  let counter = 1
+
+  while (await prisma.lifeLine.findUnique({ where: { slug }, select: { id: true } })) {
+    slug = `${base}-${counter}`
+    counter += 1
   }
-  return password
+
+  return slug
 }
 
-// Check if formation request can be auto-approved (helper function)
-export async function canAutoApprove(requestId: string): Promise<{
-  canApprove: boolean
-  reason: string
-  votingSummary: {
-    approvals: number
-    objections: number
-    discussions: number
-    passes: number
-    total: number
+/** Temporary password for a brand new leader account. */
+function generateTempPassword(): string {
+  // No look-alike characters — these get read aloud and retyped.
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  const bytes = crypto.randomBytes(14)
+  let password = ''
+  for (let i = 0; i < 14; i++) {
+    password += chars.charAt(bytes[i] % chars.length)
   }
-}> {
-  const formationRequest = await prisma.formationRequest.findUnique({
-    where: { id: requestId },
-    include: {
-      votes: true
-    }
-  })
-
-  if (!formationRequest) {
-    return {
-      canApprove: false,
-      reason: 'Formation request not found',
-      votingSummary: { approvals: 0, objections: 0, discussions: 0, passes: 0, total: 0 }
-    }
-  }
-
-  const votes = formationRequest.votes
-  const approvals = votes.filter(v => v.vote === VoteType.APPROVE).length
-  const objections = votes.filter(v => v.vote === VoteType.OBJECT).length
-  const discussions = votes.filter(v => v.vote === VoteType.DISCUSS).length
-  const passes = votes.filter(v => v.vote === VoteType.PASS).length
-
-  const votingSummary = {
-    approvals,
-    objections,
-    discussions,
-    passes,
-    total: votes.length
-  }
-
-  const isOldEnough = new Date(Date.now() - 24 * 60 * 60 * 1000) > formationRequest.createdAt
-  const meetsVotingCriteria = approvals >= 2 && objections === 0 && discussions === 0
-
-  if (!isOldEnough) {
-    return {
-      canApprove: false,
-      reason: 'Request needs more review time (minimum 24 hours)',
-      votingSummary
-    }
-  }
-
-  if (!meetsVotingCriteria) {
-    let reason = 'Voting criteria not met: '
-    const criteria = []
-    if (approvals < 2) criteria.push(`need ${2 - approvals} more approvals`)
-    if (objections > 0) criteria.push(`has ${objections} objections`)
-    if (discussions > 0) criteria.push(`has ${discussions} discussions pending`)
-    reason += criteria.join(', ')
-
-    return {
-      canApprove: false,
-      reason,
-      votingSummary
-    }
-  }
-
-  return {
-    canApprove: true,
-    reason: 'All criteria met for auto-approval',
-    votingSummary
-  }
+  return password
 }

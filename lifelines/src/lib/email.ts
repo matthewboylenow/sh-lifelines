@@ -74,9 +74,22 @@ export async function sendEmail({
 export async function sendWelcomeEmail(
   email: string,
   name: string,
-  tempPassword: string,
+  // Null when the leader already had an account — they keep the password they know.
+  tempPassword: string | null,
   lifeLineTitle: string
 ) {
+  const credentialsBlock = tempPassword
+    ? `<p>Your LifeLine leader account has been created. Here are your login credentials:</p>
+
+                <div class="credentials">
+                    <strong>Login Details:</strong><br>
+                    <strong>Email:</strong> ${email}<br>
+                    <strong>Temporary Password:</strong> ${tempPassword}
+                </div>
+
+                <p><strong>Important:</strong> Please log in and change your password immediately for security.</p>`
+    : `<p>You can manage your new group from your existing LifeLines account (<strong>${email}</strong>) — sign in with the password you already use.</p>`
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -105,16 +118,8 @@ export async function sendWelcomeEmail(
                 
                 <p>Congratulations! Your LifeLine formation request for "<strong>${lifeLineTitle}</strong>" has been approved by our formation team.</p>
                 
-                <p>Your LifeLine leader account has been created. Here are your login credentials:</p>
-                
-                <div class="credentials">
-                    <strong>Login Details:</strong><br>
-                    <strong>Email:</strong> ${email}<br>
-                    <strong>Temporary Password:</strong> ${tempPassword}
-                </div>
-                
-                <p><strong>Important:</strong> Please log in and change your password immediately for security.</p>
-                
+                ${credentialsBlock}
+
                 <a href="${process.env.APP_URL}/login" class="button">Access Your Dashboard</a>
                 
                 <h3>Next Steps:</h3>
