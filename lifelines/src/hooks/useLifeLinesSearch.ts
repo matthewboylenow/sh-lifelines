@@ -321,12 +321,14 @@ export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
     })
   }, [filters])
   
+  // Counts each selection, not each field — picking three age groups reads as
+  // three filters, which is what someone looking at the chips expects.
   const activeFilterCount = useMemo(() => {
-    return Object.entries(filters).filter(([key, value]) => {
-      if (key === 'page' || key === 'limit' || key === 'sortBy' || key === 'sortOrder') return false
-      if (Array.isArray(value)) return value.length > 0
-      return value !== undefined && value !== null && value !== ''
-    }).length
+    return Object.entries(filters).reduce((count, [key, value]) => {
+      if (key === 'page' || key === 'limit' || key === 'sortBy' || key === 'sortOrder') return count
+      if (Array.isArray(value)) return count + value.length
+      return value !== undefined && value !== null && value !== '' ? count + 1 : count
+    }, 0)
   }, [filters])
   
   // Auto-load facets on mount

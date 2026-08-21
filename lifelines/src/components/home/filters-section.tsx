@@ -1,21 +1,78 @@
 'use client'
 
-import { useState } from 'react'
 import { GroupType, MeetingFrequency, DayOfWeek } from '@prisma/client'
+import { X } from 'lucide-react'
 import { useSharedSearch } from './lifelines-search-context'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
-const dayOptions = [
-  { value: DayOfWeek.SUNDAY, label: 'Sunday' },
-  { value: DayOfWeek.MONDAY, label: 'Monday' },
-  { value: DayOfWeek.TUESDAY, label: 'Tuesday' },
-  { value: DayOfWeek.WEDNESDAY, label: 'Wednesday' },
-  { value: DayOfWeek.THURSDAY, label: 'Thursday' },
-  { value: DayOfWeek.FRIDAY, label: 'Friday' },
-  { value: DayOfWeek.SATURDAY, label: 'Saturday' },
-  { value: DayOfWeek.VARIES, label: 'Varies' },
-]
+const dayLabels: Record<string, string> = {
+  [DayOfWeek.SUNDAY]: 'Sunday',
+  [DayOfWeek.MONDAY]: 'Monday',
+  [DayOfWeek.TUESDAY]: 'Tuesday',
+  [DayOfWeek.WEDNESDAY]: 'Wednesday',
+  [DayOfWeek.THURSDAY]: 'Thursday',
+  [DayOfWeek.FRIDAY]: 'Friday',
+  [DayOfWeek.SATURDAY]: 'Saturday',
+  [DayOfWeek.VARIES]: 'Varies',
+}
+
+interface FacetOption {
+  value: string | boolean
+  label: string
+  count: number
+}
+
+/**
+ * One choice. A toggle button rather than a checkbox: every option fits on
+ * screen as a chip, so nothing is hidden behind a scrollbar.
+ */
+function FilterChip({
+  label,
+  count,
+  selected,
+  onClick,
+}: {
+  label: string
+  count?: number
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-1 ${
+        selected
+          ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
+          : 'border-gray-200 bg-white text-gray-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
+      }`}
+    >
+      <span>{label}</span>
+      {count !== undefined && (
+        <span className={selected ? 'text-white/70' : 'text-gray-400'}>{count}</span>
+      )}
+    </button>
+  )
+}
+
+function FilterGroup({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+        {title}
+      </h4>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  )
+}
 
 export function FiltersSection() {
   const {
@@ -25,22 +82,8 @@ export function FiltersSection() {
     clearFilters,
     toggleFilter,
     hasActiveFilters,
-    activeFilterCount
+    activeFilterCount,
   } = useSharedSearch()
-
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    agesStages: true,
-    groupTypes: true,
-    frequencies: true,
-    dayOfWeek: true
-  })
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }))
-  }
 
   if (!facets) {
     return (
@@ -55,193 +98,163 @@ export function FiltersSection() {
     )
   }
 
+  const labelFor = (options: FacetOption[], value: unknown) =>
+    options.find(o => o.value === value)?.label ?? String(value)
+
+  // Everything currently narrowing the results, so it can be seen and undone
+  // in one place rather than hunted for among the groups.
+  const activeChips: { key: string; label: string; remove: () => void }[] = [
+    ...(filters.agesStages ?? []).map(v => ({
+      key: `ages-${v}`,
+      label: labelFor(facets.agesStages, v),
+      remove: () => toggleFilter('agesStages', v),
+    })),
+    ...(filters.groupTypes ?? []).map(v => ({
+      key: `type-${v}`,
+      label: labelFor(facets.groupTypes, v),
+      remove: () => toggleFilter('groupTypes', v),
+    })),
+    ...(filters.frequencies ?? []).map(v => ({
+      key: `freq-${v}`,
+      label: labelFor(facets.frequencies, v),
+      remove: () => toggleFilter('frequencies', v),
+    })),
+    ...(filters.dayOfWeek
+      ? [{
+          key: `day-${filters.dayOfWeek}`,
+          label: dayLabels[filters.dayOfWeek] ?? String(filters.dayOfWeek),
+          remove: () => updateFilters({ dayOfWeek: undefined }),
+        }]
+      : []),
+    ...(filters.hasChildcare
+      ? [{
+          key: 'childcare',
+          label: 'Childcare available',
+          remove: () => toggleFilter('hasChildcare', true),
+        }]
+      : []),
+  ]
+
+  const childcareCount = facets.childcare.find(c => c.value === true)?.count
+
   return (
     <section className="section-alt">
       <div className="container mx-auto px-4">
-        <div className="dashboard-card-gradient p-8 max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="section-heading text-2xl">
-              Find Your LifeLine
-            </h3>
+        <div className="dashboard-card-gradient p-6 sm:p-8 max-w-6xl mx-auto">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <h3 className="section-heading text-2xl">Find Your LifeLine</h3>
             {hasActiveFilters && (
-              <span className="bg-secondary-100 text-secondary-700 px-4 py-1.5 rounded-full text-sm font-semibold">
-                {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+              <Button onClick={() => clearFilters()} variant="outline" size="sm">
+                Clear all
+              </Button>
+            )}
+          </div>
+
+          {/* What is narrowing the list right now */}
+          {activeChips.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-6 pb-6 border-b border-gray-200">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 mr-1">
+                Showing
               </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Ages & Stages */}
-            {facets.agesStages.length > 0 && (
-              <div>
+              {activeChips.map(chip => (
                 <button
-                  onClick={() => toggleSection('agesStages')}
-                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
+                  key={chip.key}
+                  type="button"
+                  onClick={chip.remove}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-secondary-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-1"
                 >
-                  <span>Ages & Stages</span>
-                  <span className="text-sm">
-                    {expandedSections.agesStages ? '−' : '+'}
-                  </span>
+                  {chip.label}
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="sr-only">Remove this filter</span>
                 </button>
-                {expandedSections.agesStages && (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {facets.agesStages.slice(0, 10).map((option) => (
-                      <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 mr-3"
-                          checked={filters.agesStages?.includes(option.value) || false}
-                          onChange={() => toggleFilter('agesStages', option.value)}
-                        />
-                        <span className="text-sm text-gray-700 flex-1">
-                          {option.label} ({option.count})
-                        </span>
-                      </label>
-                    ))}
-                    {facets.agesStages.length > 10 && (
-                      <button className="text-sm text-primary hover:text-primary-dark mt-2">
-                        See {facets.agesStages.length - 10} more
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Meeting Frequency */}
-            {facets.frequencies.length > 0 && (
-              <div>
-                <button
-                  onClick={() => toggleSection('frequencies')}
-                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
-                >
-                  <span>Meeting Frequency</span>
-                  <span className="text-sm">
-                    {expandedSections.frequencies ? '−' : '+'}
-                  </span>
-                </button>
-                {expandedSections.frequencies && (
-                  <div className="space-y-2">
-                    {facets.frequencies.map((option) => (
-                      <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 mr-3"
-                          checked={filters.frequencies?.includes(option.value as MeetingFrequency) || false}
-                          onChange={() => toggleFilter('frequencies', option.value)}
-                        />
-                        <span className="text-sm text-gray-700 flex-1">
-                          {option.label} ({option.count})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Day of Week */}
-            {facets.daysOfWeek.length > 0 && (
-              <div>
-                <button
-                  onClick={() => toggleSection('dayOfWeek')}
-                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
-                >
-                  <span>Day of the Week</span>
-                  <span className="text-sm">
-                    {expandedSections.dayOfWeek ? '−' : '+'}
-                  </span>
-                </button>
-                {expandedSections.dayOfWeek && (
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                    value={filters.dayOfWeek || ''}
-                    onChange={(e) => updateFilters({ dayOfWeek: e.target.value as DayOfWeek || undefined })}
-                  >
-                    <option value="">Any Day</option>
-                    {dayOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            )}
-
-            {/* LifeLine Type */}
-            {facets.groupTypes.length > 0 && (
-              <div>
-                <button
-                  onClick={() => toggleSection('groupTypes')}
-                  className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 mb-4 hover:text-primary"
-                >
-                  <span>LifeLine Type</span>
-                  <span className="text-sm">
-                    {expandedSections.groupTypes ? '−' : '+'}
-                  </span>
-                </button>
-                {expandedSections.groupTypes && (
-                  <div className="space-y-2">
-                    {facets.groupTypes.map((option) => (
-                      <label key={option.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 mr-3"
-                          checked={filters.groupTypes?.includes(option.value as GroupType) || false}
-                          onChange={() => toggleFilter('groupTypes', option.value)}
-                        />
-                        <span className="text-sm text-gray-700 flex-1">
-                          {option.label} ({option.count})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Childcare filter only (cost/free removed) */}
-          {facets.childcare.find(c => c.value === true) && (
-            <div className="mt-8 pt-6 border-t">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Additional Options</h4>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-primary focus:ring-primary mr-2"
-                    checked={filters.hasChildcare || false}
-                    onChange={() => toggleFilter('hasChildcare', true)}
-                  />
-                  <span className="text-sm text-gray-700">
-                    Childcare Available ({facets.childcare.find(c => c.value === true)?.count || 0})
-                  </span>
-                </label>
-              </div>
+              ))}
             </div>
           )}
 
-          {/* Filter Actions */}
-          <div className="mt-8 flex items-center justify-between border-t pt-6">
-            <Button
-              onClick={() => clearFilters()}
-              variant="outline"
-              size="sm"
-              disabled={!hasActiveFilters}
-            >
-              Clear all filters
-            </Button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-7">
+            {facets.agesStages.length > 0 && (
+              <FilterGroup title="Ages &amp; Stages">
+                {facets.agesStages.map(option => (
+                  <FilterChip
+                    key={String(option.value)}
+                    label={option.label}
+                    count={option.count}
+                    selected={filters.agesStages?.includes(option.value as string) || false}
+                    onClick={() => toggleFilter('agesStages', option.value)}
+                  />
+                ))}
+              </FilterGroup>
+            )}
 
-            <div className="text-sm text-gray-600 font-medium">
-              {!hasActiveFilters ? (
-                'No filters applied'
-              ) : (
-                <span className="text-primary">
-                  {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} applied
-                </span>
-              )}
-            </div>
+            {facets.daysOfWeek.length > 0 && (
+              <FilterGroup title="Day of the Week">
+                {facets.daysOfWeek.map(option => (
+                  <FilterChip
+                    key={String(option.value)}
+                    label={dayLabels[String(option.value)] ?? option.label}
+                    count={option.count}
+                    selected={filters.dayOfWeek === option.value}
+                    onClick={() =>
+                      updateFilters({
+                        dayOfWeek:
+                          filters.dayOfWeek === option.value
+                            ? undefined
+                            : (option.value as DayOfWeek),
+                      })
+                    }
+                  />
+                ))}
+              </FilterGroup>
+            )}
+
+            {facets.groupTypes.length > 0 && (
+              <FilterGroup title="LifeLine Type">
+                {facets.groupTypes.map(option => (
+                  <FilterChip
+                    key={String(option.value)}
+                    label={option.label}
+                    count={option.count}
+                    selected={filters.groupTypes?.includes(option.value as GroupType) || false}
+                    onClick={() => toggleFilter('groupTypes', option.value)}
+                  />
+                ))}
+              </FilterGroup>
+            )}
+
+            {(facets.frequencies.length > 0 || childcareCount) && (
+              <FilterGroup title="Meeting Frequency">
+                {facets.frequencies.map(option => (
+                  <FilterChip
+                    key={String(option.value)}
+                    label={option.label}
+                    count={option.count}
+                    selected={
+                      filters.frequencies?.includes(option.value as MeetingFrequency) || false
+                    }
+                    onClick={() => toggleFilter('frequencies', option.value)}
+                  />
+                ))}
+                {childcareCount ? (
+                  <FilterChip
+                    label="Childcare available"
+                    count={childcareCount}
+                    selected={filters.hasChildcare || false}
+                    onClick={() => toggleFilter('hasChildcare', true)}
+                  />
+                ) : null}
+              </FilterGroup>
+            )}
+          </div>
+
+          <div className="mt-7 pt-5 border-t border-gray-200 text-sm text-gray-600">
+            {hasActiveFilters ? (
+              <span>
+                <span className="font-semibold text-primary-700">{activeFilterCount}</span>{' '}
+                filter{activeFilterCount !== 1 ? 's' : ''} applied
+              </span>
+            ) : (
+              'Choose any combination above to narrow the list.'
+            )}
           </div>
         </div>
       </div>

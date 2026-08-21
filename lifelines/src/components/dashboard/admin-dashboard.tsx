@@ -112,7 +112,11 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
             totalUsers: 0, // This would need a separate API call
             pendingFormationRequests: 0, // This would need a separate API call
             totalInquiries: lifeLines.reduce((sum: number, ll: any) => sum + (ll._count?.inquiries || 0), 0),
-            activeLeaders: new Set(lifeLines.map((ll: any) => ll.leaderId).filter(Boolean)).size,
+            // Groups can have several leaders, so count distinct people across
+            // every group's leader list.
+            activeLeaders: new Set(
+              lifeLines.flatMap((ll: any) => (ll.leaders || []).map((l: any) => l.id))
+            ).size,
             hiddenLifeLines: lifeLines.filter((ll: any) => ll.status === 'ARCHIVED' || !ll.isVisible).length
           })
         }

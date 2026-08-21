@@ -147,8 +147,9 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="container-responsive py-8 md:py-12">
+        {/* Main Content — the hero is full-bleed and the footer butts straight
+            up against this section, so both ends need real breathing room. */}
+        <div className="container-responsive pt-10 md:pt-14 pb-16 md:pb-24">
           <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
