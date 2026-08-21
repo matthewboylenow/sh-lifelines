@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LifeLineWithLeader } from '@/types'
 import { GroupType, MeetingFrequency, DayOfWeek, LifeLineStatus } from '@prisma/client'
@@ -98,6 +98,11 @@ export interface SearchSuggestion {
 export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Callers pass this as an object literal, so it is a new reference on every
+  // render. Held in a ref so the effects below can depend on the URL alone
+  // without re-running forever.
+  const defaults = useRef(initialFilters)
   
   // Parse initial filters from URL parameters
   const getFiltersFromUrl = useCallback((): SearchFilters => {
@@ -157,10 +162,15 @@ export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
   const [error, setError] = useState<string | null>(null)
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
   
-  // Update filters from URL when search params change
+  // Update filters from URL when search params change.
+  //
+  // The caller's defaults have to be laid down first. This used to replace the
+  // whole filter set with whatever the URL held, so on a clean homepage — where
+  // the URL carries nothing — the page size the caller asked for was thrown
+  // away and the API fell back to its default of 10. The homepage asks for 200
+  // because it shows every group at once.
   useEffect(() => {
-    const urlFilters = getFiltersFromUrl()
-    setFilters(urlFilters)
+    setFilters({ ...defaults.current, ...getFiltersFromUrl() })
   }, [getFiltersFromUrl])
   
   // Build query string from filters
@@ -265,9 +275,11 @@ export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
   const clearFilters = useCallback((options?: { search?: boolean }) => {
     const clearedFilters: SearchFilters = {
       page: 1,
-      limit: filters.limit || 12,
-      sortBy: 'createdAt',
-      sortOrder: 'desc'
+      // Keep the page size the caller asked for; clearing filters should not
+      // quietly shrink the list.
+      limit: filters.limit || defaults.current.limit || 12,
+      sortBy: defaults.current.sortBy || 'createdAt',
+      sortOrder: defaults.current.sortOrder || 'desc'
     }
     setFilters(clearedFilters)
     

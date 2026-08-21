@@ -12,12 +12,13 @@ function HomeContent() {
     <LifeLinesSearchProvider>
       <HomeHero />
       <FiltersSection />
-      <div className="container-responsive py-12">
+      <div className="container-responsive py-14 md:py-16">
         <LifeLinesGrid />
       </div>
 
-      {/* Start Your Own LifeLine CTA */}
-      <div className="container-responsive pb-24">
+      {/* Start Your Own LifeLine CTA — the footer butts straight up against
+          this, so it carries the gap for both. */}
+      <div className="container-responsive pb-20 md:pb-28">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 to-primary-800 p-8 md:p-12 text-center">
           <div className="relative z-10">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
