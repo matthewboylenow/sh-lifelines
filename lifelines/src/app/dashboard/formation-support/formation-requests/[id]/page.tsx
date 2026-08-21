@@ -22,7 +22,8 @@ import {
   MinusCircle,
   Send,
   History,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react'
 import { UserRole, FormationStatus, GroupType } from '@prisma/client'
 import { hasAnyRole } from '@/lib/auth-utils'
@@ -112,6 +113,7 @@ export default function FormationRequestDetailPage() {
   })
 
   const [deciding, setDeciding] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [declineOpen, setDeclineOpen] = useState(false)
   const [declineReason, setDeclineReason] = useState('')
 
@@ -219,6 +221,34 @@ export default function FormationRequestDetailPage() {
       setError('Network error. Please try again.')
     } finally {
       setDeciding(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!request) return
+
+    const warning = request.createdLifeLine
+      ? `Delete "${request.title}"?\n\nThis removes the request and its votes and comments. The LifeLine it created ("${request.createdLifeLine.title}") will be kept — delete that separately if you no longer need it.`
+      : `Delete "${request.title}"?\n\nThis removes the request along with its votes and comments. This cannot be undone.`
+
+    if (!confirm(warning)) return
+
+    setDeleting(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/formation-requests/${requestId}`, { method: 'DELETE' })
+      const result = await response.json()
+
+      if (result.success) {
+        router.push('/dashboard/formation-support/formation-requests')
+      } else {
+        setError(result.error || 'Failed to delete the request')
+        setDeleting(false)
+      }
+    } catch {
+      setError('Network error. Please try again.')
+      setDeleting(false)
     }
   }
 
@@ -604,6 +634,33 @@ export default function FormationRequestDetailPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Removing a request outright — available at any status, so test
+                and duplicate submissions can be cleared out. */}
+            {isAdmin && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Request</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Removes this request and its votes and comments for good.
+                  {request.createdLifeLine
+                    ? ' The LifeLine it created is kept.'
+                    : ''}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="w-full flex items-center justify-center text-red-700 border-red-200 hover:bg-red-50"
+                >
+                  {deleting ? (
+                    <LoadingSpinner className="mr-2" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  {deleting ? 'Deleting...' : 'Delete this request'}
+                </Button>
               </div>
             )}
 
