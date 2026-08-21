@@ -18,7 +18,8 @@ import {
   User,
   Mail,
   ArrowLeft,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react'
 import { UserRole, FormationStatus, GroupType } from '@prisma/client'
 import { hasAnyRole } from '@/lib/auth-utils'
@@ -76,6 +77,9 @@ export default function FormationRequestsPage() {
   const [requests, setRequests] = useState<FormationRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const isAdmin = hasAnyRole(session?.user?.roles, [UserRole.ADMIN])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<FormationStatus | 'ALL'>('ALL')
   const [pagination, setPagination] = useState({
@@ -142,6 +146,31 @@ export default function FormationRequestsPage() {
       ARCHIVED: 'bg-gray-100 text-gray-800 border-gray-200'
     }
     return styles[status] || styles.SUBMITTED
+  }
+
+  const handleDelete = async (request: FormationRequest) => {
+    const warning = request.lifeLineCreated
+      ? `Delete "${request.title}"?\n\nThis removes the request and its votes and comments. The LifeLine it created will be kept — delete that separately if you no longer need it.`
+      : `Delete "${request.title}"?\n\nThis removes the request along with its votes and comments. This cannot be undone.`
+
+    if (!confirm(warning)) return
+
+    setDeletingId(request.id)
+
+    try {
+      const response = await fetch(`/api/formation-requests/${request.id}`, { method: 'DELETE' })
+      const result = await response.json()
+
+      if (result.success) {
+        await fetchRequests()
+      } else {
+        setError(result.error || 'Failed to delete the request')
+      }
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const getVoteSummary = (votes: FormationRequest['votes']) => {
@@ -418,6 +447,23 @@ export default function FormationRequestsPage() {
                             Vote
                           </Button>
                         </Link>
+                      )}
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(request)}
+                          disabled={deletingId === request.id}
+                          className="text-red-700 border-red-200 hover:bg-red-50"
+                          title="Delete this request"
+                        >
+                          {deletingId === request.id ? (
+                            <LoadingSpinner className="h-4 w-4" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">Delete this request</span>
+                        </Button>
                       )}
                     </div>
                   </div>

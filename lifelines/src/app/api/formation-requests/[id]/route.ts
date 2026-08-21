@@ -161,3 +161,46 @@ export async function PUT(req: NextRequest, context: RouteParams) {
     }
   }, [UserRole.ADMIN])(req)
 }
+
+// DELETE /api/formation-requests/[id] - Remove a request entirely (Admin only)
+export async function DELETE(req: NextRequest, context: RouteParams) {
+  return withAuth(async (req: NextRequest, session: any) => {
+    try {
+      const { params } = context
+      const { id } = await params
+
+      const request = await prisma.formationRequest.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          createdLifeLine: { select: { id: true, title: true } },
+        },
+      })
+
+      if (!request) {
+        return createErrorResponse('Formation request not found', 404)
+      }
+
+      // Votes and comments go with it. A LifeLine that already came out of this
+      // request is left alone and simply detached — deleting the paperwork
+      // should never quietly delete a real group. It can be removed separately
+      // from the LifeLines table if that is what the admin wants.
+      await prisma.formationRequest.delete({ where: { id } })
+
+      console.log(
+        `Formation request "${request.title}" deleted by ${session.user.email}`
+      )
+
+      return createSuccessResponse(
+        { deletedId: id, detachedLifeLine: request.createdLifeLine },
+        request.createdLifeLine
+          ? `Request deleted. The LifeLine "${request.createdLifeLine.title}" it created still exists — delete it separately if you no longer need it.`
+          : 'Formation request deleted'
+      )
+    } catch (error) {
+      console.error('Error deleting formation request:', error)
+      return createErrorResponse('Failed to delete formation request', 500)
+    }
+  }, [UserRole.ADMIN])(req)
+}
