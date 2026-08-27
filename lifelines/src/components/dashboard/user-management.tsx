@@ -32,6 +32,15 @@ interface User {
   isActive: boolean
   cellPhone?: string | null
   lastLoginAt?: Date | null
+  emailDeliveries?: Array<{
+    sentAt: string
+    deliveredAt: string | null
+    openedAt: string | null
+    clickedAt: string | null
+    bouncedAt: string | null
+    lastEvent: string | null
+    lastError: string | null
+  }>
   createdAt: Date
   updatedAt: Date
   _count: {
@@ -51,6 +60,51 @@ const formatCellForDisplay = (cell?: string | null) => {
   const digits = cell.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
   if (digits.length !== 10) return cell
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+/**
+ * Where someone's invitation got to.
+ *
+ * Signed in is the only outcome that actually matters, so it wins over
+ * everything else. Below that, the useful distinction is whether the message
+ * reached them at all — bounced and never-delivered need chasing, opened but
+ * not acted on just needs a nudge.
+ */
+function InvitationStatus({ user }: { user: User }) {
+  const invite = user.emailDeliveries?.[0]
+
+  if (user.lastLoginAt) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
+        <CheckCircle className="h-3 w-3" />
+        Signed in
+      </span>
+    )
+  }
+
+  if (!invite) {
+    return <span className="text-xs text-gray-400">Not invited yet</span>
+  }
+
+  const [label, tone, detail] = invite.bouncedAt
+    ? ['Bounced', 'bg-red-100 text-red-800', invite.lastError || 'The address rejected it']
+    : invite.clickedAt
+    ? ['Opened the link', 'bg-blue-100 text-blue-800', 'Has not finished signing in']
+    : invite.openedAt
+    ? ['Opened', 'bg-blue-50 text-blue-700', 'Read it but has not clicked through']
+    : invite.deliveredAt
+    ? ['Delivered', 'bg-gray-100 text-gray-700', 'Arrived, not opened yet']
+    : ['Sent', 'bg-yellow-100 text-yellow-800', 'Not confirmed delivered yet']
+
+  return (
+    <div className="space-y-1">
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${tone}`}>
+        {label}
+      </span>
+      <div className="text-xs text-gray-500">{detail}</div>
+      <div className="text-xs text-gray-400">{formatDate(invite.sentAt)}</div>
+    </div>
+  )
 }
 
 const getRoleColor = (role: UserRole) => {
@@ -760,6 +814,9 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Invitation
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Activity
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -811,6 +868,10 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                     }`}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </span>
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <InvitationStatus user={user} />
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-500">

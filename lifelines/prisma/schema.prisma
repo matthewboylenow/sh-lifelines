@@ -12,34 +12,35 @@ datasource db {
 
 // User Management
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  username          String?   @unique
-  password          String
-  displayName       String?
-  cellPhone              String?
-  cellPhoneVerified      Boolean   @default(false)
-  smsVerificationCode    String?
-  smsCodeExpiry          DateTime?
-  roles                  UserRole[] @default([MEMBER])
-  isActive               Boolean   @default(true)
-  emailVerified          Boolean   @default(false)
-  lastLoginAt            DateTime?
-  resetToken             String?
-  resetTokenExpiry       DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                  String     @id @default(cuid())
+  email               String     @unique
+  username            String?    @unique
+  password            String
+  displayName         String?
+  cellPhone           String?
+  cellPhoneVerified   Boolean    @default(false)
+  smsVerificationCode String?
+  smsCodeExpiry       DateTime?
+  roles               UserRole[] @default([MEMBER])
+  isActive            Boolean    @default(true)
+  emailVerified       Boolean    @default(false)
+  lastLoginAt         DateTime?
+  resetToken          String?
+  resetTokenExpiry    DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   // Relationships
-  ledLifeLines         LifeLine[]        @relation("LifeLineLeaders")
-  supportedLifeLines   LifeLine[]        @relation("LifeLineSupportContact")
-  formationRequests    FormationRequest[]
-  supportTickets       SupportTicket[]
-  votes                FormationVote[]
-  formationComments    FormationComment[]
-  ticketResponses      TicketResponse[]
-  removedInquiries     Inquiry[]         @relation("InquiryRemovedBy")
-  lessonProgress       LessonProgress[]
+  ledLifeLines       LifeLine[]         @relation("LifeLineLeaders")
+  supportedLifeLines LifeLine[]         @relation("LifeLineSupportContact")
+  formationRequests  FormationRequest[]
+  supportTickets     SupportTicket[]
+  votes              FormationVote[]
+  formationComments  FormationComment[]
+  ticketResponses    TicketResponse[]
+  removedInquiries   Inquiry[]          @relation("InquiryRemovedBy")
+  lessonProgress     LessonProgress[]
+  emailDeliveries    EmailDelivery[]
 
   @@map("users")
 }
@@ -53,47 +54,47 @@ enum UserRole {
 
 // LifeLine (Small Groups)
 model LifeLine {
-  id                  String    @id @default(cuid())
-  slug                String?   @unique
-  title               String
-  subtitle            String?
-  description         String?   @db.Text
-  status              LifeLineStatus @default(DRAFT)
-  isVisible           Boolean   @default(true)
-  
+  id          String         @id @default(cuid())
+  slug        String?        @unique
+  title       String
+  subtitle    String?
+  description String?        @db.Text
+  status      LifeLineStatus @default(DRAFT)
+  isVisible   Boolean        @default(true)
+
   // Group Details
-  groupLeader         String?
-  leaderEmail         String?
-  location            String?
-  agesStages          String[]  // Array of selected options
-  meetingFrequency    MeetingFrequency?
-  dayOfWeek           DayOfWeek?
-  groupType           GroupType?
-  meetingTime         String?
-  maxParticipants     Int?
-  duration            String?
-  cost                String?
-  childcare           Boolean   @default(false)
-  
+  groupLeader      String?
+  leaderEmail      String?
+  location         String?
+  agesStages       String[] // Array of selected options
+  meetingFrequency MeetingFrequency?
+  dayOfWeek        DayOfWeek?
+  groupType        GroupType?
+  meetingTime      String?
+  maxParticipants  Int?
+  duration         String?
+  cost             String?
+  childcare        Boolean           @default(false)
+
   // Media
-  imageUrl            String?
-  imageAlt            String?
-  imageAttribution    String?  // For Unsplash attribution
-  videoUrl            String?
-  
+  imageUrl         String?
+  imageAlt         String?
+  imageAttribution String? // For Unsplash attribution
+  videoUrl         String?
+
   // Timestamps
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relationships
   /// Every leader of this group. All leaders are equal — each sees the group on
   /// their dashboard and can manage its members.
-  leaders             User[]    @relation("LifeLineLeaders")
-  supportContactId    String?
-  supportContact      User?     @relation("LifeLineSupportContact", fields: [supportContactId], references: [id])
-  inquiries           Inquiry[]
-  formationRequestId  String?   @unique
-  formationRequest    FormationRequest? @relation("CreatedLifeLine", fields: [formationRequestId], references: [id])
+  leaders            User[]            @relation("LifeLineLeaders")
+  supportContactId   String?
+  supportContact     User?             @relation("LifeLineSupportContact", fields: [supportContactId], references: [id])
+  inquiries          Inquiry[]
+  formationRequestId String?           @unique
+  formationRequest   FormationRequest? @relation("CreatedLifeLine", fields: [formationRequestId], references: [id])
 
   @@map("lifelines")
 }
@@ -133,36 +134,36 @@ enum GroupType {
 
 // Formation Request System
 model FormationRequest {
-  id                  String    @id @default(cuid())
-  title               String
-  description         String?   @db.Text
-  status              FormationStatus @default(SUBMITTED)
-  
+  id          String          @id @default(cuid())
+  title       String
+  description String?         @db.Text
+  status      FormationStatus @default(SUBMITTED)
+
   // Form Data from Typeform/Native Form
-  groupLeader         String
-  leaderEmail         String
-  cellPhone           String?
-  agesStages          String?
-  groupType           GroupType?
-  meetingFrequency    MeetingFrequency?
-  dayOfWeek           DayOfWeek?
-  meetingTime         String?
-  
+  groupLeader      String
+  leaderEmail      String
+  cellPhone        String?
+  agesStages       String?
+  groupType        GroupType?
+  meetingFrequency MeetingFrequency?
+  dayOfWeek        DayOfWeek?
+  meetingTime      String?
+
   // System Fields
   autoApprovalScheduled DateTime?
-  lifeLineCreated     Boolean   @default(false)
-  
+  lifeLineCreated       Boolean   @default(false)
+
   // Timestamps
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relationships
-  submitterId         String?
-  submitter           User?     @relation(fields: [submitterId], references: [id])
-  votes               FormationVote[]
-  comments            FormationComment[]
-  createdLifeLine     LifeLine? @relation("CreatedLifeLine")
-  
+  submitterId     String?
+  submitter       User?              @relation(fields: [submitterId], references: [id])
+  votes           FormationVote[]
+  comments        FormationComment[]
+  createdLifeLine LifeLine?          @relation("CreatedLifeLine")
+
   @@map("formation_requests")
 }
 
@@ -174,17 +175,17 @@ enum FormationStatus {
 }
 
 model FormationVote {
-  id          String      @id @default(cuid())
-  vote        VoteType
-  comment     String?     @db.Text
-  createdAt   DateTime    @default(now())
-  
+  id        String   @id @default(cuid())
+  vote      VoteType
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
   // Relationships
-  requestId   String
-  request     FormationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  
+  requestId String
+  request   FormationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+
   @@unique([requestId, userId]) // One vote per user per request
   @@map("formation_votes")
 }
@@ -197,16 +198,16 @@ enum VoteType {
 }
 
 model FormationComment {
-  id          String    @id @default(cuid())
-  content     String    @db.Text
-  createdAt   DateTime  @default(now())
-  
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
   // Relationships
-  requestId   String
-  request     FormationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  authorId    String
-  author      User      @relation(fields: [authorId], references: [id])
-  
+  requestId String
+  request   FormationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User             @relation(fields: [authorId], references: [id])
+
   @@map("formation_comments")
 }
 
@@ -219,22 +220,22 @@ model Inquiry {
   message         String?       @db.Text
   status          InquiryStatus @default(UNDECIDED)
   source          InquirySource @default(PUBLIC_WEBSITE)
-  notJoinedReason String?       @db.Text  // Required when status is NOT_JOINED
-  leaderNotes     String?       @db.Text  // Optional notes from the leader
-  removedReason   String?       @db.Text  // Required when status is REMOVED
-  removedAt       DateTime?               // When member was removed
-  removedById     String?                 // Who removed the member
+  notJoinedReason String?       @db.Text // Required when status is NOT_JOINED
+  leaderNotes     String?       @db.Text // Optional notes from the leader
+  removedReason   String?       @db.Text // Required when status is REMOVED
+  removedAt       DateTime? // When member was removed
+  removedById     String? // Who removed the member
   removedBy       User?         @relation("InquiryRemovedBy", fields: [removedById], references: [id])
 
   // Timestamps
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  joinedAt        DateTime?     // When status changed to JOINED
-  lastContactedAt DateTime?     // When leader last reached out
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  joinedAt        DateTime? // When status changed to JOINED
+  lastContactedAt DateTime? // When leader last reached out
 
   // Relationships
-  lifeLineId      String
-  lifeLine        LifeLine      @relation(fields: [lifeLineId], references: [id])
+  lifeLineId String
+  lifeLine   LifeLine @relation(fields: [lifeLineId], references: [id])
 
   @@map("inquiries")
 }
@@ -258,7 +259,7 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  lessons     Lesson[]
+  lessons Lesson[]
 
   @@map("courses")
 }
@@ -276,7 +277,7 @@ model Lesson {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  progress    LessonProgress[]
+  progress LessonProgress[]
 
   @@unique([courseId, position])
   @@index([courseId])
@@ -285,15 +286,15 @@ model Lesson {
 
 /// One row per user per lesson, recording how far they have got.
 model LessonProgress {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId      String
-  lesson        Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  completedAt   DateTime?
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt  DateTime?
   /// Seconds watched, so a lesson can resume where it was left.
-  lastPosition  Int       @default(0)
-  updatedAt     DateTime  @updatedAt
+  lastPosition Int       @default(0)
+  updatedAt    DateTime  @updatedAt
 
   @@unique([userId, lessonId])
   @@index([userId])
@@ -327,24 +328,24 @@ enum InquirySource {
 
 // Support Ticket System
 model SupportTicket {
-  id              String        @id @default(cuid())
-  referenceNumber String        @unique
+  id              String         @id @default(cuid())
+  referenceNumber String         @unique
   subject         String
-  description     String        @db.Text
-  status          TicketStatus  @default(PENDING_REVIEW)
+  description     String         @db.Text
+  status          TicketStatus   @default(PENDING_REVIEW)
   priority        TicketPriority @default(MEDIUM)
   ticketType      String?
-  
+
   // Timestamps
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  resolvedAt      DateTime?
-  
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
   // Relationships
-  requesterId     String
-  requester       User          @relation(fields: [requesterId], references: [id])
-  responses       TicketResponse[]
-  
+  requesterId String
+  requester   User             @relation(fields: [requesterId], references: [id])
+  responses   TicketResponse[]
+
   @@map("support_tickets")
 }
 
@@ -361,40 +362,40 @@ enum TicketPriority {
 }
 
 model TicketResponse {
-  id            String        @id @default(cuid())
-  content       String        @db.Text
-  isFromSupport Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-  
+  id            String   @id @default(cuid())
+  content       String   @db.Text
+  isFromSupport Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
   // Relationships
-  ticketId      String
-  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId      String
-  author        User          @relation(fields: [authorId], references: [id])
-  
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User          @relation(fields: [authorId], references: [id])
+
   @@map("ticket_responses")
 }
 
 // Resource Management
 model Resource {
-  id            String        @id @default(cuid())
-  title         String
-  description   String?       @db.Text
-  websiteUrl    String?
+  id           String       @id @default(cuid())
+  title        String
+  description  String?      @db.Text
+  websiteUrl   String?
   /// A video to play inline — YouTube, Vimeo, or a direct file URL.
-  videoUrl      String?
-  resourceType  ResourceType
-  isActive      Boolean       @default(true)
-  
+  videoUrl     String?
+  resourceType ResourceType
+  isActive     Boolean      @default(true)
+
   // File Management
-  fileUrl       String?
-  fileName      String?
-  fileSize      Int?
-  
+  fileUrl  String?
+  fileName String?
+  fileSize Int?
+
   // Timestamps
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("resources")
 }
 
@@ -402,4 +403,37 @@ enum ResourceType {
   BIBLE_STUDY_REFLECTIONS
   SERIES_PROGRAMS
   LEADER_FAITH_FORMATION
+}
+
+/// What happened to an email after we handed it to the provider.
+///
+/// Sending is not delivering. Without this an admin has no way to tell a leader
+/// who never received their invitation from one who received it and ignored it,
+/// and those need completely different follow-up.
+model EmailDelivery {
+  id         String  @id @default(cuid())
+  /// Resend's message id, which its webhooks report events against.
+  providerId String? @unique
+  recipient  String
+  subject    String
+  /// What kind of message this was, e.g. account-setup.
+  kind       String
+
+  sentAt       DateTime  @default(now())
+  deliveredAt  DateTime?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  bouncedAt    DateTime?
+  complainedAt DateTime?
+  /// The most recent provider event, for anything the columns above miss.
+  lastEvent    String?
+  /// Why it failed, when it did.
+  lastError    String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([recipient])
+  @@map("email_deliveries")
 }

@@ -70,6 +70,25 @@ export async function GET(req: NextRequest) {
           cellPhone: isAdmin,
           roles: true,
           isActive: true,
+          lastLoginAt: true,
+          // The most recent invitation and what became of it, so an admin can
+          // tell "never arrived" from "arrived and ignored".
+          emailDeliveries: isAdmin
+            ? {
+                where: { kind: 'account-setup' },
+                orderBy: { sentAt: 'desc' },
+                take: 1,
+                select: {
+                  sentAt: true,
+                  deliveredAt: true,
+                  openedAt: true,
+                  clickedAt: true,
+                  bouncedAt: true,
+                  lastEvent: true,
+                  lastError: true,
+                },
+              }
+            : false,
           createdAt: true,
           updatedAt: true,
           _count: {

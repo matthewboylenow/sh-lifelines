@@ -17,7 +17,7 @@ const requestSchema = z.object({
   userIds: z.array(z.string()).optional(),
   // Or invite every leader who has never signed in — the common case after a
   // bulk import, where accounts exist with passwords nobody knows.
-  scope: z.enum(['leaders-never-logged-in']).optional(),
+  scope: z.enum(['leaders-never-logged-in', 'staff-never-logged-in']).optional(),
   // Send a single copy to the signed-in admin instead of to real leaders.
   test: z.boolean().optional(),
   // Optional admin-authored copy; blank falls back to the defaults.
@@ -84,7 +84,14 @@ export async function POST(req: NextRequest) {
         : {
             isActive: true,
             lastLoginAt: null,
-            roles: { has: UserRole.LIFELINE_LEADER },
+            // Anyone who needs to sign in to do their job — the formation and
+            // support team have the same first-time problem leaders do.
+            roles: {
+              hasSome:
+                scope === 'staff-never-logged-in'
+                  ? [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
+                  : [UserRole.LIFELINE_LEADER],
+            },
           },
       select: { id: true, email: true, displayName: true },
     })
@@ -92,7 +99,7 @@ export async function POST(req: NextRequest) {
     if (users.length === 0) {
       return createSuccessResponse(
         { sent: 0, failed: 0, results: [] },
-        scope ? 'No leaders are awaiting first sign-in' : 'No matching active users'
+        scope ? 'Nobody is awaiting first sign-in' : 'No matching active users'
       )
     }
 
@@ -114,7 +121,7 @@ export async function POST(req: NextRequest) {
           user.displayName || user.email,
           token,
           SETUP_TOKEN_DAYS,
-          { intro, subject }
+          { intro, subject, userId: user.id }
         )
 
         results.push({ email: user.email, sent: true })
@@ -158,17 +165,26 @@ export async function GET() {
       return createErrorResponse('Forbidden', 403)
     }
 
-    const pendingCount = await prisma.user.count({
-      where: {
-        isActive: true,
-        lastLoginAt: null,
-        roles: { has: UserRole.LIFELINE_LEADER },
-      },
-    })
+    // Split out so the banner can say who is still waiting, rather than
+    // counting only leaders and quietly ignoring the formation and support team.
+    const [leaderCount, staffCount] = await Promise.all([
+      prisma.user.count({
+        where: { isActive: true, lastLoginAt: null, roles: { has: UserRole.LIFELINE_LEADER } },
+      }),
+      prisma.user.count({
+        where: {
+          isActive: true,
+          lastLoginAt: null,
+          roles: {
+            hasSome: [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN],
+          },
+        },
+      }),
+    ])
 
-    return createSuccessResponse({ pendingCount })
+    return createSuccessResponse({ pendingCount: leaderCount, staffPendingCount: staffCount })
   } catch (error) {
-    console.error('Error counting pending leaders:', error)
-    return createErrorResponse('Failed to count pending leaders', 500)
+    console.error('Error counting people awaiting first sign-in:', error)
+    return createErrorResponse('Failed to count people awaiting first sign-in', 500)
   }
 }
