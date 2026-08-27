@@ -30,6 +30,7 @@ interface User {
   displayName?: string | null
   roles: UserRole[]
   isActive: boolean
+  cellPhone?: string | null
   lastLoginAt?: Date | null
   createdAt: Date
   updatedAt: Date
@@ -42,6 +43,14 @@ interface User {
 
 interface UserManagementProps {
   currentUserRole: UserRole[]
+}
+
+/** Stored as +1XXXXXXXXXX; shown as (XXX) XXX-XXXX so it reads like a phone number. */
+const formatCellForDisplay = (cell?: string | null) => {
+  if (!cell) return ''
+  const digits = cell.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
+  if (digits.length !== 10) return cell
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
 }
 
 const getRoleColor = (role: UserRole) => {
@@ -64,7 +73,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
 
   // Edit modal state
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [editForm, setEditForm] = useState({ email: '', displayName: '', password: '' })
+  const [editForm, setEditForm] = useState({ email: '', displayName: '', cellPhone: '', password: '' })
   const [editRoles, setEditRoles] = useState<UserRole[]>([])
   const [editLoading, setEditLoading] = useState(false)
 
@@ -330,6 +339,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
     setEditForm({
       email: user.email,
       displayName: user.displayName || '',
+      cellPhone: formatCellForDisplay(user.cellPhone),
       password: '',
     })
     setEditRoles([...user.roles])
@@ -350,6 +360,10 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
       if (editForm.email !== editingUser.email) payload.email = editForm.email
       if (editForm.displayName !== (editingUser.displayName || '')) payload.displayName = editForm.displayName
       if (editForm.password) payload.password = editForm.password
+      // Sent whenever it differs, including cleared, so a number can be removed.
+      if (editForm.cellPhone.trim() !== formatCellForDisplay(editingUser.cellPhone)) {
+        payload.cellPhone = editForm.cellPhone.trim()
+      }
 
       // Check if roles changed
       const rolesChanged = editRoles.length !== editingUser.roles.length ||
@@ -909,6 +923,25 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                   onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="edit-cell" className="block text-sm font-medium text-gray-700 mb-1">
+                  Mobile Number
+                </label>
+                <input
+                  id="edit-cell"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="908-555-0142"
+                  value={editForm.cellPhone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, cellPhone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Used to sign in by text message. Leave blank to remove it.
+                </p>
               </div>
 
               {hasRole(currentUserRole, UserRole.ADMIN) && (

@@ -6,6 +6,7 @@ import {
 } from '@/lib/api-utils'
 import { updateProfileSchema } from '@/lib/validations'
 import { hashPassword, hasRole } from '@/lib/auth-utils'
+import { normalizePhone } from '@/lib/phone'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { UserRole } from '@prisma/client'
@@ -47,6 +48,8 @@ export async function GET(req: NextRequest, context: RouteParams) {
         displayName: true,
         roles: true,
         isActive: true,
+        cellPhone: true,
+        cellPhoneVerified: true,
         createdAt: true,
         updatedAt: true,
         ledLifeLines: {
@@ -104,7 +107,46 @@ export async function PUT(req: NextRequest, context: RouteParams) {
     }
 
     // Prepare update data
-    const updateData: any = { ...profileData }
+    const { cellPhone, ...rest } = profileData
+    const updateData: any = { ...rest }
+
+    if (cellPhone !== undefined) {
+      const trimmed = (cellPhone ?? '').trim()
+
+      if (!trimmed) {
+        updateData.cellPhone = null
+        updateData.cellPhoneVerified = false
+      } else {
+        // Store one shape only — signing in by text looks the number up
+        // exactly, so 908-451-5305 and +19084515305 must not both exist.
+        const normalized = normalizePhone(trimmed)
+        if (!/^\+1\d{10}$/.test(normalized)) {
+          return createErrorResponse(
+            'Enter a 10-digit US mobile number, for example 908-555-0142',
+            400
+          )
+        }
+
+        // The number is the whole credential for a text sign-in, so it cannot
+        // be shared: whoever it belongs to would be able to reach both accounts.
+        const claimed = await prisma.user.findFirst({
+          where: { cellPhone: normalized, id: { not: id } },
+          select: { displayName: true, email: true },
+        })
+        if (claimed) {
+          return createErrorResponse(
+            `That number is already on ${claimed.displayName || claimed.email}'s account`,
+            409
+          )
+        }
+
+        updateData.cellPhone = normalized
+        // A changed number has not been proven to belong to them yet.
+        if (normalized !== existingUser.cellPhone) {
+          updateData.cellPhoneVerified = false
+        }
+      }
+    }
 
     // Support both single role and roles array
     if (roles !== undefined) {
@@ -129,6 +171,8 @@ export async function PUT(req: NextRequest, context: RouteParams) {
         displayName: true,
         roles: true,
         isActive: true,
+        cellPhone: true,
+        cellPhoneVerified: true,
         createdAt: true,
         updatedAt: true,
       }
