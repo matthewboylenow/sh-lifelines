@@ -30,7 +30,17 @@ interface User {
   displayName?: string | null
   roles: UserRole[]
   isActive: boolean
+  cellPhone?: string | null
   lastLoginAt?: Date | null
+  emailDeliveries?: Array<{
+    sentAt: string
+    deliveredAt: string | null
+    openedAt: string | null
+    clickedAt: string | null
+    bouncedAt: string | null
+    lastEvent: string | null
+    lastError: string | null
+  }>
   createdAt: Date
   updatedAt: Date
   _count: {
@@ -42,6 +52,59 @@ interface User {
 
 interface UserManagementProps {
   currentUserRole: UserRole[]
+}
+
+/** Stored as +1XXXXXXXXXX; shown as (XXX) XXX-XXXX so it reads like a phone number. */
+const formatCellForDisplay = (cell?: string | null) => {
+  if (!cell) return ''
+  const digits = cell.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
+  if (digits.length !== 10) return cell
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+/**
+ * Where someone's invitation got to.
+ *
+ * Signed in is the only outcome that actually matters, so it wins over
+ * everything else. Below that, the useful distinction is whether the message
+ * reached them at all — bounced and never-delivered need chasing, opened but
+ * not acted on just needs a nudge.
+ */
+function InvitationStatus({ user }: { user: User }) {
+  const invite = user.emailDeliveries?.[0]
+
+  if (user.lastLoginAt) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
+        <CheckCircle className="h-3 w-3" />
+        Signed in
+      </span>
+    )
+  }
+
+  if (!invite) {
+    return <span className="text-xs text-gray-400">Not invited yet</span>
+  }
+
+  const [label, tone, detail] = invite.bouncedAt
+    ? ['Bounced', 'bg-red-100 text-red-800', invite.lastError || 'The address rejected it']
+    : invite.clickedAt
+    ? ['Opened the link', 'bg-blue-100 text-blue-800', 'Has not finished signing in']
+    : invite.openedAt
+    ? ['Opened', 'bg-blue-50 text-blue-700', 'Read it but has not clicked through']
+    : invite.deliveredAt
+    ? ['Delivered', 'bg-gray-100 text-gray-700', 'Arrived, not opened yet']
+    : ['Sent', 'bg-yellow-100 text-yellow-800', 'Not confirmed delivered yet']
+
+  return (
+    <div className="space-y-1">
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${tone}`}>
+        {label}
+      </span>
+      <div className="text-xs text-gray-500">{detail}</div>
+      <div className="text-xs text-gray-400">{formatDate(invite.sentAt)}</div>
+    </div>
+  )
 }
 
 const getRoleColor = (role: UserRole) => {
@@ -64,7 +127,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
 
   // Edit modal state
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [editForm, setEditForm] = useState({ email: '', displayName: '', password: '' })
+  const [editForm, setEditForm] = useState({ email: '', displayName: '', cellPhone: '', password: '' })
   const [editRoles, setEditRoles] = useState<UserRole[]>([])
   const [editLoading, setEditLoading] = useState(false)
 
@@ -330,6 +393,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
     setEditForm({
       email: user.email,
       displayName: user.displayName || '',
+      cellPhone: formatCellForDisplay(user.cellPhone),
       password: '',
     })
     setEditRoles([...user.roles])
@@ -350,6 +414,10 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
       if (editForm.email !== editingUser.email) payload.email = editForm.email
       if (editForm.displayName !== (editingUser.displayName || '')) payload.displayName = editForm.displayName
       if (editForm.password) payload.password = editForm.password
+      // Sent whenever it differs, including cleared, so a number can be removed.
+      if (editForm.cellPhone.trim() !== formatCellForDisplay(editingUser.cellPhone)) {
+        payload.cellPhone = editForm.cellPhone.trim()
+      }
 
       // Check if roles changed
       const rolesChanged = editRoles.length !== editingUser.roles.length ||
@@ -746,6 +814,9 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Invitation
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Activity
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -797,6 +868,10 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                     }`}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </span>
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <InvitationStatus user={user} />
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-500">
@@ -909,6 +984,25 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                   onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="edit-cell" className="block text-sm font-medium text-gray-700 mb-1">
+                  Mobile Number
+                </label>
+                <input
+                  id="edit-cell"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="908-555-0142"
+                  value={editForm.cellPhone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, cellPhone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Used to sign in by text message. Leave blank to remove it.
+                </p>
               </div>
 
               {hasRole(currentUserRole, UserRole.ADMIN) && (

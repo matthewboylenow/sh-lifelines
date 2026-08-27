@@ -25,6 +25,12 @@ export interface EmailTemplate {
   text?: string
   /** Address replies should go to (e.g. the leader emailing their members). */
   replyTo?: string | string[]
+  /**
+   * Record this send so its delivery can be followed afterwards. Worth setting
+   * for anything someone is expected to act on — an invitation that never
+   * arrives looks exactly like one that was ignored.
+   */
+  track?: { kind: string; userId?: string | null }
 }
 
 /**
@@ -41,7 +47,8 @@ export async function sendEmail({
   subject,
   html,
   text,
-  replyTo
+  replyTo,
+  track
 }: EmailTemplate) {
   const resend = getResend()
 
@@ -64,10 +71,53 @@ export async function sendEmail({
   // Resend reports API-level failures on the response rather than throwing.
   if (error) {
     console.error('Email sending failed:', error)
+    if (track) {
+      await recordDelivery(track, to, subject, null, error.message || 'Send failed')
+    }
     throw new Error(error.message || 'Failed to send email')
   }
 
+  if (track) {
+    await recordDelivery(track, to, subject, data?.id ?? null, null)
+  }
+
   return { success: true, messageId: data?.id }
+}
+
+/**
+ * Note that a message went out, so the webhook has a row to update when the
+ * provider reports what became of it. Never fails a send: losing the audit
+ * trail is worse than nothing, but not sending the mail is worse still.
+ */
+async function recordDelivery(
+  track: { kind: string; userId?: string | null },
+  to: string | string[],
+  subject: string,
+  providerId: string | null,
+  lastError: string | null
+) {
+  try {
+    const { prisma } = await import('./prisma')
+    // One row per recipient, so each person's outcome stands on its own.
+    const recipients = Array.isArray(to) ? to : [to]
+    for (const recipient of recipients) {
+      await prisma.emailDelivery.create({
+        data: {
+          // Resend issues one id for the whole send; only the first recipient
+          // can carry it, since it has to stay unique.
+          providerId: recipient === recipients[0] ? providerId : null,
+          recipient,
+          subject,
+          kind: track.kind,
+          userId: track.userId ?? null,
+          lastEvent: lastError ? 'failed' : 'sent',
+          lastError,
+        },
+      })
+    }
+  } catch (error) {
+    console.error('Could not record email delivery:', error)
+  }
 }
 
 // Welcome email template for new LifeLine leaders
@@ -486,7 +536,7 @@ export async function sendAccountSetupEmail(
   displayName: string,
   setupToken: string,
   expiresInDays: number = 7,
-  options: { intro?: string; subject?: string } = {}
+  options: { intro?: string; subject?: string; userId?: string } = {}
 ) {
   const { subject, html } = renderAccountSetupEmail({
     displayName,
@@ -496,7 +546,13 @@ export async function sendAccountSetupEmail(
     subject: options.subject,
   })
 
-  return await sendEmail({ to: email, subject, html })
+  // Tracked: this is the one message someone must act on to get in at all.
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+    track: { kind: 'account-setup', userId: options.userId },
+  })
 }
 
 export async function sendPasswordResetEmail(
