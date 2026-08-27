@@ -75,7 +75,7 @@ function InvitationStatus({ user }: { user: User }) {
 
   if (user.lastLoginAt) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
         <CheckCircle className="h-3 w-3" />
         Signed in
       </span>
@@ -83,26 +83,26 @@ function InvitationStatus({ user }: { user: User }) {
   }
 
   if (!invite) {
-    return <span className="text-xs text-gray-400">Not invited yet</span>
+    return <span className="whitespace-nowrap text-xs text-gray-400">Not invited yet</span>
   }
 
   const [label, tone, detail] = invite.bouncedAt
-    ? ['Bounced', 'bg-red-100 text-red-800', invite.lastError || 'The address rejected it']
+    ? ['Bounced', 'bg-red-100 text-red-800', invite.lastError || 'Address rejected it']
     : invite.clickedAt
-    ? ['Opened the link', 'bg-blue-100 text-blue-800', 'Has not finished signing in']
+    ? ['Opened the link', 'bg-blue-100 text-blue-800', 'Not signed in yet']
     : invite.openedAt
-    ? ['Opened', 'bg-blue-50 text-blue-700', 'Read it but has not clicked through']
+    ? ['Opened', 'bg-blue-50 text-blue-700', 'Link not clicked']
     : invite.deliveredAt
-    ? ['Delivered', 'bg-gray-100 text-gray-700', 'Arrived, not opened yet']
-    : ['Sent', 'bg-yellow-100 text-yellow-800', 'Not confirmed delivered yet']
+    ? ['Delivered', 'bg-gray-100 text-gray-700', 'Not opened yet']
+    : ['Sent', 'bg-yellow-100 text-yellow-800', 'Delivery unconfirmed']
 
   return (
     <div className="space-y-1">
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${tone}`}>
+      <span className={`inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-xs font-medium rounded-full ${tone}`}>
         {label}
       </span>
       <div className="text-xs text-gray-500">{detail}</div>
-      <div className="text-xs text-gray-400">{formatDate(invite.sentAt)}</div>
+      <div className="whitespace-nowrap text-xs text-gray-400">{formatDate(invite.sentAt)}</div>
     </div>
   )
 }
@@ -800,26 +800,37 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
           </p>
         </div>
       ) : (
-        <div className="dashboard-card overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="dashboard-card p-0 overflow-x-auto">
+          {/* Fixed layout with declared widths. Left to itself the browser
+              shrinks columns until short phrases wrap between a number and its
+              word ("1" / "LifeLines"), which is what made this unreadable. */}
+          <table className="w-full min-w-[64rem] table-fixed divide-y divide-gray-200">
+            <colgroup>
+              <col className="w-[24%]" />
+              <col className="w-[15%]" />
+              <col className="w-[9%]" />
+              <col className="w-[17%]" />
+              <col className="w-[16%]" />
+              <col className="w-[19%]" />
+            </colgroup>
             <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Roles
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Invitation
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Activity
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -827,31 +838,31 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
             <tbody className="divide-y divide-gray-200">
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
+                  <td className="px-4 py-4">
+                    <div className="flex items-center min-w-0">
                       <div className="flex-shrink-0">
                         <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
                           <Users className="h-4 w-4 text-gray-600" />
                         </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                      <div className="ml-3 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate" title={user.displayName || undefined}>
                           {user.displayName || 'No name set'}
                         </div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Mail className="h-3 w-3 mr-1" />
-                          {user.email}
+                        <div className="text-sm text-gray-500 flex items-center min-w-0" title={user.email}>
+                          <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">{user.email}</span>
                         </div>
                       </div>
                     </div>
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     <div className="flex flex-wrap gap-1">
                       {user.roles.map(role => (
                         <span
                           key={role}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${getRoleColor(role)}`}
+                          className={`inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-xs font-medium rounded-full ${getRoleColor(role)}`}
                         >
                           {getRoleIcon(role)}
                           {getRoleLabel(role)}
@@ -860,8 +871,8 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                     </div>
                   </td>
 
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex whitespace-nowrap px-2 py-1 text-xs font-semibold rounded-full ${
                       user.isActive
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
@@ -870,25 +881,30 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
                     </span>
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 align-top">
                     <InvitationStatus user={user} />
                   </td>
 
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    <div className="space-y-1">
-                      <div>{user._count.ledLifeLines} LifeLines</div>
-                      <div>{user._count.formationRequests} Requests</div>
-                      <div>{user._count.supportTickets} Tickets</div>
+                  <td className="px-4 py-4 align-top text-sm text-gray-600">
+                    <div className="space-y-0.5">
+                      <div className="whitespace-nowrap">
+                        {user._count.ledLifeLines} {user._count.ledLifeLines === 1 ? 'LifeLine' : 'LifeLines'}
+                      </div>
+                      <div className="whitespace-nowrap text-gray-500">
+                        {user._count.formationRequests} {user._count.formationRequests === 1 ? 'request' : 'requests'}
+                        {' · '}
+                        {user._count.supportTickets} {user._count.supportTickets === 1 ? 'ticket' : 'tickets'}
+                      </div>
                       {user.lastLoginAt && (
-                        <div className="text-xs">
-                          Last: {formatDate(user.lastLoginAt)}
+                        <div className="whitespace-nowrap text-xs text-gray-400">
+                          Last in {formatDate(user.lastLoginAt)}
                         </div>
                       )}
                     </div>
                   </td>
 
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-4 py-4 align-top">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => openEditModal(user)}
                         className="p-1 text-gray-500 hover:text-blue-600 rounded hover:bg-blue-50"
@@ -918,7 +934,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
 
                       <button
                         onClick={() => toggleUserStatus(user.id, user.isActive)}
-                        className={`text-xs px-2 py-1 rounded ${
+                        className={`whitespace-nowrap text-xs px-2 py-1 rounded ${
                           user.isActive
                             ? 'bg-red-100 text-red-700 hover:bg-red-200'
                             : 'bg-green-100 text-green-700 hover:bg-green-200'

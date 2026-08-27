@@ -448,19 +448,32 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
           {/* LifeLines Table */}
           <div className="dashboard-card p-0">
             <div className="overflow-x-auto rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
+              {/* Declared widths, because the natural layout let the title and
+                  leader columns grow until Status and Inquiries were pushed
+                  under the pinned Actions column and clipped out of sight. */}
+              <table className="w-full min-w-[64rem] table-fixed divide-y divide-gray-200">
+                {/* Status needs real room: the badge is uppercase with letter
+                    spacing, so PUBLISHED renders about 106px wide and was being
+                    clipped by the column it sat in. */}
+                <colgroup>
+                  <col className="w-[31%]" />
+                  <col className="w-[24%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[23%]" />
+                </colgroup>
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       LifeLine
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Leader
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Inquiries
                     </th>
                     <th className="sticky right-0 z-20 bg-gray-50 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
@@ -471,23 +484,25 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredLifeLines.map((lifeline) => (
                     <tr key={lifeline.id} className="group hover:bg-gray-50">
-                      <td className="px-6 py-4 min-w-[16rem]">
-                        <div className="flex items-center">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {lifeline.title}
-                            </div>
-                            <div className="text-sm text-gray-500 max-w-xs truncate">
-                              {lifeline.description ? stripHtml(lifeline.description) : ''}
-                            </div>
+                      <td className="px-4 py-4">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate" title={lifeline.title}>
+                            {lifeline.title}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate">
+                            {lifeline.description ? stripHtml(lifeline.description) : ''}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{lifeline.groupLeader}</div>
-                        <div className="text-sm text-gray-500">{lifeline.leaderEmail}</div>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900 truncate" title={lifeline.groupLeader || undefined}>
+                          {lifeline.groupLeader}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate" title={lifeline.leaderEmail || undefined}>
+                          {lifeline.leaderEmail}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`status-badge ${
                           lifeline.status === 'PUBLISHED' 
                             ? 'status-badge-published' 
@@ -500,7 +515,7 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                           {lifeline.status.toLowerCase()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {lifeline._count?.inquiries || 0}
                       </td>
                       <td className="sticky right-0 z-10 bg-white group-hover:bg-gray-50 px-4 py-4 whitespace-nowrap text-right text-sm font-medium shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
