@@ -7,6 +7,7 @@ import {
   renderAccountSetupEmail,
   DEFAULT_SETUP_EMAIL_SUBJECT,
   DEFAULT_SETUP_EMAIL_INTRO,
+  appUrl,
 } from '@/lib/email'
 import { UserRole } from '@prisma/client'
 import { z } from 'zod'
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     // placeholder — real tokens are only minted when sending.
     const { subject, html } = renderAccountSetupEmail({
       displayName: parsed.data.displayName?.trim() || 'Maria Fusillo',
-      setupUrl: `${process.env.APP_URL || 'https://lifelines.sainthelen.org'}/reset-password?token=EXAMPLE-PREVIEW-LINK`,
+      setupUrl: `${appUrl()}/reset-password?token=EXAMPLE-PREVIEW-LINK`,
       expiresInDays: 7,
       intro: parsed.data.intro,
       subject: parsed.data.subject,

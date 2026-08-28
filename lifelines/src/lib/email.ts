@@ -18,6 +18,24 @@ function getResend(): Resend {
   return resendClient
 }
 
+/**
+ * Base URL for links inside emails.
+ *
+ * Every template builds its links from this. When it was read straight from
+ * APP_URL, a single missing variable turned every link in every message into
+ * "undefined/login" — and nobody finds out until a leader cannot get in. The
+ * canonical domain is the last resort so a link is always at least valid.
+ */
+export function appUrl(): string {
+  const configured = process.env.APP_URL || process.env.NEXTAUTH_URL
+  return (configured || 'https://lifelines.sainthelen.org').replace(/\/$/, '')
+}
+
+/** Where members are told to go with questions. */
+function supportEmail(): string {
+  return process.env.REPLY_TO_EMAIL || process.env.ADMIN_EMAIL || 'communications@sainthelen.org'
+}
+
 export interface EmailTemplate {
   to: string | string[]
   subject: string
@@ -25,6 +43,11 @@ export interface EmailTemplate {
   text?: string
   /** Address replies should go to (e.g. the leader emailing their members). */
   replyTo?: string | string[]
+  /**
+   * Recipients who must not see one another. Anyone in `to` is visible to every
+   * other recipient, which is not acceptable for a group of parishioners.
+   */
+  bcc?: string | string[]
   /**
    * Record this send so its delivery can be followed afterwards. Worth setting
    * for anything someone is expected to act on — an invitation that never
@@ -48,6 +71,7 @@ export async function sendEmail({
   html,
   text,
   replyTo,
+  bcc,
   track
 }: EmailTemplate) {
   const resend = getResend()
@@ -66,6 +90,7 @@ export async function sendEmail({
     html,
     text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
     ...(effectiveReplyTo ? { replyTo: effectiveReplyTo } : {}),
+    ...(bcc ? { bcc: Array.isArray(bcc) ? bcc : [bcc] } : {}),
   })
 
   // Resend reports API-level failures on the response rather than throwing.
@@ -170,7 +195,7 @@ export async function sendWelcomeEmail(
                 
                 ${credentialsBlock}
 
-                <a href="${process.env.APP_URL}/login" class="button">Access Your Dashboard</a>
+                <a href="${appUrl()}/login" class="button">Access Your Dashboard</a>
                 
                 <h3>Next Steps:</h3>
                 <ul>
@@ -189,7 +214,7 @@ export async function sendWelcomeEmail(
             
             <div class="footer">
                 <p>© 2024 A ministry of Saint Helen Church, Westfield, New Jersey</p>
-                <p>If you have questions, contact us at <a href="mailto:support@sainthelen.org">support@sainthelen.org</a></p>
+                <p>If you have questions, contact us at <a href="mailto:${supportEmail()}">${supportEmail()}</a></p>
             </div>
         </div>
     </body>
@@ -212,7 +237,7 @@ export async function sendFormationRequestNotification(
     description?: string
   }
 ) {
-  const supportEmail = process.env.ADMIN_EMAIL || 'support@sainthelen.org'
+  const supportAddress = supportEmail()
   
   const html = `
     <!DOCTYPE html>
@@ -257,14 +282,14 @@ export async function sendFormationRequestNotification(
                 
                 <p>Please review and vote on this request in the Formation Dashboard:</p>
                 
-                <a href="${process.env.APP_URL}/dashboard/formation-support/formation-requests" class="button">Review & Vote</a>
+                <a href="${appUrl()}/dashboard/formation-support/formation-requests" class="button">Review & Vote</a>
                 
                 <p><strong>Important:</strong> Formation requests require team review and voting before approval.</p>
             </div>
             
             <div class="footer">
                 <p>© 2024 A ministry of Saint Helen Church, Westfield, New Jersey</p>
-                <p>Formation Team Dashboard: <a href="${process.env.APP_URL}/dashboard/formation-support">Review Requests</a></p>
+                <p>Formation Team Dashboard: <a href="${appUrl()}/dashboard/formation-support">Review Requests</a></p>
             </div>
         </div>
     </body>
@@ -272,7 +297,7 @@ export async function sendFormationRequestNotification(
   `
 
   return await sendEmail({
-    to: supportEmail,
+    to: supportAddress,
     subject: `📝 New Formation Request: ${formationRequest.title}`,
     html
   })
@@ -328,7 +353,7 @@ export async function sendUserRegistrationConfirmationEmail(
                     <li>Manage your profile and preferences</li>
                 </ul>
                 
-                <a href="${process.env.APP_URL}/login" class="button">Access LifeLines</a>
+                <a href="${appUrl()}/login" class="button">Access LifeLines</a>
                 
                 <p>If you have any questions or need assistance getting started, please don't hesitate to contact our support team.</p>
                 
@@ -339,7 +364,7 @@ export async function sendUserRegistrationConfirmationEmail(
             
             <div class="footer">
                 <p>© 2024 A ministry of Saint Helen Church, Westfield, New Jersey</p>
-                <p>Need help? Contact us at <a href="mailto:support@sainthelen.org">support@sainthelen.org</a></p>
+                <p>Need help? Contact us at <a href="mailto:${supportEmail()}">${supportEmail()}</a></p>
             </div>
         </div>
     </body>
@@ -400,7 +425,7 @@ export async function sendInquiryNotification(
                 
                 <p>You can respond to this inquiry through your leader dashboard:</p>
                 
-                <a href="${process.env.APP_URL}/dashboard/leader" class="button">View Inquiry</a>
+                <a href="${appUrl()}/dashboard/leader" class="button">View Inquiry</a>
                 
                 <p>We encourage you to reach out to ${inquiry.personName} soon to welcome them and provide more information about your group.</p>
                 
@@ -540,7 +565,7 @@ export async function sendAccountSetupEmail(
 ) {
   const { subject, html } = renderAccountSetupEmail({
     displayName,
-    setupUrl: `${process.env.APP_URL}/reset-password?token=${setupToken}`,
+    setupUrl: `${appUrl()}/reset-password?token=${setupToken}`,
     expiresInDays,
     intro: options.intro,
     subject: options.subject,
@@ -560,7 +585,7 @@ export async function sendPasswordResetEmail(
   displayName: string,
   resetToken: string
 ) {
-  const resetUrl = `${process.env.APP_URL}/reset-password?token=${resetToken}`
+  const resetUrl = `${appUrl()}/reset-password?token=${resetToken}`
   
   const html = `
     <!DOCTYPE html>
@@ -692,7 +717,7 @@ export async function sendFormationRequestRejectionEmail(
                 
                 <p>We encourage you to stay engaged with our community and consider reapplying in the future.</p>
                 
-                <a href="${process.env.APP_URL}/lifelines" class="button">Explore Current LifeLines</a>
+                <a href="${appUrl()}/lifelines" class="button">Explore Current LifeLines</a>
                 
                 <p>If you have questions or would like to discuss this decision, please feel free to contact our formation support team.</p>
                 
@@ -703,7 +728,7 @@ export async function sendFormationRequestRejectionEmail(
             
             <div class="footer">
                 <p>© 2024 A ministry of Saint Helen Church, Westfield, New Jersey</p>
-                <p>Questions? Contact us at <a href="mailto:support@sainthelen.org">support@sainthelen.org</a></p>
+                <p>Questions? Contact us at <a href="mailto:${supportEmail()}">${supportEmail()}</a></p>
             </div>
         </div>
     </body>
@@ -780,7 +805,7 @@ export async function sendSupportTicketCreatedEmail(
                 
                 <p>You can track the status of your ticket anytime:</p>
                 
-                <a href="${process.env.APP_URL}/dashboard/formation-support/support-tickets/${ticket.referenceNumber}" class="button">View Ticket Status</a>
+                <a href="${appUrl()}/dashboard/formation-support/support-tickets/${ticket.referenceNumber}" class="button">View Ticket Status</a>
                 
                 <p><strong>Need immediate help?</strong> For urgent matters, please contact the church office directly.</p>
                 
@@ -836,14 +861,14 @@ export async function sendSupportTicketCreatedEmail(
                 
                 <p>Please respond to this ticket promptly:</p>
                 
-                <a href="${process.env.APP_URL}/dashboard/formation-support/support-tickets/${ticket.referenceNumber}" class="button">Respond to Ticket</a>
+                <a href="${appUrl()}/dashboard/formation-support/support-tickets/${ticket.referenceNumber}" class="button">Respond to Ticket</a>
             </div>
         </div>
     </body>
     </html>
   `
 
-  const supportEmail = process.env.ADMIN_EMAIL || 'support@sainthelen.org'
+  const supportAddress = supportEmail()
 
   // Send both emails
   const results = await Promise.allSettled([
@@ -853,7 +878,7 @@ export async function sendSupportTicketCreatedEmail(
       html: requesterHtml
     }),
     sendEmail({
-      to: supportEmail,
+      to: supportAddress,
       subject: `New Support Ticket [${ticket.priority}]: ${ticket.subject} [${ticket.referenceNumber}]`,
       html: supportHtml
     })
@@ -880,7 +905,7 @@ export async function sendSupportTicketResponseEmail(
   }
 ) {
   const isNotifyingCustomer = response.isFromSupport
-  const recipient = isNotifyingCustomer ? ticket.requester : { email: process.env.ADMIN_EMAIL || 'support@sainthelen.org' }
+  const recipient = isNotifyingCustomer ? ticket.requester : { email: supportEmail() }
 
   const html = `
     <!DOCTYPE html>
@@ -924,7 +949,7 @@ export async function sendSupportTicketResponseEmail(
                 <p>Please check the ticket and respond if needed:</p>
                 `}
                 
-                <a href="${process.env.APP_URL}/dashboard/formation-support/support-tickets/${ticket.referenceNumber}" class="button">View Full Ticket</a>
+                <a href="${appUrl()}/dashboard/formation-support/support-tickets/${ticket.referenceNumber}" class="button">View Full Ticket</a>
                 
                 <p>${isNotifyingCustomer ? 'Thank you for your patience as we work to resolve your issue.' : 'Please respond promptly to maintain good customer service.'}</p>
                 
@@ -961,6 +986,8 @@ export async function sendLeaderMemberEmail(
   leader: {
     displayName: string
     email: string
+    /** Whoever pressed send, so the record shows who it came from. */
+    id?: string
   },
   lifeLineTitle: string,
   recipients: string[],
@@ -1024,11 +1051,16 @@ export async function sendLeaderMemberEmail(
 
     try {
       await sendEmail({
-        to: batch,
+        // Members go in bcc so they never see one another's addresses. The
+        // leader is the visible recipient, which also gives them their own
+        // copy of what went out.
+        to: leader.email,
+        bcc: batch,
         subject: `[${lifeLineTitle}] ${subject}`,
         html,
         // The compose UI tells leaders members can reply directly to them.
         replyTo: leader.email,
+        track: { kind: 'leader-broadcast', userId: leader.id },
       })
       results.push({ batch: i / batchSize + 1, success: true, count: batch.length })
     } catch (error) {
@@ -1093,7 +1125,7 @@ export async function sendSupportTicketResolvedEmail(
                     <li>Contact our support team directly</li>
                 </ul>
                 
-                <a href="${process.env.APP_URL}/dashboard/formation-support/support-tickets" class="button">View All Tickets</a>
+                <a href="${appUrl()}/dashboard/formation-support/support-tickets" class="button">View All Tickets</a>
                 
                 <p><strong>How was our support?</strong> We'd love to hear your feedback about your experience with our support team.</p>
                 

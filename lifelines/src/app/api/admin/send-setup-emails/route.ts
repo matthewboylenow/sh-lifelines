@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-utils'
 import { generateResetToken, hasRole } from '@/lib/auth-utils'
-import { sendAccountSetupEmail, renderAccountSetupEmail, sendEmail } from '@/lib/email'
+import { sendAccountSetupEmail, renderAccountSetupEmail, sendEmail, appUrl } from '@/lib/email'
 import { UserRole } from '@prisma/client'
 import { z } from 'zod'
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
       const { subject: renderedSubject, html } = renderAccountSetupEmail({
         displayName: session.user.name || 'Maria Fusillo',
-        setupUrl: `${process.env.APP_URL}/reset-password?token=EXAMPLE-PREVIEW-LINK`,
+        setupUrl: `${appUrl()}/reset-password?token=EXAMPLE-PREVIEW-LINK`,
         expiresInDays: SETUP_TOKEN_DAYS,
         intro,
         subject,

@@ -136,10 +136,15 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
   const [bulkSetupSending, setBulkSetupSending] = useState(false)
   const [setupNotice, setSetupNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Leaders who have an account but have never signed in — after a bulk import
-  // these accounts have passwords nobody knows.
+  // Anyone who needs to sign in to do their job and never has. After a bulk
+  // import these accounts have passwords nobody knows.
+  //
+  // This counted only LIFELINE_LEADER, so the formation and support team were
+  // left out of the banner and out of the bulk send — they could be invited
+  // only by picking them out one at a time, which is easy to miss entirely.
+  const STAFF_ROLES: UserRole[] = [UserRole.LIFELINE_LEADER, UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN]
   const pendingLeaders = users.filter(
-    u => u.isActive && !u.lastLoginAt && u.roles.includes(UserRole.LIFELINE_LEADER)
+    u => u.isActive && !u.lastLoginAt && u.roles.some(r => STAFF_ROLES.includes(r))
   )
 
   // Compose modal: customise the invitation copy, preview it, send a test
@@ -253,8 +258,8 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
 
   const handleBulkSetupEmails = () => {
     openCompose({
-      scope: 'leaders-never-logged-in',
-      label: `${pendingLeaders.length} leader${pendingLeaders.length === 1 ? '' : 's'} awaiting first sign-in`,
+      scope: 'staff-never-logged-in',
+      label: `${pendingLeaders.length} ${pendingLeaders.length === 1 ? 'person' : 'people'} awaiting first sign-in`,
     })
   }
 
@@ -724,7 +729,7 @@ export function UserManagement({ currentUserRole }: UserManagementProps) {
             <Mail className="h-5 w-5 text-amber-700 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-amber-900">
               <p className="font-medium">
-                {pendingLeaders.length} leader{pendingLeaders.length === 1 ? '' : 's'} {pendingLeaders.length === 1 ? 'has' : 'have'} never signed in
+                {pendingLeaders.length} {pendingLeaders.length === 1 ? 'person has' : 'people have'} never signed in
               </p>
               <p className="text-amber-800">
                 Send them an email invitation to choose their own password.
