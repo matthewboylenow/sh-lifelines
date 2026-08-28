@@ -74,9 +74,22 @@ export async function GET(req: NextRequest) {
     // to join. Restricted to the leader themselves and to staff, since leaderId
     // is a public query parameter and must not become a way to browse
     // unpublished groups.
+    const session = await getServerSession(authOptions)
+
+    // Leaders' addresses are their personal email. The public pages deliberately
+    // route contact through the inquiry form instead of showing them, so they
+    // are withheld from anyone not signed in rather than left to be harvested.
+    const maySeeLeaderContact = Boolean(
+      session?.user &&
+        hasAnyRole(session.user.roles, [
+          UserRole.ADMIN,
+          UserRole.FORMATION_SUPPORT_TEAM,
+          UserRole.LIFELINE_LEADER,
+        ])
+    )
+
     let seesHiddenGroups = false
     if (filters.leaderId) {
-      const session = await getServerSession(authOptions)
       seesHiddenGroups = Boolean(
         session?.user &&
           (session.user.id === filters.leaderId ||
@@ -265,7 +278,7 @@ export async function GET(req: NextRequest) {
             select: {
               id: true,
               displayName: true,
-              email: true,
+              email: maySeeLeaderContact,
             }
           },
           supportContact: {
@@ -321,7 +334,13 @@ export async function GET(req: NextRequest) {
       sortOrder: filters.sortOrder,
     }
 
-    const response = createPaginatedResponse(lifeLines, total, page, limit)
+    // The group's own contact address is the leader's personal email too, so it
+    // is withheld from the public alongside the leaders[] addresses above.
+    const visibleLifeLines = maySeeLeaderContact
+      ? lifeLines
+      : lifeLines.map(({ leaderEmail, ...rest }) => rest)
+
+    const response = createPaginatedResponse(visibleLifeLines, total, page, limit)
     const responseWithMetadata = {
       ...response,
       metadata: searchMetadata

@@ -88,7 +88,7 @@ export function LeaderDashboard({ userId, userRoles }: LeaderDashboardProps) {
       setLoading(true)
       
       // Fetch user's LifeLines
-      const lifelinesRes = await fetch(`/api/lifelines?leaderId=${userId}`)
+      const lifelinesRes = await fetch(`/api/lifelines?leaderId=${userId}&limit=200`)
       const lifelinesData = await lifelinesRes.json()
       
       if (!lifelinesRes.ok) {

@@ -7,13 +7,36 @@ import {
   createPaginatedResponse 
 } from '@/lib/api-utils'
 import { createInquirySchema } from '@/lib/validations'
-import { InquiryStatus } from '@prisma/client'
+import { InquiryStatus, UserRole } from '@prisma/client'
 import { sendInquiryNotification } from '@/lib/email'
 import { ZodError } from 'zod'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 // GET /api/inquiries - List inquiries with filtering
+//
+// These are parishioners' names, email addresses and phone numbers. This
+// endpoint had no authentication at all, so the whole list was readable by
+// anyone who knew the URL. It is now limited to the people who need it, and a
+// leader sees only the groups they actually lead.
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return createErrorResponse('Unauthorized', 401)
+    }
+
+    const isStaff = hasAnyRole(session.user.roles, [
+      UserRole.ADMIN,
+      UserRole.FORMATION_SUPPORT_TEAM,
+    ])
+    const isLeader = hasAnyRole(session.user.roles, [UserRole.LIFELINE_LEADER])
+
+    if (!isStaff && !isLeader) {
+      return createErrorResponse('Forbidden', 403)
+    }
+
     const { searchParams } = new URL(req.url)
     const { page, limit, skip } = parsePaginationParams(searchParams)
     
@@ -37,7 +60,11 @@ export async function GET(req: NextRequest) {
       where.lifeLineId = filters.lifeLineId
     }
 
-    if (filters.leaderId) {
+    // A leader is pinned to their own groups whatever leaderId says, so the
+    // parameter cannot be used to read someone else's members.
+    if (!isStaff) {
+      where.lifeLine = { leaders: { some: { id: session.user.id } } }
+    } else if (filters.leaderId) {
       where.lifeLine = { leaders: { some: { id: filters.leaderId } } }
     }
 
