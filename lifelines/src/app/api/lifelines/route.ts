@@ -7,8 +7,11 @@ import {
   createPaginatedResponse
 } from '@/lib/api-utils'
 import { createLifeLineSchema } from '@/lib/validations'
-import { LifeLineStatus, GroupType, MeetingFrequency, DayOfWeek } from '@prisma/client'
+import { LifeLineStatus, GroupType, MeetingFrequency, DayOfWeek, UserRole } from '@prisma/client'
 import { ZodError } from 'zod'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { hasAnyRole } from '@/lib/auth-utils'
 
 // GET /api/lifelines - List LifeLines with advanced filtering and search
 export async function GET(req: NextRequest) {
@@ -65,8 +68,24 @@ export async function GET(req: NextRequest) {
     // Build where clause with advanced filtering
     const where: any = {}
 
+    // A leader has to see their own groups whatever the public sees. Hiding a
+    // group from the directory — which every FULL and DRAFT group is — was also
+    // hiding it from the person running it, along with everyone who had asked
+    // to join. Restricted to the leader themselves and to staff, since leaderId
+    // is a public query parameter and must not become a way to browse
+    // unpublished groups.
+    let seesHiddenGroups = false
+    if (filters.leaderId) {
+      const session = await getServerSession(authOptions)
+      seesHiddenGroups = Boolean(
+        session?.user &&
+          (session.user.id === filters.leaderId ||
+            hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]))
+      )
+    }
+
     // Only filter by visibility if not requesting all (admin mode)
-    if (!filters.includeAll) {
+    if (!filters.includeAll && !seesHiddenGroups) {
       where.isVisible = filters.isVisible
     }
 
