@@ -87,7 +87,10 @@ export async function POST(
       const result = await sendLeaderMemberEmail(
         {
           displayName: leaderDisplayName,
-          email: leaderEmail
+          email: leaderEmail,
+          // Attribute the send to whoever pressed the button, which may be an
+          // admin acting for the group rather than the leader named above.
+          id: session.user.id,
         },
         lifeLine.title,
         recipientEmails,

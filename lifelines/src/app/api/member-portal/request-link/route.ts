@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-utils'
-import { sendMemberPortalLinkEmail } from '@/lib/email'
+import { sendMemberPortalLinkEmail, appUrl } from '@/lib/email'
 import {
   generatePortalToken,
   hashPortalToken,
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       data: { email, tokenHash: hashPortalToken(rawToken), expiresAt },
     })
 
-    const portalUrl = `${process.env.APP_URL}/my-lifelines?token=${rawToken}`
+    const portalUrl = `${appUrl()}/my-lifelines?token=${rawToken}`
 
     try {
       await sendMemberPortalLinkEmail(email, portalUrl, PORTAL_TOKEN_TTL_MINUTES)
