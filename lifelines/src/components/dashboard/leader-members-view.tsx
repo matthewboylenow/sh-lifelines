@@ -75,7 +75,7 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
       setLoading(true)
 
       // Fetch leader's LifeLines first
-      const lifelinesRes = await fetch(`/api/lifelines?leaderId=${userId}`)
+      const lifelinesRes = await fetch(`/api/lifelines?leaderId=${userId}&limit=200`)
       const lifelinesData = await lifelinesRes.json()
 
       if (!lifelinesRes.ok) {

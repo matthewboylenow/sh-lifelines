@@ -28,7 +28,9 @@ export function LeaderInquiries({ userId, userRoles }: LeaderInquiriesProps) {
       setLoading(true)
       
       // Build query parameters
-      const params = new URLSearchParams({ leaderId: userId })
+      // Without a limit the API returns its default of 10, so a leader with
+      // more interest than that silently saw only the first handful.
+      const params = new URLSearchParams({ leaderId: userId, limit: '200' })
       if (filter !== 'all') {
         params.append('status', filter.toUpperCase())
       }
