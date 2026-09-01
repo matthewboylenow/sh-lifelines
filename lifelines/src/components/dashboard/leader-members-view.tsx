@@ -92,8 +92,16 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
         return
       }
 
-      // Fetch all joined inquiries for these LifeLines
-      const lifeLineIds = userLifeLines.map((ll: any) => ll.id)
+      // A coordinator leads the family heading, which has no members of its own —
+      // its people are in the subgroups. Pull those in so the roster is complete.
+      const lifeLineIds: string[] = Array.from(
+        new Set<string>(
+          userLifeLines.flatMap((ll: any) => [
+            ll.id,
+            ...((ll.children ?? []).map((c: any) => c.id)),
+          ])
+        )
+      )
 
       // Fetch joined members
       const membersPromises = lifeLineIds.map((id: string) =>

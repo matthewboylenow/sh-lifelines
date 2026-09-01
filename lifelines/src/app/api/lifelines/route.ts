@@ -270,9 +270,25 @@ export async function GET(req: NextRequest) {
       return orderBy
     }
 
+    // Families: the directory shows one card per family, so subgroups are
+    // folded into their parent rather than listed beside it.
+    //
+    // A family stays in the results when the parent OR any subgroup matches —
+    // the same conditions either way, so an archived subgroup cannot drag its
+    // family into view. This matters because the thing someone filtered for
+    // usually lives on a subgroup: the parent is a heading and carries no day
+    // or time of its own.
+    //
+    // Admins (includeAll) and leaders looking at their own groups see every
+    // group flat, subgroups included, which is what those views are for.
+    const collapseFamilies = !filters.includeAll && !filters.leaderId
+    const effectiveWhere = collapseFamilies
+      ? { parentId: null, OR: [where, { children: { some: where } }] }
+      : where
+
     const [lifeLines, total] = await Promise.all([
       prisma.lifeLine.findMany({
-        where,
+        where: effectiveWhere,
         include: {
           leaders: {
             select: {
@@ -289,6 +305,23 @@ export async function GET(req: NextRequest) {
               cellPhone: true,
             }
           },
+          // The subgroups beneath a family, so a card can say how many times
+          // are on offer and the family page can list them.
+          children: {
+            where: collapseFamilies ? { isVisible: true } : undefined,
+            orderBy: [{ dayOfWeek: 'asc' }, { title: 'asc' }],
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              status: true,
+              dayOfWeek: true,
+              meetingTime: true,
+              meetingFrequency: true,
+              location: true,
+              _count: { select: { inquiries: true } },
+            },
+          },
           _count: {
             select: {
               inquiries: true
@@ -299,7 +332,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.lifeLine.count({ where })
+      prisma.lifeLine.count({ where: effectiveWhere })
     ])
 
     // Add search metadata and analytics

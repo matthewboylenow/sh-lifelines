@@ -49,6 +49,20 @@ export async function POST(
               personName: true,
               status: true
             }
+          },
+          // A family heading has no members of its own; everyone is in the
+          // subgroups, so a coordinator emailing the family reaches all of them.
+          children: {
+            select: {
+              inquiries: {
+                where: validatedData.recipientFilter === 'all'
+                  ? {}
+                  : validatedData.recipientFilter === 'joined'
+                  ? { status: 'JOINED' }
+                  : { status: 'UNDECIDED' },
+                select: { personEmail: true },
+              },
+            },
           }
         }
       })
@@ -66,10 +80,16 @@ export async function POST(
         return createErrorResponse('You do not have permission to send emails for this LifeLine', 403)
       }
 
-      // Get recipient emails (filter out null/empty emails)
-      const recipientEmails = lifeLine.inquiries
-        .map(i => i.personEmail)
-        .filter((email): email is string => !!email && email.length > 0)
+      // Get recipient emails (filter out null/empty emails). Someone in two
+      // subgroups of the same family should still only be written to once.
+      const recipientEmails = Array.from(
+        new Set(
+          [
+            ...lifeLine.inquiries.map(i => i.personEmail),
+            ...lifeLine.children.flatMap(c => c.inquiries.map(i => i.personEmail)),
+          ].filter((email): email is string => !!email && email.length > 0)
+        )
+      )
 
       if (recipientEmails.length === 0) {
         return createErrorResponse('No members with email addresses found', 400)

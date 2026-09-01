@@ -15,6 +15,11 @@ function decodeEntities(str: string) {
 export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
   const defaultImage = '/pictures/nvmfrtbidso-1024x683.jpg'
 
+  // A family stands for several groups meeting at different times, so the card
+  // advertises the choice rather than a single day the parent does not have.
+  const subgroupCount = (lifeLine as any).children?.length ?? 0
+  const isFamily = subgroupCount > 0
+
   return (
     <Link href={`/lifelines/${lifeLine.slug || lifeLine.id}`} className="block group">
       <div className="relative h-64 bg-cover bg-center bg-no-repeat rounded-2xl overflow-hidden shadow-md group-hover:shadow-xl transform group-hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-200 group-hover:border-gray-300"
@@ -38,15 +43,17 @@ export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
           </h3>
         </div>
 
-        {/* Leader Badge */}
+        {/* Leader Badge, or the number of times on offer for a family */}
         <div className="absolute bottom-4 left-4 right-4">
           <span className="inline-block bg-white/90 text-primary-700 px-3 py-1 rounded-full text-sm font-medium shadow-lg backdrop-blur-sm max-w-full truncate">
-            Leader{lifeLine.groupLeader && lifeLine.groupLeader.includes(',') ? 's' : ''}: {lifeLine.groupLeader}
+            {isFamily
+              ? `${subgroupCount} groups to choose from`
+              : `Leader${lifeLine.groupLeader && lifeLine.groupLeader.includes(',') ? 's' : ''}: ${lifeLine.groupLeader}`}
           </span>
         </div>
 
-        {/* Status Badge */}
-        {lifeLine.status !== 'PUBLISHED' && (
+        {/* Status Badge — a family has no single status, its subgroups do */}
+        {!isFamily && lifeLine.status !== 'PUBLISHED' && (
           <div className="absolute top-4 right-4">
             <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${
               lifeLine.status === 'FULL'

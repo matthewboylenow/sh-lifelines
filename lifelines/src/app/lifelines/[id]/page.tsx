@@ -47,7 +47,24 @@ async function getLifeLine(identifier: string): Promise<LifeLineWithLeader | nul
             id: true,
             status: true,
           }
-        }
+        },
+        // Family context: a parent lists the times beneath it, a subgroup links
+        // back to the heading it belongs to.
+        children: {
+          orderBy: [{ dayOfWeek: 'asc' }, { title: 'asc' }],
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            status: true,
+            isVisible: true,
+            dayOfWeek: true,
+            meetingTime: true,
+            location: true,
+            groupLeader: true,
+          },
+        },
+        parent: { select: { id: true, slug: true, title: true } },
       }
     })
 
@@ -79,6 +96,24 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
   const canEdit = isAdminOrSupport || (session && lifeLine.leaders?.some(l => l.id === session.user.id))
 
   const defaultImage = '/pictures/nvmfrtbidso-1024x683.jpg'
+
+  // A family is a heading over several groups that meet at different times.
+  // It has no day, no time and no members of its own, so instead of an inquiry
+  // form it offers the choice of subgroups.
+  const children = ((lifeLine as any).children ?? []) as Array<{
+    id: string
+    slug: string | null
+    title: string
+    status: string
+    isVisible: boolean
+    dayOfWeek: string | null
+    meetingTime: string | null
+    groupLeader: string | null
+    location: string | null
+  }>
+  const openChildren = children.filter(c => c.status === 'PUBLISHED' && c.isVisible)
+  const isFamily = children.length > 0
+  const parent = (lifeLine as any).parent as { slug: string | null; id: string; title: string } | null
   const activeInquiries = lifeLine.inquiries?.filter(i => i.status === 'UNDECIDED').length || 0
   const totalInquiries = lifeLine.inquiries?.length || 0
 
@@ -118,6 +153,14 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
 
           <div className="absolute inset-0 flex items-center justify-center px-4">
             <div className="container-responsive text-center text-white">
+              {parent && (
+                <Link
+                  href={`/lifelines/${parent.slug || parent.id}`}
+                  className="inline-block mb-3 text-sm font-medium text-white/85 hover:text-white underline underline-offset-4 drop-shadow"
+                >
+                  Part of {parent.title}
+                </Link>
+              )}
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-lg">
                 {lifeLine.title}
               </h1>
@@ -153,6 +196,60 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
           <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
+              {/* The times available, when this is a family */}
+              {isFamily && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                  <h2 className="text-2xl font-bold text-primary-900 mb-2">Choose a time</h2>
+                  <p className="text-gray-600 mb-6">
+                    These groups all share the same focus — pick whichever time suits you.
+                  </p>
+                  <ul className="divide-y divide-gray-100">
+                    {openChildren.map(child => (
+                      <li key={child.id}>
+                        <Link
+                          href={`/lifelines/${child.slug || child.id}`}
+                          className="flex items-center justify-between gap-4 py-4 group"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-semibold text-gray-900 group-hover:text-primary-700">
+                              {child.title}
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+                              {child.dayOfWeek && (
+                                <span className="inline-flex items-center">
+                                  <Calendar className="mr-1.5 h-4 w-4 text-primary-500" />
+                                  {formatDayOfWeek(child.dayOfWeek as any)}s
+                                </span>
+                              )}
+                              {child.meetingTime && (
+                                <span className="inline-flex items-center">
+                                  <Clock className="mr-1.5 h-4 w-4 text-primary-500" />
+                                  {child.meetingTime}
+                                </span>
+                              )}
+                              {child.location && (
+                                <span className="inline-flex items-center">
+                                  <MapPin className="mr-1.5 h-4 w-4 text-primary-500" />
+                                  {child.location}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="flex-shrink-0 text-sm font-medium text-primary-600 group-hover:text-primary-800">
+                            View
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  {openChildren.length === 0 && (
+                    <p className="text-gray-600">
+                      None of these groups are open just now. Please check back soon.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Description */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                 <h2 className="text-2xl font-bold text-primary-900 mb-6">About This LifeLine</h2>
@@ -248,8 +345,13 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
               {/* Join Interest Form */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-xl font-bold text-primary-900 mb-4">Interested in Joining?</h3>
-                
-                {lifeLine.status === 'FULL' ? (
+
+                {isFamily ? (
+                  <p className="text-gray-600 text-sm">
+                    Choose one of the times listed to express your interest — that way the
+                    right leader hears from you.
+                  </p>
+                ) : lifeLine.status === 'FULL' ? (
                   <div className="text-center py-4">
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                       <p className="text-red-800 font-medium">This LifeLine is currently full.</p>
@@ -264,11 +366,13 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
                   </div>
                 )}
 
-                <InquiryForm 
-                  lifeLineId={lifeLine.id}
-                  lifeLineTitle={lifeLine.title}
-                  isFullStatus={lifeLine.status === 'FULL'}
-                />
+                {!isFamily && (
+                  <InquiryForm
+                    lifeLineId={lifeLine.id}
+                    lifeLineTitle={lifeLine.title}
+                    isFullStatus={lifeLine.status === 'FULL'}
+                  />
+                )}
               </div>
 
               {/* Leader Information */}
