@@ -89,7 +89,21 @@ model LifeLine {
   // Relationships
   /// Every leader of this group. All leaders are equal — each sees the group on
   /// their dashboard and can manage its members.
-  leaders            User[]            @relation("LifeLineLeaders")
+  ///
+  /// On a parent these are its coordinators: they see the combined roster
+  /// across every subgroup and can email all of them at once.
+  leaders User[] @relation("LifeLineLeaders")
+
+  /// A family of groups meeting at different times — "Faith Sharing" with a
+  /// Tuesday morning and a Wednesday evening beneath it, say.
+  ///
+  /// A parent is a heading, not something anyone joins: people always join a
+  /// specific subgroup, because that is where the day and time live. Only one
+  /// level is intended; a subgroup is not itself a parent.
+  parentId String?
+  parent   LifeLine?  @relation("LifeLineFamily", fields: [parentId], references: [id], onDelete: SetNull)
+  children LifeLine[] @relation("LifeLineFamily")
+
   supportContactId   String?
   supportContact     User?             @relation("LifeLineSupportContact", fields: [supportContactId], references: [id])
   inquiries          Inquiry[]

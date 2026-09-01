@@ -56,6 +56,28 @@ export async function GET(req: NextRequest) {
             email: true,
           }
           },
+        // Family context: a parent lists the times beneath it, a subgroup
+        // links back to the heading it belongs to.
+        children: {
+          orderBy: [{ dayOfWeek: 'asc' }, { title: 'asc' }],
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            subtitle: true,
+            description: true,
+            status: true,
+            isVisible: true,
+            dayOfWeek: true,
+            meetingTime: true,
+            meetingFrequency: true,
+            location: true,
+            childcare: true,
+            groupLeader: true,
+            _count: { select: { inquiries: true } },
+          },
+        },
+        parent: { select: { id: true, slug: true, title: true } },
         supportContact: {
           select: {
             id: true,
@@ -145,6 +167,11 @@ export async function PUT(req: NextRequest) {
         ...(body.status && { status: body.status }),
         ...(body.isVisible !== undefined && { isVisible: body.isVisible }),
         ...(body.supportContactId !== undefined && { supportContactId: body.supportContactId || null }),
+        // A group cannot be its own parent, and only one level is intended.
+        ...(body.parentId !== undefined && {
+          parentId:
+            body.parentId && body.parentId !== existingLifeLine.id ? body.parentId : null,
+        }),
       },
       include: {
         leaders: {
@@ -154,6 +181,28 @@ export async function PUT(req: NextRequest) {
             email: true,
           }
           },
+        // Family context: a parent lists the times beneath it, a subgroup
+        // links back to the heading it belongs to.
+        children: {
+          orderBy: [{ dayOfWeek: 'asc' }, { title: 'asc' }],
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            subtitle: true,
+            description: true,
+            status: true,
+            isVisible: true,
+            dayOfWeek: true,
+            meetingTime: true,
+            meetingFrequency: true,
+            location: true,
+            childcare: true,
+            groupLeader: true,
+            _count: { select: { inquiries: true } },
+          },
+        },
+        parent: { select: { id: true, slug: true, title: true } },
         supportContact: {
           select: {
             id: true,

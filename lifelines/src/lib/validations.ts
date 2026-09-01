@@ -44,6 +44,8 @@ export const createLifeLineSchema = z.object({
   leaderId: z.string().optional().nullable(),
   leaderIds: z.array(z.string()).optional(),
   supportContactId: z.string().optional().nullable(),
+  /** The family this group sits under, if any. */
+  parentId: z.string().optional().nullable(),
   subtitle: z.string().optional(),
   location: z.string().optional(),
   maxParticipants: z.number().int().positive().optional().nullable(),

@@ -123,7 +123,8 @@ export async function POST(req: NextRequest) {
     const lifeLine = await prisma.lifeLine.findUnique({
       where: { id: validatedData.lifeLineId },
       include: {
-        leaders: true
+        leaders: true,
+        _count: { select: { children: true } },
       }
     })
 
@@ -133,6 +134,15 @@ export async function POST(req: NextRequest) {
 
     if (lifeLine.status !== 'PUBLISHED') {
       return createErrorResponse('This LifeLine is not accepting inquiries', 400)
+    }
+
+    // A parent is a heading, not a group with a meeting time. Joining it would
+    // leave someone in no actual group, so they are sent to pick a subgroup.
+    if (lifeLine._count.children > 0) {
+      return createErrorResponse(
+        'Please choose one of the groups listed under this LifeLine, so we know which time suits you',
+        400
+      )
     }
 
     // Create the inquiry with source tracking

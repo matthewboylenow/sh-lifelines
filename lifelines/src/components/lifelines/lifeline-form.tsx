@@ -35,6 +35,7 @@ interface FormData {
   groupLeader: string
   leaderIds: string[]
   supportContactId: string
+  parentId: string
   dayOfWeek: DayOfWeek | ''
   meetingTime: string
   location: string
@@ -59,6 +60,7 @@ const INITIAL_FORM_DATA: FormData = {
   groupLeader: '',
   leaderIds: [],
   supportContactId: '',
+  parentId: '',
   dayOfWeek: '',
   meetingTime: '',
   location: '',
@@ -91,6 +93,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [leaders, setLeaders] = useState<User[]>([])
   const [supportContacts, setSupportContacts] = useState<User[]>([])
+  const [families, setFamilies] = useState<Array<{ id: string; title: string }>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showImageSelector, setShowImageSelector] = useState(false)
@@ -106,6 +109,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         groupLeader: initialData.groupLeader || '',
         leaderIds: (initialData as any).leaders?.map((l: { id: string }) => l.id) || [],
         supportContactId: (initialData as any).supportContactId || '',
+        parentId: (initialData as any).parentId || '',
         dayOfWeek: initialData.dayOfWeek || '',
         meetingTime: initialData.meetingTime || '',
         location: initialData.location || '',
@@ -154,8 +158,29 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
       }
     }
 
+    // Any group can act as a family heading, so the whole list is offered —
+    // minus this one, since a group cannot sit under itself.
+    const fetchFamilies = async () => {
+      try {
+        const response = await fetch('/api/lifelines?includeAll=true&limit=200')
+        if (response.ok) {
+          const data = await response.json()
+          setFamilies(
+            (data.data?.items || [])
+              .filter((ll: any) => ll.id !== (initialData as any)?.id)
+              .map((ll: any) => ({ id: ll.id, title: ll.title }))
+              .sort((a: any, b: any) => a.title.localeCompare(b.title))
+          )
+        }
+      } catch (error) {
+        console.error('Failed to load LifeLines:', error)
+      }
+    }
+
     fetchLeaders()
     fetchSupportContacts()
+    fetchFamilies()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleInputChange = (field: keyof FormData, value: any) => {
@@ -216,7 +241,8 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         meetingFrequency: formData.meetingFrequency || null,
         groupType: formData.groupType || null,
         leaderIds: formData.leaderIds,
-        supportContactId: formData.supportContactId || null
+        supportContactId: formData.supportContactId || null,
+        parentId: formData.parentId || null
       }
 
       if (onSubmit) {
@@ -392,6 +418,28 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
               </select>
               <p className="mt-1 text-sm text-gray-500">
                 This person will be the point of contact for the LifeLine leader
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="parentId">Part of a larger LifeLine</Label>
+              <select
+                id="parentId"
+                value={formData.parentId}
+                onChange={(e) => handleInputChange('parentId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="">Stands on its own</option>
+                {families.map(family => (
+                  <option key={family.id} value={family.id}>
+                    {family.title}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                Use this when several groups share a focus but meet at different
+                times — each one sits under a single heading in the directory.
+                People join the individual group, never the heading.
               </p>
             </div>
           </div>
