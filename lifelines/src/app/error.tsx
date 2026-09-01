@@ -133,11 +133,11 @@ export default function Error({ error, reset }: ErrorPageProps) {
           </p>
           
           <div className="flex flex-wrap justify-center gap-2 text-sm">
-            <Link 
-              href="/dashboard" 
+            <Link
+              href="/profile"
               className="text-primary-600 hover:text-primary-800 underline"
             >
-              Dashboard
+              Your Profile
             </Link>
             <span className="text-gray-300">•</span>
             <Link 
