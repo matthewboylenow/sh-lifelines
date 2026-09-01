@@ -101,20 +101,26 @@ export function FiltersSection() {
   const labelFor = (options: FacetOption[], value: unknown) =>
     options.find(o => o.value === value)?.label ?? String(value)
 
+  // A filter can arrive as a bare string — someone typing ?agesStages=Women in
+  // the URL, or older links. Treat any single value as a list of one rather
+  // than calling .map on a string.
+  const asList = (value: unknown): string[] =>
+    Array.isArray(value) ? value : value == null || value === '' ? [] : [String(value)]
+
   // Everything currently narrowing the results, so it can be seen and undone
   // in one place rather than hunted for among the groups.
   const activeChips: { key: string; label: string; remove: () => void }[] = [
-    ...(filters.agesStages ?? []).map(v => ({
+    ...asList(filters.agesStages).map(v => ({
       key: `ages-${v}`,
       label: labelFor(facets.agesStages, v),
       remove: () => toggleFilter('agesStages', v),
     })),
-    ...(filters.groupTypes ?? []).map(v => ({
+    ...asList(filters.groupTypes).map(v => ({
       key: `type-${v}`,
       label: labelFor(facets.groupTypes, v),
       remove: () => toggleFilter('groupTypes', v),
     })),
-    ...(filters.frequencies ?? []).map(v => ({
+    ...asList(filters.frequencies).map(v => ({
       key: `freq-${v}`,
       label: labelFor(facets.frequencies, v),
       remove: () => toggleFilter('frequencies', v),
@@ -179,7 +185,7 @@ export function FiltersSection() {
                     key={String(option.value)}
                     label={option.label}
                     count={option.count}
-                    selected={filters.agesStages?.includes(option.value as string) || false}
+                    selected={asList(filters.agesStages).includes(String(option.value))}
                     onClick={() => toggleFilter('agesStages', option.value)}
                   />
                 ))}
@@ -214,7 +220,7 @@ export function FiltersSection() {
                     key={String(option.value)}
                     label={option.label}
                     count={option.count}
-                    selected={filters.groupTypes?.includes(option.value as GroupType) || false}
+                    selected={asList(filters.groupTypes).includes(String(option.value))}
                     onClick={() => toggleFilter('groupTypes', option.value)}
                   />
                 ))}
@@ -228,9 +234,7 @@ export function FiltersSection() {
                     key={String(option.value)}
                     label={option.label}
                     count={option.count}
-                    selected={
-                      filters.frequencies?.includes(option.value as MeetingFrequency) || false
-                    }
+                    selected={asList(filters.frequencies).includes(String(option.value))}
                     onClick={() => toggleFilter('frequencies', option.value)}
                   />
                 ))}

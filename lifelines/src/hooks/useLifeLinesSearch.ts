@@ -95,6 +95,9 @@ export interface SearchSuggestion {
   metadata?: Record<string, any>
 }
 
+/** Filters that hold a list of values rather than a single one. */
+const MULTI_VALUE_FILTERS = ['agesStages', 'groupTypes', 'frequencies', 'searchFields']
+
 export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -310,17 +313,27 @@ export function useLifeLinesSearch(initialFilters: SearchFilters = {}) {
   const toggleFilter = useCallback((filterKey: keyof SearchFilters, value: any) => {
     const currentValue = filters[filterKey]
     let newValue: any
-    
-    if (Array.isArray(currentValue)) {
-      newValue = (currentValue as any[]).includes(value) 
-        ? (currentValue as any[]).filter((v: any) => v !== value)
-        : [...(currentValue as any[]), value]
+
+    // Which filters hold several values at once. Without this the first click
+    // on an empty one fell through to the scalar branch below and stored a bare
+    // string, so agesStages became "Women" rather than ["Women"] — and anything
+    // that treated it as a list then broke on it.
+    const isMultiValue =
+      Array.isArray(currentValue) || MULTI_VALUE_FILTERS.includes(filterKey as string)
+
+    if (isMultiValue) {
+      const current = Array.isArray(currentValue) ? (currentValue as any[]) : []
+      newValue = current.includes(value)
+        ? current.filter((v: any) => v !== value)
+        : [...current, value]
+      // An empty list means "no filter", not "match nothing".
+      if (newValue.length === 0) newValue = undefined
     } else if (typeof currentValue === 'boolean') {
       newValue = !currentValue
     } else {
       newValue = currentValue === value ? undefined : value
     }
-    
+
     updateFilters(resetPage({ [filterKey]: newValue }))
   }, [filters, updateFilters, resetPage])
   
