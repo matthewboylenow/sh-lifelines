@@ -206,7 +206,7 @@ export async function approveFormationRequest(requestId: string) {
       status: LifeLineStatus.DRAFT,
       groupLeader: formationRequest.groupLeader,
       leaderEmail: email,
-      agesStages: formationRequest.agesStages ? [formationRequest.agesStages] : [],
+      agesStages: splitAgesStages(formationRequest.agesStages),
       meetingFrequency: formationRequest.meetingFrequency,
       dayOfWeek: formationRequest.dayOfWeek,
       groupType: formationRequest.groupType,
@@ -302,6 +302,26 @@ export async function processAllPendingFormationRequests() {
   }
 
   return results
+}
+
+/**
+ * Turn the free-text "who is this for" answer into separate tags.
+ *
+ * A formation request holds one string, and someone naming two audiences writes
+ * "Women, Moms". Wrapping that in an array unsplit produced a single tag of that
+ * name, which then appeared in the homepage filters as its own option matching
+ * exactly one group.
+ */
+function splitAgesStages(value: string | null): string[] {
+  if (!value) return []
+  return Array.from(
+    new Set(
+      value
+        .split(/[,;]|\band\b/i)
+        .map(part => part.trim())
+        .filter(Boolean)
+    )
+  )
 }
 
 /** A readable, unique URL for the new group, matching the manual create path. */
