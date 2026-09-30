@@ -176,11 +176,15 @@ export default async function LifeLineDetailPage({ params }: PageProps) {
               collide with the navigation bar above. */}
           <div className="absolute bottom-6 left-0 right-0 z-10">
             <div className="container-responsive flex flex-wrap justify-center gap-2">
-              {lifeLine.agesStages && lifeLine.agesStages.length > 0 && (
-                <span className="bg-secondary-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                  {decodeEntities(lifeLine.agesStages[0])}
+              {/* Every audience this group is for, not just the first. */}
+              {lifeLine.agesStages?.map(stage => (
+                <span
+                  key={stage}
+                  className="bg-secondary-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg"
+                >
+                  {decodeEntities(stage)}
                 </span>
-              )}
+              ))}
               {lifeLine.status === 'FULL' && (
                 <span className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
                   Full

@@ -27,12 +27,27 @@ export function LifeLineCard({ lifeLine }: LifeLineCardProps) {
              backgroundImage: `linear-gradient(rgba(31, 52, 109, 0.4), rgba(31, 52, 109, 0.6)), url(${lifeLine.imageUrl || defaultImage})`
            }}>
         
-        {/* Ages & Stages Badge */}
+        {/* Ages & Stages — a group can be for several, and showing only the
+            first made "Men, Women" read as men only. The card has room for two
+            before it crowds the title, so the rest are counted. */}
         {lifeLine.agesStages && lifeLine.agesStages.length > 0 && (
-          <div className="absolute top-4 left-4">
-            <span className="bg-secondary-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-              {decodeEntities(lifeLine.agesStages[0])}
-            </span>
+          <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-1.5">
+            {lifeLine.agesStages.slice(0, 2).map(stage => (
+              <span
+                key={stage}
+                className="bg-secondary-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg"
+              >
+                {decodeEntities(stage)}
+              </span>
+            ))}
+            {lifeLine.agesStages.length > 2 && (
+              <span
+                className="bg-secondary-500/85 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg"
+                title={lifeLine.agesStages.map(decodeEntities).join(', ')}
+              >
+                +{lifeLine.agesStages.length - 2}
+              </span>
+            )}
           </div>
         )}
 

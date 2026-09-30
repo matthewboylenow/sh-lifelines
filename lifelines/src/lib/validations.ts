@@ -1,6 +1,24 @@
 import { z } from 'zod'
 import { UserRole, GroupType, MeetingFrequency, DayOfWeek, TicketPriority, ResourceType, InquirySource } from '@prisma/client'
 
+/**
+ * A link to an image or video, which may be somewhere else entirely or served
+ * by us.
+ *
+ * Requiring an absolute URL here quietly broke editing for every group whose
+ * artwork we host: those are stored as "/api/images/lifelines/<name>.jpg", and
+ * a site-relative path is not a URL, so saving any change was rejected.
+ */
+const mediaUrl = z
+  .string()
+  .refine(
+    value =>
+      value === '' ||
+      value.startsWith('/') ||
+      /^[a-z][a-z0-9+.-]*:\/\//i.test(value),
+    'Enter a web address, or a path beginning with /'
+  )
+
 // User validations
 export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -34,10 +52,10 @@ export const createLifeLineSchema = z.object({
   dayOfWeek: z.nativeEnum(DayOfWeek).optional().nullable(),
   groupType: z.nativeEnum(GroupType).optional().nullable(),
   meetingTime: z.string().optional(),
-  imageUrl: z.string().url().optional().or(z.literal('')).nullable(),
+  imageUrl: mediaUrl.optional().nullable(),
   imageAlt: z.string().optional(),
   imageAttribution: z.string().optional(),
-  videoUrl: z.string().url().optional().or(z.literal('')).nullable(),
+  videoUrl: mediaUrl.optional().nullable(),
   // Additional fields that may be sent from the form
   groupLeader: z.string().optional(),
   leaderEmail: z.string().email().optional().or(z.literal('')).nullable(),
@@ -127,10 +145,10 @@ export const createSupportTicketResponseSchema = z.object({
 export const createResourceSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
-  websiteUrl: z.string().url().optional().or(z.literal('')),
-  videoUrl: z.string().url().optional().or(z.literal('')),
+  websiteUrl: mediaUrl.optional(),
+  videoUrl: mediaUrl.optional(),
   resourceType: z.nativeEnum(ResourceType),
-  fileUrl: z.string().url().optional().or(z.literal('')),
+  fileUrl: mediaUrl.optional(),
   fileName: z.string().optional(),
   fileSize: z.number().int().positive().optional(),
 })
