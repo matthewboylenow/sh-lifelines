@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Users,
   Download,
@@ -17,6 +18,7 @@ import {
   X
 } from 'lucide-react'
 import { UserRole } from '@prisma/client'
+import { hasAnyRole } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -41,7 +43,10 @@ interface Member {
 interface LifeLineOption {
   id: string
   title: string
-  memberCount: number
+  /** Known only for groups whose members have been loaded. */
+  memberCount?: number
+  /** This group plus any subgroups beneath it. */
+  coveredIds: string[]
 }
 
 interface LeaderMembersViewProps {
@@ -50,6 +55,12 @@ interface LeaderMembersViewProps {
 }
 
 export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps) {
+  // Admins and the formation team oversee every group, not just ones they lead.
+  // They load one group at a time: loading all of them would mean a request per
+  // group per status — around 150 every time the page opened.
+  const isStaff = hasAnyRole(userRoles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
+  const searchParams = useSearchParams()
+  const linkedLifeLine = searchParams.get('lifeLine')
   const [members, setMembers] = useState<Member[]>([])
   const [removedMembers, setRemovedMembers] = useState<Member[]>([])
   const [lifeLines, setLifeLines] = useState<LifeLineOption[]>([])
@@ -58,7 +69,11 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedLifeLine, setSelectedLifeLine] = useState<string>('all')
+  // Leaders start on everything they run. Staff start on the group they were
+  // linked to, or are asked to choose one.
+  const [selectedLifeLine, setSelectedLifeLine] = useState<string>(
+    linkedLifeLine || (isStaff ? '' : 'all')
+  )
   const [activeTab, setActiveTab] = useState<'active' | 'removed'>('active')
 
   // Stats
@@ -70,12 +85,20 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
   const [isRemoving, setIsRemoving] = useState(false)
   const [removalError, setRemovalError] = useState<string | null>(null)
 
+  // Leaders already hold all their members, so changing the dropdown just
+  // filters. Staff load per group, so for them a new choice means a new fetch.
+  const staffSelection = isStaff ? selectedLifeLine : null
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
 
-      // Fetch leader's LifeLines first
-      const lifelinesRes = await fetch(`/api/lifelines?leaderId=${userId}&limit=200`)
+      // Leaders see the groups they run; staff see every group.
+      const lifelinesRes = await fetch(
+        isStaff
+          ? '/api/lifelines?includeAll=true&limit=200'
+          : `/api/lifelines?leaderId=${userId}&limit=200`
+      )
       const lifelinesData = await lifelinesRes.json()
 
       if (!lifelinesRes.ok) {
@@ -92,15 +115,21 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
         return
       }
 
-      // A coordinator leads the family heading, which has no members of its own —
-      // its people are in the subgroups. Pull those in so the roster is complete.
+      // A family heading has no members of its own — its people are in the
+      // subgroups — so every group is paired with the ids it really covers.
+      const coveredBy = (ll: any): string[] => [
+        ll.id,
+        ...((ll.children ?? []).map((c: any) => c.id)),
+      ]
+
+      // Leaders load everything they run. Staff load only the group in front of
+      // them, and nothing until one is chosen.
+      const groupsToLoad = isStaff
+        ? userLifeLines.filter((ll: any) => ll.id === staffSelection)
+        : userLifeLines
+
       const lifeLineIds: string[] = Array.from(
-        new Set<string>(
-          userLifeLines.flatMap((ll: any) => [
-            ll.id,
-            ...((ll.children ?? []).map((c: any) => c.id)),
-          ])
-        )
+        new Set<string>(groupsToLoad.flatMap(coveredBy))
       )
 
       // Fetch joined members
@@ -129,12 +158,22 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
       const allMembers = membersResults.flat()
       const allRemoved = removedResults.flat()
 
-      // Build LifeLine options with member counts
-      const lifeLineOptions: LifeLineOption[] = userLifeLines.map((ll: any) => ({
-        id: ll.id,
-        title: ll.title,
-        memberCount: allMembers.filter((m: Member) => m.lifeLine.id === ll.id).length
-      }))
+      // Build LifeLine options. A count is only shown where the members were
+      // actually loaded; for anything else it would be a guess.
+      const loadedIds = new Set(lifeLineIds)
+      const lifeLineOptions: LifeLineOption[] = userLifeLines
+        .map((ll: any) => {
+          const covered = coveredBy(ll)
+          return {
+            id: ll.id,
+            title: ll.title,
+            coveredIds: covered,
+            memberCount: covered.every(id => loadedIds.has(id))
+              ? allMembers.filter((m: Member) => covered.includes(m.lifeLine.id)).length
+              : undefined,
+          }
+        })
+        .sort((a: LifeLineOption, b: LifeLineOption) => a.title.localeCompare(b.title))
 
       setLifeLines(lifeLineOptions)
       setMembers(allMembers)
@@ -147,11 +186,16 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
     } finally {
       setLoading(false)
     }
-  }, [userId])
+  }, [userId, isStaff, staffSelection])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const selectedGroup = useMemo(
+    () => lifeLines.find(ll => ll.id === selectedLifeLine),
+    [lifeLines, selectedLifeLine]
+  )
 
   // Filter members based on search and selected LifeLine
   const filterMembers = (list: Member[]) =>
@@ -161,8 +205,10 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
         member.personEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.personPhone?.includes(searchQuery)
 
+      // Choosing a family heading means everyone in its subgroups; comparing
+      // against the heading's own id alone matched nobody.
       const matchesLifeLine = selectedLifeLine === 'all' ||
-        member.lifeLine.id === selectedLifeLine
+        (selectedGroup?.coveredIds ?? [selectedLifeLine]).includes(member.lifeLine.id)
 
       return matchesSearch && matchesLifeLine
     })
@@ -483,10 +529,15 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
               onChange={(e) => setSelectedLifeLine(e.target.value)}
               className="form-input form-select text-sm"
             >
-              <option value="all">All LifeLines ({totalMembers})</option>
+              {isStaff ? (
+                <option value="">Choose a LifeLine…</option>
+              ) : (
+                <option value="all">All LifeLines ({totalMembers})</option>
+              )}
               {lifeLines.map(ll => (
                 <option key={ll.id} value={ll.id}>
-                  {ll.title} ({ll.memberCount})
+                  {ll.title}
+                  {ll.memberCount !== undefined ? ` (${ll.memberCount})` : ''}
                 </option>
               ))}
             </select>
@@ -516,6 +567,14 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
             <h3 className="text-lg font-medium text-gray-900 mb-2">No LifeLines Found</h3>
             <p className="text-gray-600">
               You don&apos;t have any LifeLines assigned to you yet.
+            </p>
+          </div>
+        ) : isStaff && !selectedLifeLine ? (
+          <div className="text-center py-12 px-6">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Choose a LifeLine</h3>
+            <p className="text-gray-600">
+              Pick any group from the list above to see who has joined it.
             </p>
           </div>
         ) : activeTab === 'active' ? (
