@@ -451,16 +451,18 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
               {/* Declared widths, because the natural layout let the title and
                   leader columns grow until Status and Inquiries were pushed
                   under the pinned Actions column and clipped out of sight. */}
-              <table className="w-full min-w-[64rem] table-fixed divide-y divide-gray-200">
+              <table className="w-full min-w-[68rem] table-fixed divide-y divide-gray-200">
                 {/* Status needs real room: the badge is uppercase with letter
                     spacing, so PUBLISHED renders about 106px wide and was being
                     clipped by the column it sat in. */}
+                {/* Five labelled actions need about 340px; measured, not guessed.
+                    The two text columns give way since they truncate cleanly. */}
                 <colgroup>
-                  <col className="w-[31%]" />
-                  <col className="w-[24%]" />
-                  <col className="w-[14%]" />
+                  <col className="w-[25%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[13%]" />
                   <col className="w-[8%]" />
-                  <col className="w-[23%]" />
+                  <col className="w-[36%]" />
                 </colgroup>
                 <thead className="bg-gray-50">
                   <tr>
@@ -522,15 +524,23 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                         <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/lifelines/${lifeline.slug || lifeline.id}`}
-                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                             title="Open the public page for this LifeLine"
                           >
                             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                             View
                           </Link>
                           <Link
+                            href={`/dashboard/leader/members?lifeLine=${lifeline.id}`}
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium text-gray-600 hover:bg-secondary-50 hover:text-secondary-700"
+                            title="See who has joined this LifeLine"
+                          >
+                            <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                            Members
+                          </Link>
+                          <Link
                             href={`/lifelines/${lifeline.slug || lifeline.id}/edit`}
-                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700"
                             title="Edit this LifeLine's details"
                           >
                             <Edit className="h-3.5 w-3.5" aria-hidden="true" />
@@ -538,7 +548,7 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                           </Link>
                           <button
                             onClick={() => toggleLifeLineVisibility(lifeline.id, lifeline.status, lifeline.title)}
-                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium text-gray-600 hover:bg-amber-50 hover:text-amber-700"
                             title={
                               lifeline.status === 'ARCHIVED'
                                 ? 'Show this LifeLine on the public site again'
@@ -558,7 +568,7 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
                             )}
                           </button>
                           <button
-                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700"
                             title="Permanently delete this LifeLine and its inquiries"
                             onClick={() => {
                               if (confirm(`Are you sure you want to delete "${lifeline.title}"? This will also remove all related inquiries.`)) {
