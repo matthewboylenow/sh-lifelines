@@ -23,8 +23,10 @@ export default async function LeaderMembersPage() {
   ]
 
   if (!hasAnyRole(session.user.roles, allowedRoles)) {
-    redirect('/dashboard')
+    redirect('/')
   }
+
+  const isStaff = hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
 
   return (
     <MainLayout>
@@ -38,9 +40,13 @@ export default async function LeaderMembersPage() {
             Back to Dashboard
           </Link>
 
-          <h1 className="text-3xl font-bold text-gray-900">My Members</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isStaff ? 'LifeLine Members' : 'My Members'}
+          </h1>
           <p className="text-gray-600 mt-2">
-            View and manage people who have joined your LifeLines
+            {isStaff
+              ? 'See who has joined any LifeLine across the parish'
+              : 'View and manage people who have joined your LifeLines'}
           </p>
         </div>
 
