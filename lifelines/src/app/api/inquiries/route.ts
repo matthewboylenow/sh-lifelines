@@ -8,7 +8,7 @@ import {
 } from '@/lib/api-utils'
 import { createInquirySchema } from '@/lib/validations'
 import { InquiryStatus, UserRole } from '@prisma/client'
-import { sendInquiryNotification } from '@/lib/email'
+import { sendInquiryNotification, parishOfficeEmails } from '@/lib/email'
 import { ZodError } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -170,18 +170,38 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Notify every leader of the group, not just one
-    for (const leader of lifeLine.leaders) {
+    // Notify every leader of the group, not just one. A group nobody leads yet
+    // still gets people signing up, and with no one to tell, those requests
+    // went unnoticed — so they go to the parish office, along with the listed
+    // contact if the group has one.
+    const recipients: Array<{ id: string | null; email: string | string[]; name: string }> =
+      lifeLine.leaders.length > 0
+        ? lifeLine.leaders.map(leader => ({
+            id: leader.id,
+            email: leader.email,
+            name: leader.displayName || lifeLine.groupLeader || 'LifeLine Leader',
+          }))
+        : [{
+            id: null,
+            email: Array.from(new Set([
+              ...(lifeLine.leaderEmail ? [lifeLine.leaderEmail.toLowerCase()] : []),
+              ...parishOfficeEmails(),
+            ])),
+            name: lifeLine.groupLeader || 'LifeLines Team',
+          }]
+
+    for (const recipient of recipients) {
       try {
         await sendInquiryNotification(
-          leader.email,
-          leader.displayName || lifeLine.groupLeader || 'LifeLine Leader',
+          recipient.email,
+          recipient.name,
           lifeLine.title,
           {
             personName: inquiry.personName,
             personEmail: inquiry.personEmail || undefined,
             message: inquiry.message || undefined,
-          }
+          },
+          { leaderId: recipient.id }
         )
       } catch (emailError) {
         console.error('Failed to send inquiry notification:', emailError)
