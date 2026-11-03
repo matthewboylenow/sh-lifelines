@@ -36,6 +36,21 @@ export function supportEmail(): string {
   return process.env.REPLY_TO_EMAIL || process.env.ADMIN_EMAIL || 'communications@sainthelen.org'
 }
 
+/**
+ * The parish office: who hears about anything that needs a person — new
+ * formation requests, support tickets, and sign-ups for a group with no leader.
+ * PARISH_OFFICE_EMAILS (comma-separated) overrides the default.
+ */
+export function parishOfficeEmails(): string[] {
+  const configured = (process.env.PARISH_OFFICE_EMAILS || '')
+    .split(',')
+    .map(address => address.trim().toLowerCase())
+    .filter(Boolean)
+  return configured.length > 0
+    ? Array.from(new Set(configured))
+    : ['communications@sainthelen.org', 'mauricchio@sainthelen.org']
+}
+
 /** Everyone who reviews formation requests: the formation team and admins. */
 async function formationTeamEmails(): Promise<string[]> {
   try {
@@ -277,8 +292,6 @@ export async function sendFormationRequestNotification(
     description?: string
   }
 ) {
-  const supportAddress = supportEmail()
-  
   const html = `
     <!DOCTYPE html>
     <html>
@@ -339,11 +352,12 @@ export async function sendFormationRequestNotification(
   // The team votes on these, so the team has to hear about them. Sent only to
   // the parish inbox, a request could sit unseen until someone happened to
   // open the dashboard.
-  const team = await formationTeamEmails()
+  const office = parishOfficeEmails()
+  const team = (await formationTeamEmails()).filter(address => !office.includes(address))
 
   return await sendEmail({
-    to: supportAddress,
-    ...(team.length > 0 ? { bcc: team.filter(address => address !== supportAddress) } : {}),
+    to: office,
+    ...(team.length > 0 ? { bcc: team } : {}),
     subject: `📝 New Formation Request: ${formationRequest.title}`,
     html,
     track: { kind: 'formation-request' },
@@ -428,7 +442,7 @@ export async function sendUserRegistrationConfirmationEmail(
 
 // Inquiry notification to LifeLine leader
 export async function sendInquiryNotification(
-  leaderEmail: string,
+  leaderEmail: string | string[],
   leaderName: string,
   lifeLineTitle: string,
   inquiry: {
@@ -920,8 +934,6 @@ export async function sendSupportTicketCreatedEmail(
     </html>
   `
 
-  const supportAddress = supportEmail()
-
   // Send both emails
   const results = await Promise.allSettled([
     sendEmail({
@@ -931,7 +943,7 @@ export async function sendSupportTicketCreatedEmail(
       html: requesterHtml
     }),
     sendEmail({
-      to: supportAddress,
+      to: parishOfficeEmails(),
       subject: `New Support Ticket [${ticket.priority}]: ${ticket.subject} [${ticket.referenceNumber}]`,
       track: { kind: 'support-ticket' },
       html: supportHtml
@@ -959,7 +971,7 @@ export async function sendSupportTicketResponseEmail(
   }
 ) {
   const isNotifyingCustomer = response.isFromSupport
-  const recipient = isNotifyingCustomer ? ticket.requester : { email: supportEmail() }
+  const recipient = isNotifyingCustomer ? ticket.requester : { email: parishOfficeEmails() }
 
   const html = `
     <!DOCTYPE html>
