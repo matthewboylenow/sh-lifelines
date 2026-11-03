@@ -32,8 +32,28 @@ export function appUrl(): string {
 }
 
 /** Where members are told to go with questions. */
-function supportEmail(): string {
+export function supportEmail(): string {
   return process.env.REPLY_TO_EMAIL || process.env.ADMIN_EMAIL || 'communications@sainthelen.org'
+}
+
+/** Everyone who reviews formation requests: the formation team and admins. */
+async function formationTeamEmails(): Promise<string[]> {
+  try {
+    const { prisma } = await import('./prisma')
+    const { UserRole } = await import('@prisma/client')
+    const people = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        roles: { hasSome: [UserRole.FORMATION_SUPPORT_TEAM, UserRole.ADMIN] },
+      },
+      select: { email: true },
+    })
+    return Array.from(new Set(people.map(person => person.email.toLowerCase())))
+  } catch (error) {
+    // Falling back to the parish inbox alone is better than not sending.
+    console.error('Could not look up the formation team:', error)
+    return []
+  }
 }
 
 export interface EmailTemplate {
@@ -49,11 +69,22 @@ export interface EmailTemplate {
    */
   bcc?: string | string[]
   /**
-   * Record this send so its delivery can be followed afterwards. Worth setting
-   * for anything someone is expected to act on — an invitation that never
-   * arrives looks exactly like one that was ignored.
+   * What kind of message this is, and whose account it concerns, so its
+   * delivery can be followed afterwards. Every send is recorded; an invitation
+   * that never arrives looks exactly like one that was ignored.
    */
   track?: { kind: string; userId?: string | null }
+}
+
+/** How many more times to try a send that was refused for going too fast. */
+const RATE_LIMIT_RETRIES = 3
+
+function isRateLimited(error: { name?: string; message?: string; statusCode?: number | null }) {
+  return (
+    error.statusCode === 429 ||
+    error.name === 'rate_limit_exceeded' ||
+    /too many requests/i.test(error.message ?? '')
+  )
 }
 
 /**
@@ -75,6 +106,9 @@ export async function sendEmail({
   track
 }: EmailTemplate) {
   const resend = getResend()
+  // Every send is recorded. Untracked mail is invisible: when a leader says
+  // they never heard about a new member, there must be a way to check.
+  const tracking = track ?? { kind: 'other' }
 
   // Mail is sent from the Resend-verified sending domain, which is not
   // necessarily a monitored mailbox. Default Reply-To to a real parish address
@@ -83,7 +117,7 @@ export async function sendEmail({
   const defaultReplyTo = process.env.REPLY_TO_EMAIL || process.env.ADMIN_EMAIL
   const effectiveReplyTo = replyTo || defaultReplyTo
 
-  const { data, error } = await resend.emails.send({
+  const message = {
     from: `${FROM_NAME} <${process.env.FROM_EMAIL || 'noreply@sainthelen.org'}>`,
     to: Array.isArray(to) ? to : [to],
     subject,
@@ -91,20 +125,25 @@ export async function sendEmail({
     text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
     ...(effectiveReplyTo ? { replyTo: effectiveReplyTo } : {}),
     ...(bcc ? { bcc: Array.isArray(bcc) ? bcc : [bcc] } : {}),
-  })
+  }
+
+  // Resend allows 10 sends a second. Going over is not a real failure — the
+  // message is fine and only needs a moment — but it used to be treated as one,
+  // and three leaders' invitations were silently dropped during a bulk send.
+  let { data, error } = await resend.emails.send(message)
+  for (let attempt = 1; error && isRateLimited(error) && attempt <= RATE_LIMIT_RETRIES; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 1000 * 2 ** (attempt - 1)))
+    ;({ data, error } = await resend.emails.send(message))
+  }
 
   // Resend reports API-level failures on the response rather than throwing.
   if (error) {
     console.error('Email sending failed:', error)
-    if (track) {
-      await recordDelivery(track, to, subject, null, error.message || 'Send failed')
-    }
+    await recordDelivery(tracking, to, subject, null, error.message || 'Send failed')
     throw new Error(error.message || 'Failed to send email')
   }
 
-  if (track) {
-    await recordDelivery(track, to, subject, data?.id ?? null, null)
-  }
+  await recordDelivery(tracking, to, subject, data?.id ?? null, null)
 
   return { success: true, messageId: data?.id }
 }
@@ -224,6 +263,7 @@ export async function sendWelcomeEmail(
   return await sendEmail({
     to: email,
     subject: `Welcome to LifeLines - Your "${lifeLineTitle}" group is approved!`,
+    track: { kind: 'welcome' },
     html
   })
 }
@@ -296,10 +336,17 @@ export async function sendFormationRequestNotification(
     </html>
   `
 
+  // The team votes on these, so the team has to hear about them. Sent only to
+  // the parish inbox, a request could sit unseen until someone happened to
+  // open the dashboard.
+  const team = await formationTeamEmails()
+
   return await sendEmail({
     to: supportAddress,
+    ...(team.length > 0 ? { bcc: team.filter(address => address !== supportAddress) } : {}),
     subject: `📝 New Formation Request: ${formationRequest.title}`,
-    html
+    html,
+    track: { kind: 'formation-request' },
   })
 }
 
@@ -374,6 +421,7 @@ export async function sendUserRegistrationConfirmationEmail(
   return await sendEmail({
     to: user.email,
     subject: '🎉 Welcome to LifeLines - Account Created Successfully',
+    track: { kind: 'registration' },
     html
   })
 }
@@ -387,7 +435,8 @@ export async function sendInquiryNotification(
     personName: string
     personEmail?: string
     message?: string
-  }
+  },
+  options: { leaderId?: string | null } = {}
 ) {
   const html = `
     <!DOCTYPE html>
@@ -440,6 +489,7 @@ export async function sendInquiryNotification(
   return await sendEmail({
     to: leaderEmail,
     subject: `New inquiry for your LifeLine: ${lifeLineTitle}`,
+    track: { kind: 'new-member', userId: options.leaderId ?? null },
     html
   })
 }
@@ -640,6 +690,7 @@ export async function sendPasswordResetEmail(
   return await sendEmail({
     to: email,
     subject: 'Password Reset Request - LifeLines',
+    track: { kind: 'password-reset' },
     html
   })
 }
@@ -738,6 +789,7 @@ export async function sendFormationRequestRejectionEmail(
   return await sendEmail({
     to: request.leaderEmail,
     subject: `Formation Request Update: ${request.title}`,
+    track: { kind: 'formation-decision' },
     html
   })
 }
@@ -875,11 +927,13 @@ export async function sendSupportTicketCreatedEmail(
     sendEmail({
       to: ticket.requester.email,
       subject: `Support Ticket Created: ${ticket.subject} [${ticket.referenceNumber}]`,
+      track: { kind: 'support-ticket' },
       html: requesterHtml
     }),
     sendEmail({
       to: supportAddress,
       subject: `New Support Ticket [${ticket.priority}]: ${ticket.subject} [${ticket.referenceNumber}]`,
+      track: { kind: 'support-ticket' },
       html: supportHtml
     })
   ])
@@ -970,12 +1024,14 @@ export async function sendSupportTicketResponseEmail(
     return await sendEmail({
       to: recipient,
       subject: `Support Ticket Response: ${ticket.subject} [${ticket.referenceNumber}]`,
+      track: { kind: 'support-ticket' },
       html
     })
   } else {
     return await sendEmail({
       to: recipient.email,
       subject: `Support Ticket Response: ${ticket.subject} [${ticket.referenceNumber}]`,
+      track: { kind: 'support-ticket' },
       html
     })
   }
@@ -1147,6 +1203,7 @@ export async function sendSupportTicketResolvedEmail(
   return await sendEmail({
     to: ticket.requester.email,
     subject: `✅ Resolved: ${ticket.subject} [${ticket.referenceNumber}]`,
+    track: { kind: 'support-ticket' },
     html
   })
 }
@@ -1202,6 +1259,7 @@ export async function sendMemberPortalLinkEmail(
   return await sendEmail({
     to: email,
     subject: 'Manage your LifeLines',
+    track: { kind: 'member-portal-link' },
     html
   })
 }
@@ -1267,6 +1325,7 @@ export async function sendMemberLeftNotification(
   return await sendEmail({
     to: leaderEmail,
     subject: `${details.personName} has left ${details.lifeLineTitle}`,
+    track: { kind: 'member-left' },
     html
   })
 }
