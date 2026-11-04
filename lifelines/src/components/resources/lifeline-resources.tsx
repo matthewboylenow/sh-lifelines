@@ -164,7 +164,8 @@ export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
 
     if (resource.fileUrl) {
       return (
-        <a href={resource.fileUrl} download={resource.fileName} target="_blank" rel="noopener noreferrer">
+        // Files are private, so the link goes through a route that signs it.
+        <a href={`/api/resources/${resource.id}/download`} target="_blank" rel="noopener noreferrer">
           <Button size="sm" variant="outline">
             <Download className="h-4 w-4 mr-2" aria-hidden="true" />
             Download

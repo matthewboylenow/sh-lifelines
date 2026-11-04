@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { refreshPublicResources } from '@/lib/public-resources'
 import { prisma } from '@/lib/prisma'
 import {
   createErrorResponse,
@@ -21,7 +22,8 @@ const resourceSchema = z.object({
   fileUrl: z.string().optional(),
   fileName: z.string().optional(),
   fileSize: z.number().optional(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  isPublic: z.boolean().optional()
 })
 
 // GET /api/resources - List all resources
@@ -101,12 +103,14 @@ export async function POST(req: NextRequest) {
         fileUrl: validatedData.fileUrl || null,
         fileName: validatedData.fileName || null,
         fileSize: validatedData.fileSize || null,
-        isActive: validatedData.isActive ?? true
+        isActive: validatedData.isActive ?? true,
+        isPublic: validatedData.isPublic ?? false
       }
 
       const resource = await prisma.resource.create({
         data
       })
+      refreshPublicResources()
 
       return createSuccessResponse(resource, 'Resource created successfully')
     } catch (error) {

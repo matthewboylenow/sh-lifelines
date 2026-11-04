@@ -400,6 +400,9 @@ model Resource {
   videoUrl     String?
   resourceType ResourceType
   isActive     Boolean      @default(true)
+  /// Also shown on the public home page, where anyone can open it without
+  /// signing in — the season's discussion guide and the online resources.
+  isPublic     Boolean      @default(false)
 
   // File Management
   fileUrl  String?
