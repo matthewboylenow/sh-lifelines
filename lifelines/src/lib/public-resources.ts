@@ -1,10 +1,9 @@
-import { revalidatePath } from 'next/cache'
 import { prisma } from './prisma'
 
 /**
- * Resources anyone can open from the home page without signing in: the
+ * Resources anyone can open from the Resources page without signing in: the
  * season's discussion guide and a few online resources. An admin chooses which
- * by ticking "Show on the public LifeLines page" on the resource.
+ * by ticking "Show on the public Resources page" on the resource.
  */
 export interface PublicResource {
   id: string
@@ -34,17 +33,8 @@ export async function getPublicResources(): Promise<PublicResource[]> {
       hasFile: Boolean(fileUrl),
     }))
   } catch (error) {
-    // The home page must still load if this fails; the section just hides.
+    // The page must still load if this fails; it falls back to the contact card.
     console.error('Could not load public resources:', error)
     return []
-  }
-}
-
-/** Show a resource change on the home page straight away. */
-export function refreshPublicResources() {
-  try {
-    revalidatePath('/')
-  } catch (error) {
-    console.error('Could not refresh the home page:', error)
   }
 }

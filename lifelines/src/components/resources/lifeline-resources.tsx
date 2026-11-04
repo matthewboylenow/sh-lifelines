@@ -51,7 +51,7 @@ export function LifeLineResources({ userRoles }: LifeLineResourcesProps) {
   const fetchResources = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/resources?limit=100')
+      const response = await fetch('/api/resources?limit=100&public=false')
       const data = await response.json()
 
       if (!response.ok) {
