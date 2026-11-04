@@ -100,12 +100,17 @@ export async function generatePresignedUploadUrl(
 // Generate presigned URL for downloads
 export async function generatePresignedDownloadUrl(
   key: string,
-  expiresIn: number = 3600 // 1 hour
+  expiresIn: number = 3600, // 1 hour
+  /** Save the file under this name rather than the storage key. */
+  fileName?: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: key,
+      ...(fileName
+        ? { ResponseContentDisposition: `attachment; filename="${fileName.replace(/["\\\r\n]/g, '')}"` }
+        : {}),
     })
 
     const url = await getSignedUrl(s3Client, command, { expiresIn })
@@ -200,4 +205,32 @@ export const MAX_FILE_SIZE = {
   IMAGE: 5 * 1024 * 1024,    // 5MB
   VIDEO: 100 * 1024 * 1024,  // 100MB
   DOCUMENT: 10 * 1024 * 1024, // 10MB
+}
+
+/**
+ * Where in our bucket a stored file lives, or null if it is somewhere else.
+ *
+ * Files have been recorded two ways: "s3://<key>", and the bucket's own https
+ * address. The bucket is private, so the https form cannot be opened directly
+ * by anyone — it has to be turned back into a key and signed.
+ */
+export function storedObjectKey(fileUrl: string | null | undefined): string | null {
+  if (!fileUrl) return null
+  if (fileUrl.startsWith('s3://')) return fileUrl.slice('s3://'.length) || null
+  if (!BUCKET_NAME) return null
+
+  try {
+    const url = new URL(fileUrl)
+    // https://<bucket>.s3.<region>.amazonaws.com/<key>
+    if (url.hostname.startsWith(`${BUCKET_NAME}.s3.`) && url.hostname.endsWith('.amazonaws.com')) {
+      return decodeURIComponent(url.pathname.slice(1)) || null
+    }
+    // https://s3.<region>.amazonaws.com/<bucket>/<key>
+    if (url.hostname.startsWith('s3.') && url.pathname.startsWith(`/${BUCKET_NAME}/`)) {
+      return decodeURIComponent(url.pathname.slice(BUCKET_NAME.length + 2)) || null
+    }
+  } catch {
+    // Not a URL at all.
+  }
+  return null
 }

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { refreshPublicResources } from '@/lib/public-resources'
 import { prisma } from '@/lib/prisma'
 import {
   createErrorResponse,
@@ -19,7 +20,8 @@ const updateResourceSchema = z.object({
   fileUrl: z.string().optional(),
   fileName: z.string().optional(),
   fileSize: z.number().optional(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  isPublic: z.boolean().optional()
 })
 
 // GET /api/resources/[id] - Get single resource
@@ -90,6 +92,7 @@ export async function PUT(
         data
       })
 
+      refreshPublicResources()
       return createSuccessResponse(resource, 'Resource updated successfully')
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -128,6 +131,7 @@ export async function DELETE(
         where: { id }
       })
 
+      refreshPublicResources()
       return createSuccessResponse(null, 'Resource deleted successfully')
     } catch (error) {
       console.error('Error deleting resource:', error)

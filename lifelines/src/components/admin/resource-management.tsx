@@ -30,6 +30,7 @@ interface Resource {
   fileName: string | null
   fileSize: number | null
   isActive: boolean
+  isPublic: boolean
   createdAt: string
   updatedAt: string
 }
@@ -43,6 +44,7 @@ interface ResourceFormData {
   fileUrl: string
   fileName: string
   isActive: boolean
+  isPublic: boolean
 }
 
 const emptyFormData: ResourceFormData = {
@@ -53,7 +55,8 @@ const emptyFormData: ResourceFormData = {
   resourceType: ResourceType.LEADER_FAITH_FORMATION,
   fileUrl: '',
   fileName: '',
-  isActive: true
+  isActive: true,
+  isPublic: false
 }
 
 const resourceTypeLabels: Record<ResourceType, string> = {
@@ -145,7 +148,8 @@ export function ResourceManagement() {
       resourceType: resource.resourceType,
       fileUrl: resource.fileUrl || '',
       fileName: resource.fileName || '',
-      isActive: resource.isActive
+      isActive: resource.isActive,
+      isPublic: resource.isPublic
     })
     setShowForm(true)
   }
@@ -398,6 +402,23 @@ export function ResourceManagement() {
                 </label>
               </div>
 
+              {/* Public: also on the home page, no sign-in needed */}
+              <div className="flex items-start">
+                <input
+                  type="checkbox"
+                  id="isPublic"
+                  checked={formData.isPublic}
+                  onChange={e => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isPublic" className="ml-2 text-sm text-gray-700">
+                  Show on the public LifeLines page
+                  <span className="block text-gray-500">
+                    Anyone can open it from the home page without signing in. Use this for the season&apos;s discussion guide and online resources.
+                  </span>
+                </label>
+              </div>
+
               {/* Form Actions */}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                 <Button type="button" variant="outline" onClick={cancelForm}>
@@ -517,6 +538,11 @@ export function ResourceManagement() {
                       }`}>
                         {resource.isActive ? 'Active' : 'Inactive'}
                       </span>
+                      {resource.isPublic && resource.isActive && (
+                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                          Public
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
