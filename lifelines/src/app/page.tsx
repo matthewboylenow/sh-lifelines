@@ -6,12 +6,6 @@ import { HomeHero } from '@/components/home/hero'
 import { FiltersSection } from '@/components/home/filters-section'
 import { LifeLinesSearchProvider } from '@/components/home/lifelines-search-context'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { PublicResources } from '@/components/home/public-resources'
-import { getPublicResources } from '@/lib/public-resources'
-
-// Resource changes refresh the page immediately (see refreshPublicResources);
-// this is only the backstop.
-export const revalidate = 300
 
 function HomeContent() {
   return (
@@ -47,14 +41,9 @@ function HomeContent() {
   )
 }
 
-export default async function HomePage() {
-  const resources = await getPublicResources()
-
+export default function HomePage() {
   return (
     <MainLayout noPadding>
-      {/* Rendered on the server, outside the Suspense below, so the guide is
-          there on first paint rather than behind the "Loading..." state. */}
-      <PublicResources resources={resources} />
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center">
           <LoadingSpinner />

@@ -14,6 +14,8 @@ export function Header() {
 
   const navigation = [
     { name: 'Home', href: '/', current: false },
+    // Open to everyone: the season's discussion guide and online resources.
+    { name: 'Resources', href: '/resources', current: false },
   ]
 
   const dashboardNavigation: { name: string; href: string; roles: UserRole[] }[] = [

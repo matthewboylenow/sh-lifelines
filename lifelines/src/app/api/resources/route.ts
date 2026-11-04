@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server'
-import { refreshPublicResources } from '@/lib/public-resources'
 import { prisma } from '@/lib/prisma'
 import {
   createErrorResponse,
@@ -51,6 +50,13 @@ export async function GET(req: NextRequest) {
 
       if (resourceType) {
         where.resourceType = resourceType
+      }
+
+      // ?public=false leaves out what the Resources page already shows to
+      // everyone, so leaders don't see those twice on the same page.
+      const isPublic = searchParams.get('public')
+      if (isPublic !== null) {
+        where.isPublic = isPublic === 'true'
       }
 
       if (search) {
@@ -110,7 +116,6 @@ export async function POST(req: NextRequest) {
       const resource = await prisma.resource.create({
         data
       })
-      refreshPublicResources()
 
       return createSuccessResponse(resource, 'Resource created successfully')
     } catch (error) {

@@ -402,7 +402,7 @@ export function ResourceManagement() {
                 </label>
               </div>
 
-              {/* Public: also on the home page, no sign-in needed */}
+              {/* Public: also on the Resources page for everyone, no sign-in needed */}
               <div className="flex items-start">
                 <input
                   type="checkbox"
@@ -412,9 +412,9 @@ export function ResourceManagement() {
                   className="mt-0.5 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
                 <label htmlFor="isPublic" className="ml-2 text-sm text-gray-700">
-                  Show on the public LifeLines page
+                  Show on the public Resources page
                   <span className="block text-gray-500">
-                    Anyone can open it from the home page without signing in. Use this for the season&apos;s discussion guide and online resources.
+                    Anyone can open it from the Resources page without signing in. Use this for the season&apos;s discussion guide and online resources.
                   </span>
                 </label>
               </div>
