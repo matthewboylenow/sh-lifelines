@@ -28,14 +28,24 @@ export function FormationSupportInquiries() {
         params.append('status', filter.toUpperCase())
       }
 
-      const response = await fetch(`/api/inquiries?${params}`)
-      const data = await response.json()
+      // The API sends 10 at a time unless asked for more, so this page used to
+      // show (and count) only the 10 newest. Load every page, 200 at a time.
+      params.set('limit', '200')
+      const all: InquiryWithLifeLine[] = []
+      for (let page = 1; page <= 50; page++) {
+        params.set('page', String(page))
+        const response = await fetch(`/api/inquiries?${params}`)
+        const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch inquiries')
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch inquiries')
+        }
+
+        all.push(...(data.data.items || []))
+        if (page >= (data.data.pagination?.totalPages ?? 1)) break
       }
 
-      setInquiries(data.data.items || [])
+      setInquiries(all)
 
     } catch (error) {
       console.error('Inquiries error:', error)
