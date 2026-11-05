@@ -93,6 +93,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [leaders, setLeaders] = useState<User[]>([])
   const [supportContacts, setSupportContacts] = useState<User[]>([])
+  const [leaderSearch, setLeaderSearch] = useState('')
   const [families, setFamilies] = useState<Array<{ id: string; title: string }>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -129,11 +130,34 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
     }
   }, [initialData])
 
+  // Leaders already on the group when the form opened come first, so they're
+  // visible without scrolling. (Sorting by the live selection would make a
+  // name jump to the top the moment it's ticked.) The search narrows the rest,
+  // but never hides someone who is ticked.
+  const originalLeaderIds: string[] =
+    (initialData as any)?.leaders?.map((l: { id: string }) => l.id) ?? []
+  const leaderQuery = leaderSearch.trim().toLowerCase()
+  const visibleLeaders = (Array.isArray(leaders) ? leaders : [])
+    .filter(leader =>
+      !leaderQuery ||
+      formData.leaderIds.includes(leader.id) ||
+      `${leader.displayName ?? ''} ${leader.email}`.toLowerCase().includes(leaderQuery)
+    )
+    .sort((a, b) => {
+      const aFirst = originalLeaderIds.includes(a.id) ? 0 : 1
+      const bFirst = originalLeaderIds.includes(b.id) ? 0 : 1
+      if (aFirst !== bFirst) return aFirst - bFirst
+      return (a.displayName || a.email).localeCompare(b.displayName || b.email)
+    })
+
   // Load leaders and support contacts
   useEffect(() => {
     const fetchLeaders = async () => {
       try {
-        const response = await fetch('/api/users?role=LIFELINE_LEADER')
+        // The API returns 10 people unless told otherwise, which cut this list
+        // off partway through the alphabet — anyone after the tenth leader
+        // could not be picked at all.
+        const response = await fetch('/api/users?role=LIFELINE_LEADER&limit=200')
         if (response.ok) {
           const data = await response.json()
           // /api/users returns a paginated { items, pagination } payload.
@@ -147,7 +171,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
     const fetchSupportContacts = async () => {
       try {
         // Fetch Formation Support Team members and Admins as potential support contacts
-        const response = await fetch('/api/users?roles=FORMATION_SUPPORT_TEAM,ADMIN')
+        const response = await fetch('/api/users?roles=FORMATION_SUPPORT_TEAM,ADMIN&limit=200')
         if (response.ok) {
           const data = await response.json()
           // /api/users returns a paginated { items, pagination } payload.
@@ -361,9 +385,19 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 Select everyone who leads this group. All leaders are equal — each can see it on
                 their dashboard, manage members and email the group.
               </p>
+              {leaders.length > 8 && (
+                <Input
+                  type="search"
+                  value={leaderSearch}
+                  onChange={(e) => setLeaderSearch(e.target.value)}
+                  placeholder="Search leaders by name or email"
+                  aria-label="Search leader accounts"
+                  className="mb-2"
+                />
+              )}
               <div className="border border-gray-300 rounded-lg max-h-56 overflow-y-auto divide-y">
-                {Array.isArray(leaders) && leaders.length > 0 ? (
-                  leaders.map(leader => {
+                {visibleLeaders.length > 0 ? (
+                  visibleLeaders.map(leader => {
                     const checked = formData.leaderIds.includes(leader.id)
                     return (
                       <label
@@ -391,12 +425,21 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                     )
                   })
                 ) : (
-                  <p className="px-3 py-2 text-sm text-gray-500">No leader accounts available.</p>
+                  <p className="px-3 py-2 text-sm text-gray-500">
+                    {leaders.length > 0 ? 'No leaders match that search.' : 'No leader accounts available.'}
+                  </p>
                 )}
               </div>
-              {formData.leaderIds.length > 0 && (
+              {formData.leaderIds.length > 0 ? (
                 <p className="mt-1 text-xs text-gray-600">
                   {formData.leaderIds.length} leader{formData.leaderIds.length === 1 ? '' : 's'} selected
+                </p>
+              ) : (
+                // A group with no leader account shows on nobody's dashboard,
+                // and its sign-ups go to the parish office instead of a leader.
+                <p className="mt-1 text-xs text-amber-700">
+                  No leader account selected. This group won&apos;t appear on anyone&apos;s
+                  dashboard, and join requests will go to the parish office.
                 </p>
               )}
             </div>
