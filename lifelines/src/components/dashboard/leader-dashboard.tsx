@@ -215,6 +215,10 @@ export function LeaderDashboard({ userId, userRoles }: LeaderDashboardProps) {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">{lifeLine.title}</h3>
+                    {(lifeLine as any).isLegacy ? (
+                      // Not in the public directory, so "published" would mislead.
+                      <span className="status-badge status-badge-archived">small group</span>
+                    ) : (
                     <span className={`status-badge ${
                       lifeLine.status === 'PUBLISHED' 
                         ? 'status-badge-published' 
@@ -226,9 +230,11 @@ export function LeaderDashboard({ userId, userRoles }: LeaderDashboardProps) {
                     }`}>
                       {lifeLine.status.toLowerCase()}
                     </span>
+                    )}
                   </div>
                   
                   <div className="flex items-center space-x-2">
+                    {!(lifeLine as any).isLegacy && (
                     <Link
                       href={`/lifelines/${lifeLine.slug || lifeLine.id}`}
                       className="text-gray-400 hover:text-gray-600"
@@ -236,6 +242,7 @@ export function LeaderDashboard({ userId, userRoles }: LeaderDashboardProps) {
                     >
                       <Eye className="h-4 w-4" />
                     </Link>
+                    )}
                     <Link
                       href={`/lifelines/${lifeLine.slug || lifeLine.id}/edit`}
                       className="text-gray-400 hover:text-gray-600"

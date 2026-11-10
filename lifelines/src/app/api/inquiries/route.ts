@@ -132,7 +132,9 @@ export async function POST(req: NextRequest) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    if (lifeLine.status !== 'PUBLISHED') {
+    // Legacy small groups are not on the public site, so nobody can ask to
+    // join one here; their leaders add members themselves.
+    if (lifeLine.status !== 'PUBLISHED' || lifeLine.isLegacy) {
       return createErrorResponse('This LifeLine is not accepting inquiries', 400)
     }
 

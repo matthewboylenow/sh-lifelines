@@ -28,8 +28,9 @@ export async function GET(request: NextRequest) {
       totalInquiries,
       hiddenLifeLines
     ] = await Promise.all([
-      // Total LifeLines
-      prisma.lifeLine.count().catch(() => 0),
+      // Total LifeLines. Legacy small groups have their own tab and are left
+      // out, so this keeps meaning the LifeLines people can find and join.
+      prisma.lifeLine.count({ where: { isLegacy: false } }).catch(() => 0),
 
       // Total Users
       prisma.user.count().catch(() => 0),
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
       // Hidden LifeLines (archived or not visible)
       prisma.lifeLine.count({
         where: {
+          isLegacy: false,
           OR: [
             { status: 'ARCHIVED' },
             { isVisible: false }

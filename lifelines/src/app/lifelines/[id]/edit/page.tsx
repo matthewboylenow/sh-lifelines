@@ -72,6 +72,24 @@ export default async function EditLifeLinePage({ params }: PageProps) {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 py-8">
         <div className="container-responsive">
           <div className="mb-8">
+            {lifeLine.isLegacy ? (
+              // Legacy groups have no public page to go back to.
+              <div className="mb-4">
+                <Link
+                  href={
+                    hasAnyRole(session.user.roles, [UserRole.ADMIN])
+                      ? '/dashboard/admin?tab=legacy'
+                      : '/dashboard/leader'
+                  }
+                  className="inline-flex items-center text-primary-600 hover:text-primary-700 transition-colors"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  {hasAnyRole(session.user.roles, [UserRole.ADMIN])
+                    ? 'Back to Legacy Small Groups'
+                    : 'Back to Dashboard'}
+                </Link>
+              </div>
+            ) : (
             <div className="flex items-center justify-between mb-4">
               <Link
                 href={`/lifelines/${slugOrId}`}
@@ -88,9 +106,10 @@ export default async function EditLifeLinePage({ params }: PageProps) {
                 View Public Page →
               </Link>
             </div>
+            )}
 
             <h1 className="text-3xl font-bold text-primary-900 mb-2">
-              Edit LifeLine
+              {lifeLine.isLegacy ? 'Edit Legacy Small Group' : 'Edit LifeLine'}
             </h1>
             <p className="text-gray-600">
               Update the details for "{lifeLine.title}"

@@ -7,7 +7,9 @@ import {
 import { updateLifeLineSchema } from '@/lib/validations'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { canManageLifeLines } from '@/lib/auth-utils'
+import { canManageLifeLines, hasAnyRole } from '@/lib/auth-utils'
+import { UserRole } from '@prisma/client'
+import { normalizeLegacyLeaders } from '@/lib/legacy-leaders'
 
 // Authorize a mutation: any of the group's leaders, formation support, or an
 // admin may change it. Returns an error response to short-circuit, or null.
@@ -111,7 +113,43 @@ export async function GET(req: NextRequest) {
       return createErrorResponse('LifeLine not found', 404)
     }
 
-    return createSuccessResponse(lifeLine)
+    // This address takes any id or slug and needs no sign-in, so what it
+    // returns has to match what the public page shows. It used to return
+    // every group, hidden and draft ones included, with its newest members'
+    // names and email addresses and its leaders' addresses, to anyone.
+    const session = await getServerSession(authOptions)
+    const isStaff = Boolean(
+      session?.user &&
+        hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
+    )
+    const leadsIt = Boolean(session?.user && lifeLine.leaders.some(l => l.id === session.user.id))
+
+    if (isStaff || leadsIt) {
+      return createSuccessResponse(lifeLine)
+    }
+
+    const isPublic =
+      lifeLine.status === 'PUBLISHED' && lifeLine.isVisible && !lifeLine.isLegacy
+    if (!isPublic) {
+      return createErrorResponse('LifeLine not found', 404)
+    }
+
+    const {
+      inquiries: _members,
+      leaderEmail: _leaderEmail,
+      legacyLeaders: _legacyLeaders,
+      legacyNotes: _legacyNotes,
+      supportContact,
+      leaders,
+      ...publicFields
+    } = lifeLine
+    return createSuccessResponse({
+      ...publicFields,
+      leaders: leaders.map(({ email: _email, ...leader }) => leader),
+      supportContact: supportContact
+        ? { id: supportContact.id, displayName: supportContact.displayName }
+        : null,
+    })
   } catch (error) {
     console.error('Error fetching LifeLine:', error)
     return createErrorResponse('Failed to fetch LifeLine', 500)
@@ -141,9 +179,23 @@ export async function PUT(req: NextRequest) {
     const authError = await authorizeMutation(existingLifeLine.leaders.map(l => l.id))
     if (authError) return authError
 
+    // A legacy group's carried-over leaders and notes are for admins to edit.
+    const session = await getServerSession(authOptions)
+    const isAdmin = Boolean(session?.user && hasAnyRole(session.user.roles, [UserRole.ADMIN]))
+    const legacyUpdate =
+      existingLifeLine.isLegacy && isAdmin
+        ? {
+            ...(body.legacyNotes !== undefined && { legacyNotes: body.legacyNotes || null }),
+            ...(body.legacyLeaders !== undefined && {
+              legacyLeaders: normalizeLegacyLeaders(body.legacyLeaders),
+            }),
+          }
+        : {}
+
     const lifeLine = await prisma.lifeLine.update({
       where: { id: existingLifeLine.id },
       data: {
+        ...legacyUpdate,
         ...(validatedData.title && { title: validatedData.title }),
         ...(body.subtitle !== undefined && { subtitle: body.subtitle || null }),
         ...(validatedData.description !== undefined && { description: validatedData.description || null }),
@@ -165,7 +217,10 @@ export async function PUT(req: NextRequest) {
         ...(validatedData.imageAlt !== undefined && { imageAlt: validatedData.imageAlt || null }),
         ...(validatedData.imageAttribution !== undefined && { imageAttribution: validatedData.imageAttribution || null }),
         ...(body.status && { status: body.status }),
-        ...(body.isVisible !== undefined && { isVisible: body.isVisible }),
+        // Legacy groups are never public; the database refuses it anyway.
+        ...(existingLifeLine.isLegacy
+          ? { isVisible: false }
+          : body.isVisible !== undefined && { isVisible: body.isVisible }),
         ...(body.supportContactId !== undefined && { supportContactId: body.supportContactId || null }),
         // A group cannot be its own parent, and only one level is intended.
         ...(body.parentId !== undefined && {
@@ -255,6 +310,10 @@ export async function PATCH(req: NextRequest) {
     }
     if (body.isVisible !== undefined) {
       updateData.isVisible = body.isVisible
+    }
+    // Legacy groups are never public, whatever their status.
+    if (existingLifeLine.isLegacy) {
+      updateData.isVisible = false
     }
 
     const lifeLine = await prisma.lifeLine.update({

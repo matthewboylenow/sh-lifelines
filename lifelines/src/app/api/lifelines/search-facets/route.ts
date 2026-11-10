@@ -7,10 +7,12 @@ import { LifeLineStatus } from '@prisma/client'
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const includeHidden = searchParams.get('includeHidden') === 'true'
+    // Only what the public directory shows. There used to be an includeHidden
+    // switch here that anyone could set to see hidden and draft groups.
+    const includeHidden = false
     
     // Base where clause
-    const baseWhere = includeHidden ? {} : { isVisible: true, status: LifeLineStatus.PUBLISHED }
+    const baseWhere = { isVisible: true, status: LifeLineStatus.PUBLISHED, isLegacy: false }
 
     // Get all the facet data in parallel
     const [

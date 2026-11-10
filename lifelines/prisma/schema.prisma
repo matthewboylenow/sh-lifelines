@@ -62,6 +62,18 @@ model LifeLine {
   status      LifeLineStatus @default(DRAFT)
   isVisible   Boolean        @default(true)
 
+  /// A small group carried over from before LifeLines. Its leaders get
+  /// accounts and can manage it from their dashboard, but it is never shown on
+  /// the public site: the database refuses isLegacy with isVisible (see
+  /// prisma/sql/2026-11-legacy-small-groups.sql). DRAFT until an admin pushes
+  /// the legacy groups live, then PUBLISHED.
+  isLegacy      Boolean @default(false)
+  /// The people to give leader accounts when the group goes live, as
+  /// [{ name, email }]. Kept apart from `leaders`, which only holds accounts.
+  legacyLeaders Json?
+  /// What the leader told us in the update form, for admins only.
+  legacyNotes   String? @db.Text
+
   // Group Details
   groupLeader      String?
   leaderEmail      String?
@@ -110,6 +122,7 @@ model LifeLine {
   formationRequestId String?           @unique
   formationRequest   FormationRequest? @relation("CreatedLifeLine", fields: [formationRequestId], references: [id])
 
+  @@index([isLegacy])
   @@map("lifelines")
 }
 

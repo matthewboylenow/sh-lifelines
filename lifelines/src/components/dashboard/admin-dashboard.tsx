@@ -22,7 +22,8 @@ import {
   UserCheck,
   FileText,
   Download,
-  Upload
+  Upload,
+  History
 } from 'lucide-react'
 import { UserRole, LifeLineStatus } from '@prisma/client'
 import { LifeLineWithLeader } from '@/types'
@@ -31,6 +32,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { UserManagement } from './user-management'
 import { ResourceManagement } from '@/components/admin/resource-management'
+import { LegacySmallGroups } from '@/components/admin/legacy-small-groups'
 import { useToast } from '@/components/ui/toast'
 
 interface AdminDashboardProps {
@@ -54,10 +56,10 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
 
   // Read initial tab from URL query param
   const tabParam = searchParams.get('tab')
-  const validTabs = ['overview', 'lifelines', 'users', 'resources', 'settings'] as const
+  const validTabs = ['overview', 'lifelines', 'legacy', 'users', 'resources', 'settings'] as const
   const initialTab = validTabs.includes(tabParam as any) ? (tabParam as typeof validTabs[number]) : 'overview'
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'lifelines' | 'users' | 'resources' | 'settings'>(initialTab)
+  const [activeTab, setActiveTab] = useState<typeof validTabs[number]>(initialTab)
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [lifeLines, setLifeLines] = useState<LifeLineWithLeader[]>([])
   const [loading, setLoading] = useState(true)
@@ -219,11 +221,14 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
   return (
     <div className="space-y-8">
       {/* Admin Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      {/* Six tabs don't fit a phone or a narrow laptop: scroll sideways
+          rather than push the page wider. */}
+      <div className="border-b border-gray-200 overflow-x-auto">
+        <nav className="-mb-px flex space-x-6 lg:space-x-8 min-w-max">
           {[
             { id: 'overview', name: 'Overview', icon: Shield },
             { id: 'lifelines', name: 'LifeLines Management', icon: BookOpen },
+            { id: 'legacy', name: 'Legacy Small Groups', icon: History },
             { id: 'users', name: 'User Management', icon: Users },
             { id: 'resources', name: 'Resources', icon: FileText },
             { id: 'settings', name: 'System Settings', icon: Settings },
@@ -589,6 +594,9 @@ export function AdminDashboard({ userId, userRoles }: AdminDashboardProps) {
           </div>
         </div>
       )}
+
+      {/* Legacy small groups: their own tab, never on the public site */}
+      {activeTab === 'legacy' && <LegacySmallGroups />}
 
       {/* Users Management Tab */}
       {activeTab === 'users' && (
