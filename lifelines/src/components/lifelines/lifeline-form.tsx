@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { legacyLeadersToText, normalizeLegacyLeaders } from '@/lib/legacy-leaders'
 import { 
   Save,
   X,
@@ -19,7 +21,7 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { ImageSelector } from '@/components/ImageSelector'
-import { LifeLine, User, LifeLineStatus, GroupType, MeetingFrequency, DayOfWeek } from '@prisma/client'
+import { LifeLine, User, LifeLineStatus, GroupType, MeetingFrequency, DayOfWeek, UserRole } from '@prisma/client'
 
 interface LifeLineFormProps {
   initialData?: Partial<LifeLine & { leader?: User }>
@@ -51,6 +53,9 @@ interface FormData {
   imageAttribution: string
   status: LifeLineStatus
   isVisible: boolean
+  /** Legacy groups only: carried-over leaders, one "Name <email>" per line. */
+  legacyLeadersText: string
+  legacyNotes: string
 }
 
 const INITIAL_FORM_DATA: FormData = {
@@ -75,7 +80,9 @@ const INITIAL_FORM_DATA: FormData = {
   imageAlt: '',
   imageAttribution: '',
   status: 'DRAFT',
-  isVisible: true
+  isVisible: true,
+  legacyLeadersText: '',
+  legacyNotes: ''
 }
 
 const AGES_STAGES_OPTIONS = [
@@ -90,6 +97,11 @@ const AGES_STAGES_OPTIONS = [
 
 export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLineFormProps) {
   const router = useRouter()
+  const { data: session } = useSession()
+  const isAdmin = Boolean(session?.user?.roles?.includes(UserRole.ADMIN))
+  // Legacy small groups are never public, so they get no publishing options:
+  // just their carried-over leaders and notes, and a plain Save.
+  const isLegacy = Boolean((initialData as any)?.isLegacy)
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [leaders, setLeaders] = useState<User[]>([])
   const [supportContacts, setSupportContacts] = useState<User[]>([])
@@ -125,7 +137,9 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         imageAlt: initialData.imageAlt || '',
         imageAttribution: initialData.imageAttribution || '',
         status: initialData.status || 'DRAFT',
-        isVisible: initialData.isVisible ?? true
+        isVisible: initialData.isVisible ?? true,
+        legacyLeadersText: legacyLeadersToText((initialData as any).legacyLeaders),
+        legacyNotes: (initialData as any).legacyNotes || ''
       })
     }
   }, [initialData])
@@ -255,10 +269,17 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
     setError('')
 
     try {
+      const { legacyLeadersText, legacyNotes, ...fields } = formData
       const submitData = {
-        ...formData,
-        status: saveAs === 'published' ? 'PUBLISHED' : 'DRAFT',
-        isVisible: saveAs === 'published',
+        ...fields,
+        // A legacy group keeps its status (draft until pushed live) and is
+        // never visible; the server and database enforce the same.
+        status: isLegacy ? formData.status : saveAs === 'published' ? 'PUBLISHED' : 'DRAFT',
+        isVisible: isLegacy ? false : saveAs === 'published',
+        ...(isLegacy && isAdmin && {
+          legacyLeaders: normalizeLegacyLeaders(legacyLeadersText),
+          legacyNotes,
+        }),
         maxParticipants: formData.maxParticipants ? Number(formData.maxParticipants) : null,
         cost: formData.cost || null,
         dayOfWeek: formData.dayOfWeek || null,
@@ -295,7 +316,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         if (mode === 'create' && result.data?.id) {
           router.push(`/lifelines/${result.data.id}`)
         } else {
-          router.push('/dashboard/admin')
+          router.push(isLegacy ? '/dashboard/admin?tab=legacy' : '/dashboard/admin')
         }
       }
     } catch (error) {
@@ -433,6 +454,11 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
               {formData.leaderIds.length > 0 ? (
                 <p className="mt-1 text-xs text-gray-600">
                   {formData.leaderIds.length} leader{formData.leaderIds.length === 1 ? '' : 's'} selected
+                </p>
+              ) : isLegacy && formData.status === 'DRAFT' ? (
+                <p className="mt-1 text-xs text-gray-600">
+                  Leader accounts are created from the legacy leaders below when legacy groups
+                  are pushed live.
                 </p>
               ) : (
                 // A group with no leader account shows on nobody's dashboard,
@@ -698,7 +724,82 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
           </div>
         </div>
 
+        {/* Legacy small group: never public, so no publishing options */}
+        {isLegacy && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h2 className="text-xl font-semibold text-gray-900">Legacy small group</h2>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  formData.status === 'DRAFT'
+                    ? 'bg-amber-100 text-amber-800'
+                    : formData.status === 'ARCHIVED'
+                      ? 'bg-gray-100 text-gray-700'
+                      : 'bg-green-100 text-green-800'
+                }`}
+              >
+                {formData.status === 'DRAFT' ? 'Draft' : formData.status === 'ARCHIVED' ? 'Not meeting' : 'Live'}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Never shown on the public site.{' '}
+              {formData.status === 'DRAFT'
+                ? 'When legacy groups are pushed live, each leader below gets an account and sees this group on their dashboard.'
+                : formData.status === 'ARCHIVED'
+                  ? 'Kept for the record and left out when legacy groups are pushed live.'
+                  : 'Its leaders see it on their dashboard.'}
+            </p>
+
+            <div className="space-y-5">
+              {isAdmin && formData.status !== 'PUBLISHED' && formData.status !== 'FULL' && (
+                <div>
+                  <Label htmlFor="legacyStatus">Status</Label>
+                  <select
+                    id="legacyStatus"
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="DRAFT">Draft (included when legacy groups are pushed live)</option>
+                    <option value="ARCHIVED">Not meeting (left out)</option>
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="legacyLeadersText">Legacy leaders</Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  One per line, as Name &lt;email&gt;. Anyone without an email can&apos;t be given an account.
+                </p>
+                <textarea
+                  id="legacyLeadersText"
+                  value={formData.legacyLeadersText}
+                  onChange={(e) => handleInputChange('legacyLeadersText', e.target.value)}
+                  readOnly={!isAdmin}
+                  rows={3}
+                  placeholder="Jane Smith <jane@example.com>"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent read-only:bg-gray-50"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="legacyNotes">Notes from the leader&apos;s update</Label>
+                <p className="text-xs text-gray-500 mb-2">For admins. Not shown to members.</p>
+                <textarea
+                  id="legacyNotes"
+                  value={formData.legacyNotes}
+                  onChange={(e) => handleInputChange('legacyNotes', e.target.value)}
+                  readOnly={!isAdmin}
+                  rows={5}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent read-only:bg-gray-50"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Publishing Options */}
+        {!isLegacy && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Publishing Options</h2>
           
@@ -730,6 +831,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
             </div>
           </div>
         </div>
+        )}
 
         {/* Form Actions */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -744,6 +846,12 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
               Cancel
             </Button>
 
+            {isLegacy ? (
+              <Button type="submit" disabled={loading}>
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Saving...' : 'Save'}
+              </Button>
+            ) : (
             <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 type="submit"
@@ -763,6 +871,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 {loading ? 'Publishing...' : 'Publish LifeLine'}
               </Button>
             </div>
+            )}
           </div>
         </div>
       </form>

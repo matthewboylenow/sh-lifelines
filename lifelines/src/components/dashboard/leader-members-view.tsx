@@ -96,7 +96,7 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
       // Leaders see the groups they run; staff see every group.
       const lifelinesRes = await fetch(
         isStaff
-          ? '/api/lifelines?includeAll=true&limit=200'
+          ? '/api/lifelines?includeAll=true&legacy=include&limit=200'
           : `/api/lifelines?leaderId=${userId}&limit=200`
       )
       const lifelinesData = await lifelinesRes.json()

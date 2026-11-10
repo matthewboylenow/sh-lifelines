@@ -88,18 +88,36 @@ export async function GET(req: NextRequest) {
         ])
     )
 
+    const isStaff = Boolean(
+      session?.user &&
+        hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])
+    )
+
     let seesHiddenGroups = false
     if (filters.leaderId) {
       seesHiddenGroups = Boolean(
-        session?.user &&
-          (session.user.id === filters.leaderId ||
-            hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM]))
+        session?.user && (session.user.id === filters.leaderId || isStaff)
       )
     }
 
-    // Only filter by visibility if not requesting all (admin mode)
-    if (!filters.includeAll && !seesHiddenGroups) {
-      where.isVisible = filters.isVisible
+    // Hidden and draft groups are for staff. includeAll and isVisible=false
+    // are plain query parameters, so without this check anyone could list them.
+    const includeAll = filters.includeAll && isStaff
+    if (!includeAll && !seesHiddenGroups) {
+      where.isVisible = isStaff ? filters.isVisible : true
+    }
+
+    // Legacy small groups never appear in the directory or in staff lists of
+    // LifeLines unless asked for: ?legacy=only for the admin's Legacy Small
+    // Groups tab, ?legacy=include where every group belongs. A leader always
+    // sees their own, legacy or not.
+    const legacyMode = searchParams.get('legacy')
+    if (seesHiddenGroups) {
+      // the leader's own groups, or staff looking at one leader's: all of them
+    } else if (isStaff && legacyMode === 'only') {
+      where.isLegacy = true
+    } else if (!(isStaff && legacyMode === 'include')) {
+      where.isLegacy = false
     }
 
     // Status filtering
@@ -281,7 +299,7 @@ export async function GET(req: NextRequest) {
     //
     // Admins (includeAll) and leaders looking at their own groups see every
     // group flat, subgroups included, which is what those views are for.
-    const collapseFamilies = !filters.includeAll && !filters.leaderId
+    const collapseFamilies = !includeAll && !filters.leaderId
     const effectiveWhere = collapseFamilies
       ? { parentId: null, OR: [where, { children: { some: where } }] }
       : where
@@ -369,9 +387,28 @@ export async function GET(req: NextRequest) {
 
     // The group's own contact address is the leader's personal email too, so it
     // is withheld from the public alongside the leaders[] addresses above.
-    const visibleLifeLines = maySeeLeaderContact
-      ? lifeLines
-      : lifeLines.map(({ leaderEmail, ...rest }) => rest)
+    const isAdmin = Boolean(session?.user && hasAnyRole(session.user.roles, [UserRole.ADMIN]))
+    const visibleLifeLines = lifeLines.map(lifeLine => {
+      // What a legacy group's leader wrote in the update form, and the
+      // carried-over leader list, are for admins.
+      const { legacyNotes: _notes, legacyLeaders: _carriedOver, ...rest } = lifeLine as typeof lifeLine & {
+        legacyNotes?: unknown
+        legacyLeaders?: unknown
+      }
+      const shown = isAdmin ? lifeLine : rest
+      if (maySeeLeaderContact) return shown
+      // Signed-out visitors get no personal contact details: not the leader's
+      // address, and not the support contact's email or cell phone.
+      const { leaderEmail: _leaderEmail, supportContact, ...publicFields } = shown as typeof rest & {
+        leaderEmail?: string | null
+      }
+      return {
+        ...publicFields,
+        supportContact: supportContact
+          ? { id: supportContact.id, displayName: supportContact.displayName }
+          : null,
+      }
+    })
 
     const response = createPaginatedResponse(visibleLifeLines, total, page, limit)
     const responseWithMetadata = {

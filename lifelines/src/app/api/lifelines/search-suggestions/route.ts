@@ -9,14 +9,16 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const query = searchParams.get('q')?.trim()
     const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 20)
-    const includeHidden = searchParams.get('includeHidden') === 'true'
+    // Only what the public directory shows. There used to be an includeHidden
+    // switch here that anyone could set to see hidden and draft groups.
+    const includeHidden = false
     
     if (!query || query.length < 2) {
       return createSuccessResponse({ suggestions: [] })
     }
 
     // Base where clause for visibility
-    const baseWhere = includeHidden ? {} : { isVisible: true, status: LifeLineStatus.PUBLISHED }
+    const baseWhere = { isVisible: true, status: LifeLineStatus.PUBLISHED, isLegacy: false }
 
     // Get suggestions from different fields
     const [
