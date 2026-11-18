@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { 
   createErrorResponse, 
   createSuccessResponse, 
@@ -12,6 +14,13 @@ import { UserRole } from '@prisma/client'
 // POST /api/unsplash/search - Search Unsplash images
 export async function POST(req: NextRequest) {
   try {
+    // Only the image picker in the LifeLine form calls this. Without a check,
+    // anyone could spend the parish's Unsplash allowance.
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return createErrorResponse('Unauthorized', 401)
+    }
+
     const body = await req.json()
     const validatedData = unsplashSearchSchema.parse(body)
     const { query, page = 1, per_page = 12 } = validatedData

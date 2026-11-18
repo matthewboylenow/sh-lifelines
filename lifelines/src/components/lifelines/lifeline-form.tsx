@@ -26,6 +26,8 @@ import { LifeLine, User, LifeLineStatus, GroupType, MeetingFrequency, DayOfWeek,
 interface LifeLineFormProps {
   initialData?: Partial<LifeLine & { leader?: User }>
   mode: 'create' | 'edit'
+  /** Create a legacy small group (admins, from the Legacy Small Groups tab). */
+  legacy?: boolean
   onSubmit?: (data: any) => void
   onCancel?: () => void
 }
@@ -95,13 +97,13 @@ const AGES_STAGES_OPTIONS = [
   'Moms',
 ]
 
-export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLineFormProps) {
+export function LifeLineForm({ initialData, mode, legacy = false, onSubmit, onCancel }: LifeLineFormProps) {
   const router = useRouter()
   const { data: session } = useSession()
   const isAdmin = Boolean(session?.user?.roles?.includes(UserRole.ADMIN))
   // Legacy small groups are never public, so they get no publishing options:
   // just their carried-over leaders and notes, and a plain Save.
-  const isLegacy = Boolean((initialData as any)?.isLegacy)
+  const isLegacy = legacy || Boolean((initialData as any)?.isLegacy)
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [leaders, setLeaders] = useState<User[]>([])
   const [supportContacts, setSupportContacts] = useState<User[]>([])
@@ -247,7 +249,9 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
     if (!formData.title.trim()) {
       errors.title = 'Title is required'
     }
-    if (!formData.groupLeader.trim()) {
+    // A legacy group can take its leader names from the legacy leaders box.
+    const legacyNames = isLegacy && normalizeLegacyLeaders(formData.legacyLeadersText).length > 0
+    if (!formData.groupLeader.trim() && !legacyNames) {
       errors.groupLeader = 'Group leader is required'
     }
     if (formData.maxParticipants && isNaN(Number(formData.maxParticipants))) {
@@ -270,14 +274,21 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
 
     try {
       const { legacyLeadersText, legacyNotes, ...fields } = formData
+      const carriedOver = isLegacy ? normalizeLegacyLeaders(legacyLeadersText) : []
       const submitData = {
         ...fields,
+        groupLeader:
+          fields.groupLeader.trim() ||
+          carriedOver.map(l => (l.name !== l.email ? l.name : '')).filter(Boolean).join(' and ') ||
+          carriedOver[0]?.email ||
+          '',
         // A legacy group keeps its status (draft until pushed live) and is
         // never visible; the server and database enforce the same.
         status: isLegacy ? formData.status : saveAs === 'published' ? 'PUBLISHED' : 'DRAFT',
         isVisible: isLegacy ? false : saveAs === 'published',
         ...(isLegacy && isAdmin && {
-          legacyLeaders: normalizeLegacyLeaders(legacyLeadersText),
+          ...(mode === 'create' && { isLegacy: true }),
+          legacyLeaders: carriedOver,
           legacyNotes,
         }),
         maxParticipants: formData.maxParticipants ? Number(formData.maxParticipants) : null,
@@ -313,7 +324,10 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
         const result = await response.json()
         
         // Redirect to the LifeLine or back to admin
-        if (mode === 'create' && result.data?.id) {
+        if (mode === 'create' && isLegacy) {
+          // Legacy groups have no public page to land on.
+          router.push('/dashboard/admin?tab=legacy')
+        } else if (mode === 'create' && result.data?.id) {
           router.push(`/lifelines/${result.data.id}`)
         } else {
           router.push(isLegacy ? '/dashboard/admin?tab=legacy' : '/dashboard/admin')
@@ -400,6 +414,9 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
               )}
             </div>
 
+            {/* A legacy draft's leaders are entered as name + email below and linked
+                when it's pushed live; one place to enter them. */}
+            {!(isLegacy && formData.status !== 'PUBLISHED' && formData.status !== 'FULL') && (
             <div className="md:col-span-2">
               <Label>Leader Accounts</Label>
               <p className="text-xs text-gray-500 mb-2">
@@ -469,6 +486,7 @@ export function LifeLineForm({ initialData, mode, onSubmit, onCancel }: LifeLine
                 </p>
               )}
             </div>
+            )}
 
             <div className="md:col-span-2">
               <Label htmlFor="supportContactId">Support Contact (Formation Team)</Label>

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { normalizeLegacyLeaders } from '@/lib/legacy-leaders'
 import { prisma } from '@/lib/prisma'
 import {
   createErrorResponse,
@@ -426,10 +427,30 @@ export async function GET(req: NextRequest) {
 // POST /api/lifelines - Create new LifeLine
 export async function POST(req: NextRequest) {
   try {
+    // Creating a LifeLine is for staff, as the create page already assumed.
+    // This used to be open to anyone, signed in or not, and could create a
+    // published, visible group straight onto the public site.
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return createErrorResponse('Unauthorized', 401)
+    }
+    if (!hasAnyRole(session.user.roles, [UserRole.ADMIN, UserRole.FORMATION_SUPPORT_TEAM])) {
+      return createErrorResponse('Only administrators and the formation team can create LifeLines', 403)
+    }
+
     const body = await req.json()
 
     // Validate the incoming data
     const validatedData = createLifeLineSchema.parse(body)
+
+    // Legacy small groups are created by admins from the Legacy Small Groups
+    // tab. They are never public, start as drafts (or Not meeting), and hold
+    // their leaders as name + email until they are pushed live.
+    const isLegacy = body.isLegacy === true
+    if (isLegacy && !hasAnyRole(session.user.roles, [UserRole.ADMIN])) {
+      return createErrorResponse('Only administrators can create legacy small groups', 403)
+    }
+    const legacyLeaders = isLegacy ? normalizeLegacyLeaders(body.legacyLeaders) : []
 
     // Generate a unique slug from the title
     const { slugify } = await import('@/lib/utils')
@@ -449,7 +470,7 @@ export async function POST(req: NextRequest) {
         subtitle: validatedData.subtitle || null,
         description: validatedData.description || null,
         groupLeader: validatedData.groupLeader || null,
-        leaderEmail: validatedData.leaderEmail || null,
+        leaderEmail: validatedData.leaderEmail || legacyLeaders[0]?.email || null,
         // Accept a list of leaders; fall back to the legacy single field.
         ...(() => {
           const ids = validatedData.leaderIds?.length
@@ -471,8 +492,18 @@ export async function POST(req: NextRequest) {
         imageUrl: validatedData.imageUrl || null,
         imageAlt: validatedData.imageAlt || null,
         imageAttribution: validatedData.imageAttribution || null,
-        status: validatedData.status || 'DRAFT',
-        isVisible: validatedData.isVisible ?? true,
+        ...(isLegacy
+          ? {
+              isLegacy: true,
+              isVisible: false,
+              status: validatedData.status === 'ARCHIVED' ? 'ARCHIVED' : 'DRAFT',
+              legacyLeaders: legacyLeaders.map(({ name, email }) => ({ name, email })),
+              legacyNotes: typeof body.legacyNotes === 'string' ? body.legacyNotes || null : null,
+            }
+          : {
+              status: validatedData.status || 'DRAFT',
+              isVisible: validatedData.isVisible ?? true,
+            }),
       },
       include: {
         leaders: {
