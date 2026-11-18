@@ -15,7 +15,9 @@ import {
   FileSpreadsheet,
   UserX,
   AlertTriangle,
-  X
+  X,
+  UserPlus,
+  CheckCircle
 } from 'lucide-react'
 import { UserRole } from '@prisma/client'
 import { hasAnyRole } from '@/lib/auth-utils'
@@ -84,6 +86,15 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
   const [removalReason, setRemovalReason] = useState('')
   const [isRemoving, setIsRemoving] = useState(false)
   const [removalError, setRemovalError] = useState<string | null>(null)
+
+  // Add-member dialog. Leaders add people who already belong but never used
+  // the join form; nobody is emailed.
+  const emptyNewMember = { lifeLineId: '', personName: '', personEmail: '', personPhone: '', note: '' }
+  const [addingOpen, setAddingOpen] = useState(false)
+  const [newMember, setNewMember] = useState(emptyNewMember)
+  const [isAdding, setIsAdding] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   // Leaders already hold all their members, so changing the dropdown just
   // filters. Staff load per group, so for them a new choice means a new fetch.
@@ -247,6 +258,63 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
     }
   }
 
+  // Only groups people can belong to: a family heading's members are in the
+  // groups beneath it.
+  const joinableGroups = lifeLines.filter(ll => ll.coveredIds.length === 1)
+
+  const openAddMember = () => {
+    const current = joinableGroups.find(ll => ll.id === selectedLifeLine)
+    setNewMember({
+      ...emptyNewMember,
+      lifeLineId: current?.id ?? (joinableGroups.length === 1 ? joinableGroups[0].id : ''),
+    })
+    setAddError(null)
+    setAddingOpen(true)
+  }
+
+  const closeAddMember = () => {
+    setAddingOpen(false)
+    setAddError(null)
+  }
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newMember.lifeLineId || newMember.personName.trim().length < 2) return
+
+    setIsAdding(true)
+    setAddError(null)
+    try {
+      const res = await fetch(`/api/lifelines/${newMember.lifeLineId}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personName: newMember.personName,
+          personEmail: newMember.personEmail,
+          personPhone: newMember.personPhone,
+          note: newMember.note,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add member')
+
+      setAddingOpen(false)
+      setNotice(data.message || `${newMember.personName.trim()} added`)
+      setActiveTab('active')
+      // Show the group they were added to. For staff, changing the selection
+      // loads that group; otherwise reload what's on screen.
+      if (selectedLifeLine !== 'all' && selectedLifeLine !== newMember.lifeLineId) {
+        setSelectedLifeLine(newMember.lifeLineId)
+        if (!isStaff) await fetchData()
+      } else {
+        await fetchData()
+      }
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : 'Failed to add member')
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
   // Export to CSV
   const handleExportCSV = () => {
     const dataToExport = activeTab === 'active' ? filteredMembers : filteredRemoved
@@ -369,6 +437,135 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
 
   return (
     <div className="space-y-6">
+      {/* Add Member Dialog */}
+      {addingOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <form
+            onSubmit={handleAddMember}
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
+            aria-labelledby="add-member-title"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center text-primary-600">
+                <UserPlus className="h-5 w-5 mr-2" aria-hidden="true" />
+                <h3 id="add-member-title" className="text-lg font-semibold">Add member</h3>
+              </div>
+              <button type="button" onClick={closeAddMember} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-4">
+              For someone who already belongs to the group. They&apos;re added as a member straight
+              away, and no email is sent to them.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="new-member-group" className="block text-sm font-medium text-gray-700 mb-1">
+                  LifeLine <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="new-member-group"
+                  value={newMember.lifeLineId}
+                  onChange={(e) => setNewMember(prev => ({ ...prev, lifeLineId: e.target.value }))}
+                  className="form-input form-select w-full"
+                  required
+                >
+                  <option value="">Choose a LifeLine…</option>
+                  {joinableGroups.map(ll => (
+                    <option key={ll.id} value={ll.id}>{ll.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="new-member-name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="new-member-name"
+                  value={newMember.personName}
+                  onChange={(e) => setNewMember(prev => ({ ...prev, personName: e.target.value }))}
+                  placeholder="First and last name"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="new-member-email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <Input
+                  id="new-member-email"
+                  type="email"
+                  value={newMember.personEmail}
+                  onChange={(e) => setNewMember(prev => ({ ...prev, personEmail: e.target.value }))}
+                  placeholder="So the group's emails reach them"
+                  autoComplete="off"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="new-member-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <Input
+                  id="new-member-phone"
+                  type="tel"
+                  value={newMember.personPhone}
+                  onChange={(e) => setNewMember(prev => ({ ...prev, personPhone: e.target.value }))}
+                  autoComplete="off"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="new-member-note" className="block text-sm font-medium text-gray-700 mb-1">
+                  Note
+                </label>
+                <textarea
+                  id="new-member-note"
+                  value={newMember.note}
+                  onChange={(e) => setNewMember(prev => ({ ...prev, note: e.target.value }))}
+                  placeholder="Optional, e.g. joins on Zoom"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {addError && (
+              <div className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg">{addError}</div>
+            )}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <Button type="button" onClick={closeAddMember} variant="outline" disabled={isAdding}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isAdding || !newMember.lifeLineId || newMember.personName.trim().length < 2}
+              >
+                {isAdding ? 'Adding...' : 'Add member'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {notice && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
+          <span className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 flex-none" aria-hidden="true" />
+            {notice}
+          </span>
+          <button onClick={() => setNotice(null)} className="text-green-700 hover:text-green-900" aria-label="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Removal Confirmation Dialog */}
       {removingMember && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -541,6 +738,13 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
                 </option>
               ))}
             </select>
+
+            {joinableGroups.length > 0 && (
+              <Button onClick={openAddMember} size="sm">
+                <UserPlus className="h-4 w-4 mr-1" aria-hidden="true" />
+                Add member
+              </Button>
+            )}
 
             <Button onClick={fetchData} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4" />

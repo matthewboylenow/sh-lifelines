@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Edit, Trash2, Users, Rocket, AlertTriangle, CheckCircle, History } from 'lucide-react'
+import { Edit, Trash2, Users, Rocket, AlertTriangle, CheckCircle, History, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from '@/components/ui/toast'
@@ -162,10 +162,16 @@ export function LegacySmallGroups() {
               )}
             </p>
           </div>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+          <Link href="/lifelines/create?legacy=1">
+            <Button variant="outline" className="w-full">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+              Add legacy small group
+            </Button>
+          </Link>
           <Button
             onClick={pushLive}
             disabled={pushing || drafts.length - draftsWithoutLeader.length === 0}
-            className="shrink-0"
           >
             <Rocket className="h-4 w-4 mr-2" aria-hidden="true" />
             {pushing
@@ -174,6 +180,7 @@ export function LegacySmallGroups() {
                 ? 'All pushed live'
                 : `Push ${drafts.length - draftsWithoutLeader.length} draft${drafts.length - draftsWithoutLeader.length === 1 ? '' : 's'} live`}
           </Button>
+          </div>
         </div>
 
         {result && (
