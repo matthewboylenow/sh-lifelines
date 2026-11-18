@@ -59,12 +59,14 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",
+    "read-excel-file": "9.3.12",
     "resend": "^6.19.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
     "twilio": "^5.13.1",
     "typescript": "^5.9.2",
     "unsplash-js": "^7.0.19",
+    "write-excel-file": "4.1.1",
     "zod": "^4.0.15"
   },
   "devDependencies": {
