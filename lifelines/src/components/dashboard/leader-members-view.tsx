@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   X,
   UserPlus,
-  CheckCircle
+  CheckCircle,
+  Upload
 } from 'lucide-react'
 import { UserRole } from '@prisma/client'
 import { hasAnyRole } from '@/lib/auth-utils'
@@ -25,6 +26,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { formatDate } from '@/utils/formatters'
+import { MemberSpreadsheetImport } from './member-spreadsheet-import'
 
 interface Member {
   id: string
@@ -95,6 +97,7 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
   const [isAdding, setIsAdding] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   // Leaders already hold all their members, so changing the dropdown just
   // filters. Staff load per group, so for them a new choice means a new fetch.
@@ -366,7 +369,10 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
   }
 
   // Export to Excel-compatible format (CSV with BOM for Excel)
-  const handleExportExcel = () => {
+  // A real Excel workbook. This used to be comma-separated text saved with an
+  // .xls name, which Excel opens with a warning that the file "could be
+  // corrupted or unsafe".
+  const handleExportExcel = async () => {
     const dataToExport = activeTab === 'active' ? filteredMembers : filteredRemoved
 
     if (dataToExport.length === 0) {
@@ -399,20 +405,18 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
           ]
     )
 
-    const csvContent = '\uFEFF' + [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
-    ].join('\n')
-
-    const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `lifeline-${activeTab}-members-${new Date().toISOString().split('T')[0]}.xls`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    const { default: writeXlsxFile } = await import('write-excel-file/browser')
+    await writeXlsxFile(
+      [
+        headers.map(text => ({ value: text, fontWeight: 'bold' as const })),
+        ...rows.map(row => row.map(cell => ({ value: cell }))),
+      ],
+      {
+        sheet: activeTab === 'active' ? 'Members' : 'Departed',
+        stickyRowsCount: 1,
+        columns: headers.map(text => ({ width: text === 'Reason' ? 40 : text === 'Email' || text === 'LifeLine' ? 32 : 20 })),
+      }
+    ).toFile(`lifeline-${activeTab}-members-${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
   if (loading) {
@@ -552,6 +556,27 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
             </div>
           </form>
         </div>
+      )}
+
+      {importOpen && (
+        <MemberSpreadsheetImport
+          groups={joinableGroups}
+          defaultGroupId={
+            joinableGroups.find(ll => ll.id === selectedLifeLine)?.id ??
+            (joinableGroups.length === 1 ? joinableGroups[0].id : '')
+          }
+          onClose={() => setImportOpen(false)}
+          onDone={async (message, groupId) => {
+            setNotice(message)
+            setActiveTab('active')
+            if (selectedLifeLine !== 'all' && selectedLifeLine !== groupId) {
+              setSelectedLifeLine(groupId)
+              if (!isStaff) await fetchData()
+            } else {
+              await fetchData()
+            }
+          }}
+        />
       )}
 
       {notice && (
@@ -740,10 +765,16 @@ export function LeaderMembersView({ userId, userRoles }: LeaderMembersViewProps)
             </select>
 
             {joinableGroups.length > 0 && (
-              <Button onClick={openAddMember} size="sm">
-                <UserPlus className="h-4 w-4 mr-1" aria-hidden="true" />
-                Add member
-              </Button>
+              <>
+                <Button onClick={openAddMember} size="sm">
+                  <UserPlus className="h-4 w-4 mr-1" aria-hidden="true" />
+                  Add member
+                </Button>
+                <Button onClick={() => setImportOpen(true)} variant="outline" size="sm">
+                  <Upload className="h-4 w-4 mr-1" aria-hidden="true" />
+                  Add from spreadsheet
+                </Button>
+              </>
             )}
 
             <Button onClick={fetchData} variant="outline" size="sm">
