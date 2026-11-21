@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { isPlayableVideo } from '@/lib/video'
+import { uploadFile } from '@/lib/upload-utils'
 
 interface Resource {
   id: string
@@ -45,6 +46,7 @@ interface ResourceFormData {
   fileName: string
   isActive: boolean
   isPublic: boolean
+  fileSize?: number
 }
 
 const emptyFormData: ResourceFormData = {
@@ -81,6 +83,7 @@ export function ResourceManagement() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   useEffect(() => {
     fetchResources()
@@ -181,27 +184,17 @@ export function ResourceManagement() {
     if (!file) return
 
     setUploadingFile(true)
+    setUploadProgress(0)
     try {
-      const formDataUpload = new FormData()
-      formDataUpload.append('file', file)
-      formDataUpload.append('category', 'resource')
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formDataUpload
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload file')
-      }
+      // Straight to storage, so large PDFs and videos are fine.
+      const uploaded = await uploadFile(file, 'resource', setUploadProgress)
 
       // Update form with uploaded file info
       setFormData(prev => ({
         ...prev,
-        fileUrl: data.data.fileUrl,
-        fileName: data.data.fileName
+        fileUrl: uploaded.fileUrl,
+        fileName: uploaded.fileName,
+        fileSize: uploaded.fileSize
       }))
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to upload file')
@@ -366,13 +359,13 @@ export function ResourceManagement() {
                   <label className="flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                     <Upload className="h-4 w-4 mr-2 text-gray-500" />
                     <span className="text-sm text-gray-700">
-                      {uploadingFile ? 'Uploading...' : 'Choose File'}
+                      {uploadingFile ? `Uploading… ${uploadProgress}%` : 'Choose File'}
                     </span>
                     <input
                       type="file"
                       onChange={handleFileUpload}
                       className="hidden"
-                      accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.webp,.gif,.mp3,.m4a,.mp4,.mov,.webm"
                       disabled={uploadingFile}
                     />
                   </label>
@@ -384,7 +377,7 @@ export function ResourceManagement() {
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Supported formats: PDF, Word, PowerPoint, Excel
+                  PDF, Word, PowerPoint, Excel, images, audio or video, up to 500 MB.
                 </p>
               </div>
 

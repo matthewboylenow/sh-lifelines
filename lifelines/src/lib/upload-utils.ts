@@ -1,29 +1,67 @@
+import { UPLOAD_RULES, UploadPurpose, uploadContentType } from './upload-rules'
+
 export interface UploadResult {
   fileName: string
-  uploadedFileName: string
   fileUrl: string
   fileSize: number
   fileType: string
-  uploadedBy: string
-  uploadedAt: string
 }
 
-export async function uploadFile(file: File): Promise<UploadResult> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || 'Failed to upload file')
+/**
+ * Upload a file straight to storage.
+ *
+ * The server only signs the upload; the file itself goes from the browser to
+ * S3. Sending it through the server failed for anything over 4.5 MB, which is
+ * the most Vercel accepts in one request.
+ */
+export async function uploadFile(
+  file: File,
+  purpose: UploadPurpose = 'lifeline-image',
+  onProgress?: (percent: number) => void
+): Promise<UploadResult> {
+  // Say what's wrong before anything is sent.
+  const rule = UPLOAD_RULES[purpose]
+  if (!uploadContentType(purpose, file.name, file.type)) {
+    throw new Error(rule.typeError)
+  }
+  if (file.size > rule.maxBytes) {
+    throw new Error(
+      `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is ${rule.maxBytes / 1024 / 1024} MB.`
+    )
   }
 
-  const result = await response.json()
-  return result.data
+  const response = await fetch('/api/upload/presign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ purpose, fileName: file.name, fileType: file.type, fileSize: file.size }),
+  })
+  const result = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(result.error || 'Could not start the upload')
+  }
+  const { uploadUrl, contentType, fileUrl } = result.data as {
+    uploadUrl: string
+    contentType: string
+    fileUrl: string
+  }
+
+  // XMLHttpRequest rather than fetch, for upload progress on large files.
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', uploadUrl)
+    xhr.setRequestHeader('Content-Type', contentType)
+    xhr.upload.onprogress = event => {
+      if (event.lengthComputable && onProgress) onProgress(Math.round((event.loaded / event.total) * 100))
+    }
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error('The upload was not accepted. Please try again.'))
+    xhr.onerror = () => reject(new Error('The upload failed. Check your connection and try again.'))
+    xhr.send(file)
+  })
+
+  return { fileName: file.name, fileUrl, fileSize: file.size, fileType: contentType }
 }
 
 export function getFileIcon(fileType: string): string {
